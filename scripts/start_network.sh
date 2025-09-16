@@ -152,6 +152,24 @@ broadcast-mode = "sync"
 EOF
 done
 
+# Configure API server for each node
+echo -e "${YELLOW}Configuring API servers${NC}"
+for i in $(seq 0 $((NODES-1))); do
+  NODE_DIR="$BASE_DIR/node$i"
+  API_PORT=$((1317 + i))
+  
+  # Enable API server and set correct address in app.toml
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s/enable = false/enable = true/" "$NODE_DIR/config/app.toml"
+    sed -i '' "s/address = \"tcp:\/\/localhost:1317\"/address = \"tcp:\/\/127.0.0.1:$API_PORT\"/" "$NODE_DIR/config/app.toml"
+  else
+    sed -i "s/enable = false/enable = true/" "$NODE_DIR/config/app.toml"
+    sed -i "s/address = \"tcp:\/\/localhost:1317\"/address = \"tcp:\/\/127.0.0.1:$API_PORT\"/" "$NODE_DIR/config/app.toml"
+  fi
+  
+  echo "Node $i API server enabled on port $API_PORT"
+done
+
 echo -e "${GREEN}Network setup:${NC}"
 echo -e "  - Node0 is the sole validator"
 echo -e "  - Other nodes are regular full nodes"
@@ -215,7 +233,7 @@ for i in $(seq 0 $((NODES-1))); do
   JSON_PORT=$((8545 + i * 2))
   WS_PORT=$((8546 + i * 2))
   
-  echo -e "  Starting node$i on ports RPC:$RPC_PORT JSON-RPC:$JSON_PORT WebSocket:$WS_PORT"
+  echo -e "  Starting node$i on ports RPC:$RPC_PORT API:$API_PORT JSON-RPC:$JSON_PORT WebSocket:$WS_PORT"
   
   # Start node with correct flags
   "$BINARY" start \
@@ -243,9 +261,10 @@ echo
 echo "Endpoints:"
 for i in $(seq 0 $((NODES-1))); do
   RPC_PORT=$((26657 + i))
+  API_PORT=$((1317 + i))
   JSON_PORT=$((8545 + i * 2))
   WS_PORT=$((8546 + i * 2))
-  echo "  Node$i: RPC=http://localhost:$RPC_PORT JSON-RPC=http://localhost:$JSON_PORT WebSocket=ws://localhost:$WS_PORT"
+  echo "  Node$i: RPC=http://localhost:$RPC_PORT API=http://localhost:$API_PORT JSON-RPC=http://localhost:$JSON_PORT WebSocket=ws://localhost:$WS_PORT"
 done
 echo
 echo "Stop: pkill -f 'shardeumd.*shardeum-testnet' or Ctrl+C"

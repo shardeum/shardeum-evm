@@ -60,7 +60,7 @@
         
         <div class="info">
             <strong>Network Details:</strong><br>
-            • Chain ID: shardeum<br>
+            • Chain ID: shardeum-testnet<br>
             • RPC: http://127.0.0.1:26657<br>
             • Token: SHM (ashm)<br>
             • Decimals: 18
@@ -74,8 +74,18 @@
             <h3>Prerequisites:</h3>
             <ul>
                 <li>Keplr browser extension installed</li>
-                <li>Local Shardeum node running on port 26657</li>
+                <li>Local Shardeum node running with: <code>make start-network</code></li>
+                <li>API server enabled (ports 26657 for RPC, 1317 for API)</li>
                 <li>Access this page via http:// (not file://)</li>
+            </ul>
+        </div>
+
+        <div class="info">
+            <h3>Troubleshooting:</h3>
+            <ul>
+                <li>If you get "failed to fetch", restart your network with the updated script</li>
+                <li>Make sure both RPC (26657) and API (1317) endpoints are running</li>
+                <li>Test endpoints: <a href="http://127.0.0.1:26657/status" target="_blank">RPC Status</a> | <a href="http://127.0.0.1:1317/cosmos/base/tendermint/v1beta1/node_info" target="_blank">API Info</a></li>
             </ul>
         </div>
     </div>
@@ -91,7 +101,7 @@
 
             try {
                 await window.keplr.experimentalSuggestChain({
-                    chainId: "shardeum",
+                    chainId: "shardeum-testnet",
                     chainName: "Shardeum Local",
                     rpc: "http://127.0.0.1:26657",
                     rest: "http://127.0.0.1:1317",
@@ -135,7 +145,7 @@
                 statusDiv.innerHTML = '<div class="success">✅ Shardeum Local network added to Keplr successfully!</div>';
                 
                 // Enable the chain
-                await window.keplr.enable("shardeum");
+                await window.keplr.enable("shardeum-testnet");
                 statusDiv.innerHTML += '<div class="success">✅ Shardeum chain enabled in Keplr!</div>';
                 
             } catch (error) {
