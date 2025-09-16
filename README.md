@@ -181,6 +181,7 @@ Examples:
 ```bash
 # Using Makefile
 make start-network                 # Start 4 nodes (default)
+make start-network NODES=6         # Start 6 nodes
 
 # Using script directly 
 ./scripts/start_network.sh         # Start 4 nodes (default)

@@ -95,12 +95,14 @@ echo -e "${YELLOW}Validating genesis${NC}"
 "$BINARY" genesis validate --home "$NODE0_DIR" || echo -e "${YELLOW}Warning: Genesis validation failed, continuing anyway${NC}"
 
 # Initialize other nodes and copy genesis
-echo -e "${YELLOW}Initializing other nodes${NC}"
-for i in $(seq 1 $((NODES-1))); do
-  NODE_DIR="$BASE_DIR/node$i"
-  "$BINARY" init "node$i" --chain-id "$CHAINID" --home "$NODE_DIR" --overwrite > /dev/null 2>&1
-  cp "$NODE0_DIR/config/genesis.json" "$NODE_DIR/config/genesis.json"
-done
+if [ $NODES -gt 1 ]; then
+  echo -e "${YELLOW}Initializing other nodes${NC}"
+  for i in $(seq 1 $((NODES-1))); do
+    NODE_DIR="$BASE_DIR/node$i"
+    "$BINARY" init "node$i" --chain-id "$CHAINID" --home "$NODE_DIR" --overwrite > /dev/null 2>&1
+    cp "$NODE0_DIR/config/genesis.json" "$NODE_DIR/config/genesis.json"
+  done
+fi
 
 # Set up client configuration for each node
 echo -e "${YELLOW}Setting up client configuration${NC}"

@@ -379,7 +379,7 @@ test-rpc-compat-stop:
 .PHONY: localnet-start localnet-stop localnet-build-env localnet-build-nodes test-rpc-compat test-rpc-compat-stop
 
 start-network: build
-	@cd scripts && SKIP_BUILD=1 BINARY=../build/shardeumd ./start_network.sh
+	@cd scripts && SKIP_BUILD=1 BINARY=../build/shardeumd ./start_network.sh $(or $(NODES),4)
 
 add-node: build
 	@cd scripts && SKIP_BUILD=1 BINARY=../build/shardeumd ./add_node.sh $(NODE_ID) $(SEED_RPC)
