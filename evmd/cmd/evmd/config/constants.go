@@ -7,6 +7,12 @@ const (
 	// ExampleDisplayDenom is the display denomination of the Cosmos EVM example chain's base coin.
 	ExampleDisplayDenom = "atom"
 
+	// ShardeumChainDenom is the denomination of the Shardeum chain's base coin.
+	ShardeumChainDenom = "ashm"
+
+	// ShardeumDisplayDenom is the display denomination of the Shardeum chain's base coin.
+	ShardeumDisplayDenom = "shm"
+
 	// EighteenDecimalsChainID is the chain ID for the 18 decimals chain.
 	EighteenDecimalsChainID = 9001
 
@@ -18,6 +24,9 @@ const (
 
 	// TwoDecimalsChainID is the chain ID for the 2 decimals chain.
 	TwoDecimalsChainID = 9004
+
+	// ShardeumChainID is the chain ID for Shardeum EVM chain.
+	ShardeumChainID = 8118
 
 	CosmosChainID = 262144
 

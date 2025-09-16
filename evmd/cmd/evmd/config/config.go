@@ -24,18 +24,18 @@ var ChainsCoinInfo = map[uint64]evmtypes.EvmCoinInfo{
 		DisplayDenom:  "test",
 		Decimals:      evmtypes.SixDecimals,
 	},
-	// EVMChainID provides a chain ID used for internal testing
-	EVMChainID: {
-		Denom:         "atest",
-		ExtendedDenom: "atest",
-		DisplayDenom:  "test",
+	// ShardeumChainID provides the chain ID for Shardeum EVM blockchain
+	ShardeumChainID: {
+		Denom:         ShardeumChainDenom,
+		ExtendedDenom: ShardeumChainDenom,
+		DisplayDenom:  ShardeumDisplayDenom,
 		Decimals:      evmtypes.EighteenDecimals,
 	},
 }
 
 const (
-	// Bech32Prefix defines the Bech32 prefix used for accounts on the exemplary Cosmos EVM blockchain.
-	Bech32Prefix = "cosmos"
+	// Bech32Prefix defines the Bech32 prefix used for accounts on the Shardeum blockchain.
+	Bech32Prefix = "shardeum"
 	// Bech32PrefixAccAddr defines the Bech32 prefix of an account's address.
 	Bech32PrefixAccAddr = Bech32Prefix
 	// Bech32PrefixAccPub defines the Bech32 prefix of an account's public key.
@@ -49,13 +49,13 @@ const (
 	// Bech32PrefixConsPub defines the Bech32 prefix of a consensus node public key.
 	Bech32PrefixConsPub = Bech32Prefix + sdk.PrefixValidator + sdk.PrefixConsensus + sdk.PrefixPublic
 	// DisplayDenom defines the denomination displayed to users in client applications.
-	DisplayDenom = "atom"
-	// BaseDenom defines to the default denomination used in the Cosmos EVM example chain.
-	BaseDenom = "aatom"
+	DisplayDenom = "shm"
+	// BaseDenom defines to the default denomination used in the Shardeum chain.
+	BaseDenom = "ashm"
 	// BaseDenomUnit defines the precision of the base denomination.
 	BaseDenomUnit = 18
-	// EVMChainID defines the EIP-155 replay-protection chain id for the current ethereum chain config.
-	EVMChainID = 262144
+	// EVMChainID defines the EIP-155 replay-protection chain id for the Shardeum chain config.
+	EVMChainID = 8118
 )
 
 // SetBech32Prefixes sets the global prefixes to be used when serializing addresses and public keys to Bech32 strings.
