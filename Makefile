@@ -381,7 +381,10 @@ test-rpc-compat-stop:
 start-network: build
 	@cd scripts && SKIP_BUILD=1 BINARY=../build/shardeumd ./start_network.sh
 
-.PHONY: start-network
+add-node: build
+	@cd scripts && SKIP_BUILD=1 BINARY=../build/shardeumd ./add_node.sh $(NODE_ID) $(SEED_RPC)
+
+.PHONY: start-network add-node
 
 test-system: build-v04 build
 	mkdir -p ./tests/systemtests/binaries/

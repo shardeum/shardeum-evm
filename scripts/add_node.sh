@@ -21,7 +21,7 @@ SEED_NODE_RPC="${2:-http://localhost:26657}"
 CHAINID="shardeum-testnet"
 BASE_DIR="../.testnet"
 MIN_GAS="0.000006ashm"
-BINARY="../build/shardeumd"
+BINARY="${BINARY:-../build/shardeumd}"
 
 # Colors
 GREEN='\033[0;32m'
@@ -50,10 +50,12 @@ fi
 echo -e "${GREEN}Adding new node '$NODE_ID' using seed-based discovery${NC}"
 echo -e "${YELLOW}Using seed node: $SEED_NODE_RPC${NC}"
 
-# Verify binary exists
+# Verify binary exists (skip build if called from makefile)
 if [ ! -f "$BINARY" ]; then
-  echo -e "${YELLOW}Binary not found, building shardeumd...${NC}"
-  (cd .. && make build)
+  if [ "$SKIP_BUILD" != "1" ]; then
+    echo -e "${YELLOW}Binary not found, building shardeumd...${NC}"
+    (cd .. && make build)
+  fi
   if [ ! -f "$BINARY" ]; then
     echo -e "${RED}Error: Failed to build binary at $BINARY${NC}"
     exit 1

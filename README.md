@@ -192,11 +192,20 @@ make start-network                 # Start 4 nodes (default)
 You can dynamically add more nodes to an existing testnet:
 
 ```bash
+# Using Makefile (recommended)
+make add-node NODE_ID=node4 [SEED_RPC=http://localhost:26657]
+
+# Or directly using the script
 ./scripts/add_node.sh <node_id> [seed_rpc_endpoint]
 ```
 
 Examples:
 ```bash
+# Using Makefile
+make add-node NODE_ID=node4                           # Add node4, connect to default seed at localhost:26657
+make add-node NODE_ID=node5 SEED_RPC=http://localhost:26658  # Add node5, connect to specific node as seed
+
+# Using script directly
 ./scripts/add_node.sh node4                           # Add node4, connect to default seed at localhost:26657
 ./scripts/add_node.sh node5 http://localhost:26658    # Add node5, connect to specific node as seed
 ./scripts/add_node.sh 6                               # Add node6 (ID automatically prefixed)
