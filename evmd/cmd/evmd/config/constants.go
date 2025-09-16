@@ -26,7 +26,7 @@ const (
 	TwoDecimalsChainID = 9004
 
 	// ShardeumChainID is the chain ID for Shardeum EVM chain.
-	ShardeumChainID = 8118
+	ShardeumChainID = 8119
 
 	CosmosChainID = 262144
 
