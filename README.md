@@ -143,8 +143,136 @@ thus moving the standard forward.
 
 ## Getting started
 
+### Quick Start - Single Node
+
 To run the example `evmd` chain, run the script using `./local_node.sh`
 from the root folder of the repository.
+
+```bash
+./local_node.sh
+```
+
+This will:
+- Build the `evmd` binary
+- Initialize a local testnet with the chain ID `shardeum`
+- Create funded dev accounts (dev0, dev1, dev2, dev3)
+- Start the node with JSON-RPC APIs enabled
+
+### Multi-Node Testnet
+
+For testing with multiple validators, use the multi-node script:
+
+```bash
+./start_multi_nodes.sh
+```
+
+Options:
+- `-n, --nodes N`: Number of nodes to start (default: 4)
+- `-c, --chain-id ID`: Chain ID (default: local-testnet)
+- `--clean`: Clean existing data before starting
+- `--no-build`: Skip building the binary
+
+Examples:
+```bash
+./start_multi_nodes.sh -n 3              # Start 3 nodes
+./start_multi_nodes.sh -n 5 --clean      # Clean data and start 5 nodes
+./start_multi_nodes.sh --chain-id mytest  # Custom chain ID
+```
+
+To stop all nodes:
+```bash
+./.multi-nodes/stop_nodes.sh
+```
+
+### Network Endpoints
+
+#### Single Node
+- **RPC**: http://localhost:26657
+- **API**: http://localhost:1317  
+- **JSON-RPC**: http://localhost:8545
+
+#### Multi-Node
+Each node runs on different ports:
+- **Node 0**: RPC 26657, API 1317, JSON-RPC 8545
+- **Node 1**: RPC 26658, API 1318, JSON-RPC 8555
+- **Node N**: RPC 26657+N, API 1317+N, JSON-RPC 8545+N*10
+
+## Keplr Wallet Integration
+
+### Adding Shardeum to Keplr
+
+1. **Start your local node** (single or multi-node)
+2. **Serve the add-to-keplr page**:
+   ```bash
+   # Using Python
+   python -m http.server 8000
+   
+   # Or using Node.js
+   npx serve .
+   ```
+3. **Open the page**: http://localhost:8000/add-to-keplr.html
+4. **Click "Add Shardeum Local to Keplr"** - this will add the network configuration to your Keplr wallet
+
+### Network Configuration
+- **Chain ID**: `shardeum`
+- **Currency**: SHM (ashm)
+- **Decimals**: 18
+- **RPC**: http://127.0.0.1:26657
+- **REST**: http://127.0.0.1:1317
+
+### Staking with Keplr
+
+After adding the network, you can use the staking interface:
+1. Open: http://localhost:8000/keplr-staking.html
+2. Connect your Keplr wallet
+3. Stake tokens with the default validator
+
+## Development Features
+
+### Pre-funded Development Accounts
+
+The local node comes with 4 pre-funded dev accounts:
+
+| Account | Address (Ethereum) | Address (Cosmos) |
+|---------|-------------------|------------------|
+| dev0 | 0xC6Fe5D33615a1C52c08018c47E8Bc53646A0E101 | cosmos1cml96vmptgw99syqrrz8az79xer2pcgp84pdun |
+| dev1 | 0x963EBDf2e1f8DB8707D05FC75bfeFFBa1B5BaC17 | cosmos1jcltmuhplrdcwp7stlr4hlhlhgd4htqh3a79sq |
+| dev2 | 0x40a0cb1C63e026A81B55EE1308586E21eec1eFa9 | cosmos1gzsvk8rruqn2sx64acfsskrwy8hvrmafqkaze8 |
+| dev3 | 0x498B5AeC5D439b733dC2F58AB489783A23FB26dA | cosmos1fx944mzagwdhx0wz7k9tfztc8g3lkfk6rrgv6l |
+
+Each account is funded with 1,000,000 SHM tokens.
+
+### Additional Development Options
+
+#### Creating Extra Dev Accounts
+```bash
+./local_node.sh --additional-users 5  # Creates dev4, dev5, dev6, dev7, dev8
+```
+
+#### Custom Mnemonics
+```bash
+# Create a YAML file with your mnemonics
+echo "mnemonics:" > my_mnemonics.yaml
+echo '  - "your first mnemonic phrase here"' >> my_mnemonics.yaml
+echo '  - "your second mnemonic phrase here"' >> my_mnemonics.yaml
+
+./local_node.sh --mnemonics-input my_mnemonics.yaml
+```
+
+#### Development with Remote Debugging
+```bash
+./local_node.sh --remote-debugging
+```
+
+### Chain Configuration
+
+The Shardeum testnet includes:
+- **Native Token**: SHM (ashm)
+- **Block Time**: ~1-2 seconds (optimized for development)
+- **Gas Price**: 0 ashm (free transactions for development)
+- **Max Block Gas**: 10,000,000
+- **Active Precompiles**: Bank, Distribution, Staking, ERC20, Gov, ICS20, Slashing
+- **Governance**: Fast proposal periods (30s voting, 15s expedited)
 
 ### Migrations
 
