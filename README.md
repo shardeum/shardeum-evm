@@ -160,28 +160,29 @@ This will:
 
 ### Multi-Node Testnet
 
-For testing with multiple validators, use the multi-node script:
+For testing with multiple validators, use the network startup script:
 
 ```bash
-./start_multi_nodes.sh
+./start_network.sh [number_of_nodes]
 ```
 
-Options:
-- `-n, --nodes N`: Number of nodes to start (default: 4)
-- `-c, --chain-id ID`: Chain ID (default: local-testnet)
-- `--clean`: Clean existing data before starting
-- `--no-build`: Skip building the binary
+This script will:
+- Build the `shardeumd` binary 
+- Initialize nodes with the Shardeum testnet configuration
+- Set up a bootstrap validator on node0
+- Configure peer connections between all nodes
+- Start all nodes with proper port assignments
 
 Examples:
 ```bash
-./start_multi_nodes.sh -n 3              # Start 3 nodes
-./start_multi_nodes.sh -n 5 --clean      # Clean data and start 5 nodes
-./start_multi_nodes.sh --chain-id mytest  # Custom chain ID
+./start_network.sh        # Start 4 nodes (default)
+./start_network.sh 6      # Start 6 nodes
 ```
 
 To stop all nodes:
 ```bash
-./.multi-nodes/stop_nodes.sh
+pkill -f 'shardeumd.*shardeum-testnet'
+# Or press Ctrl+C if running in foreground
 ```
 
 ### Network Endpoints
@@ -193,9 +194,9 @@ To stop all nodes:
 
 #### Multi-Node
 Each node runs on different ports:
-- **Node 0**: RPC 26657, API 1317, JSON-RPC 8545
-- **Node 1**: RPC 26658, API 1318, JSON-RPC 8555
-- **Node N**: RPC 26657+N, API 1317+N, JSON-RPC 8545+N*10
+- **Node 0**: RPC 26657, GRPC 9090, API 1317, JSON-RPC 8545, WebSocket 8546
+- **Node 1**: RPC 26658, GRPC 9091, API 1318, JSON-RPC 8547, WebSocket 8548
+- **Node N**: RPC 26657+N, GRPC 9090+N, API 1317+N, JSON-RPC 8545+N*2, WebSocket 8546+N*2
 
 ## Keplr Wallet Integration
 
