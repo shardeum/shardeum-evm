@@ -378,6 +378,11 @@ test-rpc-compat-stop:
 
 .PHONY: localnet-start localnet-stop localnet-build-env localnet-build-nodes test-rpc-compat test-rpc-compat-stop
 
+start-network: build
+	@cd scripts && SKIP_BUILD=1 BINARY=../build/shardeumd ./start_network.sh
+
+.PHONY: start-network
+
 test-system: build-v04 build
 	mkdir -p ./tests/systemtests/binaries/
 	cp $(BUILDDIR)/evmd ./tests/systemtests/binaries/

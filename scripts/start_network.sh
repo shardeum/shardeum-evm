@@ -14,9 +14,9 @@ trap cleanup SIGINT SIGTERM
 
 NODES="${1:-4}"
 CHAINID="shardeum-testnet"  # Use proper Shardeum chain ID
-BASE_DIR="./.testnet"
+BASE_DIR="../.testnet"
 MIN_GAS="0.000006ashm"
-BINARY="./build/shardeumd"
+BINARY="${BINARY:-../build/shardeumd}"
 
 # Colors
 GREEN='\033[0;32m'
@@ -30,9 +30,11 @@ echo -e "${GREEN}Starting $NODES node Shardeum testnet${NC}"
 rm -rf "$BASE_DIR"
 pkill -f "shardeumd.*shardeum-testnet" || true
 
-# Build our own binary locally
-echo -e "${YELLOW}Building shardeumd binary${NC}"
-make build
+# Build our own binary locally (skip if called from makefile)
+if [ "$SKIP_BUILD" != "1" ]; then
+  echo -e "${YELLOW}Building shardeumd binary${NC}"
+  (cd .. && make build)
+fi
 
 # Verify binary exists
 if [ ! -f "$BINARY" ]; then
@@ -42,8 +44,8 @@ if [ ! -f "$BINARY" ]; then
 fi
 
 # Verify genesis file exists
-if [ ! -f "config/genesis.json" ]; then
-  echo -e "${RED}Error: Genesis file not found at config/genesis.json${NC}"
+if [ ! -f "../config/genesis.json" ]; then
+  echo -e "${RED}Error: Genesis file not found at ../config/genesis.json${NC}"
   echo "Make sure you have the proper Shardeum network configuration"
   exit 1
 fi
@@ -58,7 +60,7 @@ mkdir -p "$NODE0_DIR"
 
 # Replace with our custom genesis immediately after init
 echo -e "${YELLOW}Using custom genesis with ashm denomination${NC}"
-cp "config/genesis.json" "$NODE0_DIR/config/genesis.json"
+cp "../config/genesis.json" "$NODE0_DIR/config/genesis.json"
 
 # Create validator key for node0 only
 echo -e "${YELLOW}Creating validator key for primary node${NC}"
@@ -214,7 +216,7 @@ echo
 echo "Stop: pkill -f 'shardeumd.*shardeum-testnet' or Ctrl+C"
 echo "Logs: $BASE_DIR/node*/node.log"
 echo
-echo "Add more nodes: ./add_node.sh <node_id>"
+echo "Add more nodes: ./scripts/add_node.sh <node_id>"
 echo
 echo -e "${YELLOW}Network is running. Press Ctrl+C to stop all nodes.${NC}"
 

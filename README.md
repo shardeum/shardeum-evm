@@ -160,10 +160,14 @@ This will:
 
 ### Multi-Node Testnet
 
-For testing with multiple validators, use the network startup script:
+For testing with multiple validators, you can use either the Makefile target or the script directly:
 
 ```bash
-./start_network.sh [number_of_nodes]
+# Using Makefile (recommended)
+make start-network
+
+# Or directly using the script
+./scripts/start_network.sh [number_of_nodes]
 ```
 
 This script will:
@@ -175,8 +179,12 @@ This script will:
 
 Examples:
 ```bash
-./start_network.sh        # Start 4 nodes (default)
-./start_network.sh 6      # Start 6 nodes
+# Using Makefile
+make start-network                 # Start 4 nodes (default)
+
+# Using script directly 
+./scripts/start_network.sh         # Start 4 nodes (default)
+./scripts/start_network.sh 6       # Start 6 nodes
 ```
 
 #### Adding Nodes to Running Network
@@ -184,14 +192,14 @@ Examples:
 You can dynamically add more nodes to an existing testnet:
 
 ```bash
-./add_node.sh <node_id> [seed_rpc_endpoint]
+./scripts/add_node.sh <node_id> [seed_rpc_endpoint]
 ```
 
 Examples:
 ```bash
-./add_node.sh node4                           # Add node4, connect to default seed at localhost:26657
-./add_node.sh node5 http://localhost:26658    # Add node5, connect to specific node as seed
-./add_node.sh 6                               # Add node6 (ID automatically prefixed)
+./scripts/add_node.sh node4                           # Add node4, connect to default seed at localhost:26657
+./scripts/add_node.sh node5 http://localhost:26658    # Add node5, connect to specific node as seed
+./scripts/add_node.sh 6                               # Add node6 (ID automatically prefixed)
 ```
 
 The script will:

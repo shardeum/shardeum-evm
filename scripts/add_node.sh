@@ -19,9 +19,9 @@ trap cleanup SIGINT SIGTERM
 NODE_ID="${1:-}"
 SEED_NODE_RPC="${2:-http://localhost:26657}"
 CHAINID="shardeum-testnet"
-BASE_DIR="./.testnet"
+BASE_DIR="../.testnet"
 MIN_GAS="0.000006ashm"
-BINARY="./build/shardeumd"
+BINARY="../build/shardeumd"
 
 # Colors
 GREEN='\033[0;32m'
@@ -53,7 +53,7 @@ echo -e "${YELLOW}Using seed node: $SEED_NODE_RPC${NC}"
 # Verify binary exists
 if [ ! -f "$BINARY" ]; then
   echo -e "${YELLOW}Binary not found, building shardeumd...${NC}"
-  make build
+  (cd .. && make build)
   if [ ! -f "$BINARY" ]; then
     echo -e "${RED}Error: Failed to build binary at $BINARY${NC}"
     exit 1
