@@ -170,7 +170,7 @@ This script will:
 - Build the `shardeumd` binary 
 - Initialize nodes with the Shardeum testnet configuration
 - Set up a bootstrap validator on node0
-- Configure peer connections between all nodes
+- Configure seed-based peer discovery (node0 acts as seed)
 - Start all nodes with proper port assignments
 
 Examples:
@@ -179,10 +179,39 @@ Examples:
 ./start_network.sh 6      # Start 6 nodes
 ```
 
+#### Adding Nodes to Running Network
+
+You can dynamically add more nodes to an existing testnet:
+
+```bash
+./add_node.sh <node_id> [seed_rpc_endpoint]
+```
+
+Examples:
+```bash
+./add_node.sh node4                           # Add node4, connect to default seed at localhost:26657
+./add_node.sh node5 http://localhost:26658    # Add node5, connect to specific node as seed
+./add_node.sh 6                               # Add node6 (ID automatically prefixed)
+```
+
+The script will:
+- Initialize the new node with proper configuration
+- Download genesis from existing network
+- Configure seed-based peer discovery
+- Assign available ports automatically
+- Start the node and connect to the network
+
+#### Stopping Nodes
+
 To stop all nodes:
 ```bash
 pkill -f 'shardeumd.*shardeum-testnet'
 # Or press Ctrl+C if running in foreground
+```
+
+To stop a specific added node:
+```bash
+# Find the process ID and kill it, or use Ctrl+C in the add_node terminal
 ```
 
 ### Network Endpoints

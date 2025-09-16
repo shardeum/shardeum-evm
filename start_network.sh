@@ -60,17 +60,19 @@ mkdir -p "$NODE0_DIR"
 echo -e "${YELLOW}Using custom genesis with ashm denomination${NC}"
 cp "config/genesis.json" "$NODE0_DIR/config/genesis.json"
 
-# Create validator key for node0 FIRST (before genesis setup)
-"$BINARY" keys add "validator0" \
+# Create validator key for node0 only
+echo -e "${YELLOW}Creating validator key for primary node${NC}"
+"$BINARY" keys add "validator" \
   --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1 || true
 
-# Add validator account to genesis with sufficient stake
-"$BINARY" genesis add-genesis-account "validator0" 100000000000000000000000000ashm \
+# Add validator account to genesis  
+echo -e "${YELLOW}Adding validator account to genesis${NC}"
+"$BINARY" genesis add-genesis-account "validator" 100000000000000000000000000ashm \
   --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
 
-# Create genesis transaction with proper chain-id
+# Create genesis transaction for validator
 echo -e "${YELLOW}Creating genesis transaction for validator${NC}"
-if "$BINARY" genesis gentx validator0 1000000000000000000ashm \
+"$BINARY" genesis gentx "validator" 1000000000000000000ashm \
   --chain-id "$CHAINID" \
   --moniker "node0" \
   --commission-rate="0.10" \
@@ -78,19 +80,11 @@ if "$BINARY" genesis gentx validator0 1000000000000000000ashm \
   --commission-max-change-rate="0.01" \
   --min-self-delegation="1" \
   --keyring-backend test \
-  --home "$NODE0_DIR"; then
-  echo -e "${GREEN}Genesis transaction created successfully${NC}"
-else
-  echo -e "${RED}Genesis transaction failed, but continuing...${NC}"
-fi
+  --home "$NODE0_DIR"
 
-# Collect genesis transactions
-echo -e "${YELLOW}Collecting genesis transactions${NC}"
-if "$BINARY" genesis collect-gentxs --home "$NODE0_DIR"; then
-  echo -e "${GREEN}Genesis transactions collected successfully${NC}"
-else
-  echo -e "${RED}Genesis collection failed, but continuing...${NC}"
-fi
+# Collect genesis transaction
+echo -e "${YELLOW}Collecting genesis transaction${NC}"
+"$BINARY" genesis collect-gentxs --home "$NODE0_DIR"
 
 # Genesis is already properly configured from our template
 
@@ -98,24 +92,12 @@ fi
 echo -e "${YELLOW}Validating genesis${NC}"
 "$BINARY" genesis validate --home "$NODE0_DIR" || echo -e "${YELLOW}Warning: Genesis validation failed, continuing anyway${NC}"
 
-# Initialize remaining nodes as regular nodes (not validators)
-echo -e "${YELLOW}Initializing remaining $((NODES-1)) nodes as regular nodes${NC}"
+# Initialize other nodes and copy genesis
+echo -e "${YELLOW}Initializing other nodes${NC}"
 for i in $(seq 1 $((NODES-1))); do
   NODE_DIR="$BASE_DIR/node$i"
-  mkdir -p "$NODE_DIR"
-  
-  # Initialize node
   "$BINARY" init "node$i" --chain-id "$CHAINID" --home "$NODE_DIR" --overwrite > /dev/null 2>&1
-  
-  # Create keys for potential future validator usage (but don't add to genesis yet)
-  "$BINARY" keys add "validator$i" \
-    --keyring-backend test --home "$NODE_DIR" > /dev/null 2>&1 || true
-done
-
-# Copy the genesis with single bootstrap validator to all nodes
-echo -e "${YELLOW}Copying genesis to all nodes${NC}"
-for i in $(seq 1 $((NODES-1))); do
-  cp "$NODE0_DIR/config/genesis.json" "$BASE_DIR/node$i/config/genesis.json"
+  cp "$NODE0_DIR/config/genesis.json" "$NODE_DIR/config/genesis.json"
 done
 
 # Set up client configuration for each node
@@ -134,31 +116,54 @@ EOF
 done
 
 echo -e "${GREEN}Network setup:${NC}"
-echo -e "  - Node0: Bootstrap validator (will start producing blocks)"
-echo -e "  - Node1-$((NODES-1)): Regular nodes (can become validators later via staking)"
+echo -e "  - Node0 is the sole validator"
+echo -e "  - Other nodes are regular full nodes"
 
-# Set up persistent peers
-echo -e "${YELLOW}Setting up peer connections${NC}"
+# Set up seed-based peer discovery
+echo -e "${YELLOW}Setting up seed-based peer discovery${NC}"
+
+# Node0 will be the seed node - no seeds needed for it
+NODE0_ID=$("$BINARY" cometbft show-node-id --home "$BASE_DIR/node0")
+SEED_ADDRESS="$NODE0_ID@127.0.0.1:27656"
+
+echo -e "${YELLOW}Using node0 as seed: $SEED_ADDRESS${NC}"
+
+# Configure all nodes for local development
 for i in $(seq 0 $((NODES-1))); do
-  PEER_LIST=""
-  for j in $(seq 0 $((NODES-1))); do
-    if [ $i -ne $j ]; then
-      P2P_PORT=$((26656 + j))
-      NODE_ID=$("$BINARY" cometbft show-node-id --home "$BASE_DIR/node$j")
-      if [ -n "$PEER_LIST" ]; then
-        PEER_LIST="$PEER_LIST,"
-      fi
-      PEER_LIST="$PEER_LIST$NODE_ID@127.0.0.1:$P2P_PORT"
-    fi
-  done
-  
-  # Update config with persistent peers (cross-platform sed)
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/persistent_peers = \"\"/persistent_peers = \"$PEER_LIST\"/" "$BASE_DIR/node$i/config/config.toml"
+    # Allow duplicate IPs for local development
+    sed -i '' "s/allow_duplicate_ip = false/allow_duplicate_ip = true/" "$BASE_DIR/node$i/config/config.toml"
+    
+    # Configure seeds for non-seed nodes
+    if [ $i -ne 0 ]; then
+      sed -i '' "s/seeds = \"\"/seeds = \"$SEED_ADDRESS\"/" "$BASE_DIR/node$i/config/config.toml"
+    fi
+    
+    # Ensure persistent_peers stays empty for regular nodes
+    sed -i '' "s/persistent_peers = \".*\"/persistent_peers = \"\"/" "$BASE_DIR/node$i/config/config.toml"
   else
-    sed -i "s/persistent_peers = \"\"/persistent_peers = \"$PEER_LIST\"/" "$BASE_DIR/node$i/config/config.toml"
+    # Allow duplicate IPs for local development
+    sed -i "s/allow_duplicate_ip = false/allow_duplicate_ip = true/" "$BASE_DIR/node$i/config/config.toml"
+    
+    # Configure seeds for non-seed nodes
+    if [ $i -ne 0 ]; then
+      sed -i "s/seeds = \"\"/seeds = \"$SEED_ADDRESS\"/" "$BASE_DIR/node$i/config/config.toml"
+    fi
+    
+    # Ensure persistent_peers stays empty for regular nodes
+    sed -i "s/persistent_peers = \".*\"/persistent_peers = \"\"/" "$BASE_DIR/node$i/config/config.toml"
+  fi
+  
+  if [ $i -eq 0 ]; then
+    echo "Node $i configured as seed node (allow_duplicate_ip=true)"
+  else
+    echo "Node $i using seed: $SEED_ADDRESS (allow_duplicate_ip=true)"
   fi
 done
+
+echo -e "${GREEN}Seed configuration complete:${NC}"
+echo -e "  - Node0: Seed node (no seeds configured)"
+echo -e "  - Node1-$(($NODES-1)): Use node0 as seed for peer discovery"
 
 # Start nodes
 echo -e "${YELLOW}Starting $NODES nodes${NC}"
@@ -167,7 +172,7 @@ for i in $(seq 0 $((NODES-1))); do
   
   # Ports
   RPC_PORT=$((26657 + i))
-  P2P_PORT=$((26656 + i))
+  P2P_PORT=$((27656 + i))
   GRPC_PORT=$((9090 + i))
   API_PORT=$((1317 + i))
   JSON_PORT=$((8545 + i * 2))
@@ -191,7 +196,7 @@ for i in $(seq 0 $((NODES-1))); do
     > "$NODE_DIR/node.log" 2>&1 &
     
   echo $! > "$NODE_DIR/node.pid"
-  sleep 1
+  sleep 3  # Give nodes more time to start and bind ports
 done
 
 echo
@@ -208,6 +213,8 @@ done
 echo
 echo "Stop: pkill -f 'shardeumd.*shardeum-testnet' or Ctrl+C"
 echo "Logs: $BASE_DIR/node*/node.log"
+echo
+echo "Add more nodes: ./add_node.sh <node_id>"
 echo
 echo -e "${YELLOW}Network is running. Press Ctrl+C to stop all nodes.${NC}"
 
