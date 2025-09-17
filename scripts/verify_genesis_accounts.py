@@ -149,9 +149,6 @@ def extract_shardeum_accounts(db_path: str, min_balance: int = 0, max_accounts: 
         if balance_dec < min_balance:
             continue
         
-        if eth_addr == '0x002D3a2BfE09E3E29b6d38d58CaaD16EEe4C9BC5':
-            print(f"My cosmos address is {cosmos_addr} for {eth_addr}")
-            
         if not cosmos_addr:
             print(f"Warning: Failed to encode address {eth_addr}", file=sys.stderr)
             continue
