@@ -3,7 +3,7 @@ package keeper
 import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	storetypes "cosmossdk.io/store/types"
 

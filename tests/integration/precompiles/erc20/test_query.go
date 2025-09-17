@@ -7,9 +7,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	"github.com/cosmos/evm/precompiles/erc20"
-	"github.com/cosmos/evm/testutil"
-	transferkeeper "github.com/cosmos/evm/x/ibc/transfer/keeper"
+	"github.com/shardeum/shardeum-evm/precompiles/erc20"
+	"github.com/shardeum/shardeum-evm/testutil"
+	transferkeeper "github.com/shardeum/shardeum-evm/x/ibc/transfer/keeper"
 	"github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 
 	sdkmath "cosmossdk.io/math"

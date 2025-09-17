@@ -10,9 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/cosmos/evm/server/config"
-	testutiltypes "github.com/cosmos/evm/testutil/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/server/config"
+	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	errorsmod "cosmossdk.io/errors"
 

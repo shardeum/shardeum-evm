@@ -1,7 +1,7 @@
 package namespaces
 
 import (
-	"github.com/cosmos/evm/tests/jsonrpc/simulator/types"
+	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/types"
 )
 
 const (

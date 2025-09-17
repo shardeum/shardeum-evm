@@ -5,10 +5,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	cmn "github.com/cosmos/evm/precompiles/common"
-	"github.com/cosmos/evm/precompiles/slashing"
-	"github.com/cosmos/evm/precompiles/testutil"
-	utiltx "github.com/cosmos/evm/testutil/tx"
+	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
+	"github.com/shardeum/shardeum-evm/precompiles/slashing"
+	"github.com/shardeum/shardeum-evm/precompiles/testutil"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

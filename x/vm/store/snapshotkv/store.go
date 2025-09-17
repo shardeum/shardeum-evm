@@ -3,7 +3,7 @@ package snapshotkv
 import (
 	"fmt"
 
-	"github.com/cosmos/evm/x/vm/store/types"
+	"github.com/shardeum/shardeum-evm/x/vm/store/types"
 
 	"cosmossdk.io/store/cachekv"
 	storetypes "cosmossdk.io/store/types"

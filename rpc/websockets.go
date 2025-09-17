@@ -23,9 +23,9 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 
-	rpcfilters "github.com/cosmos/evm/rpc/namespaces/ethereum/eth/filters"
-	"github.com/cosmos/evm/rpc/stream"
-	"github.com/cosmos/evm/server/config"
+	rpcfilters "github.com/shardeum/shardeum-evm/rpc/namespaces/ethereum/eth/filters"
+	"github.com/shardeum/shardeum-evm/rpc/stream"
+	"github.com/shardeum/shardeum-evm/server/config"
 
 	"cosmossdk.io/log"
 

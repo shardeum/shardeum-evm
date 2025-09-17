@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 // Copied the Account and StorageResult types since they are registered under an

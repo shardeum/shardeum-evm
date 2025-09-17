@@ -4,8 +4,8 @@
 package config
 
 import (
-	evmconfig "github.com/cosmos/evm/config"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	evmconfig "github.com/shardeum/shardeum-evm/config"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 // TestChainsCoinInfo is a map of the chain id and its corresponding EvmCoinInfo
@@ -13,9 +13,9 @@ import (
 // chain id
 var TestChainsCoinInfo = map[uint64]evmtypes.EvmCoinInfo{
 	EighteenDecimalsChainID: {
-		Denom:         ExampleChainDenom,
-		ExtendedDenom: ExampleChainDenom,
-		DisplayDenom:  ExampleDisplayDenom,
+		Denom:         ShardeumChainDenom,
+		ExtendedDenom: ShardeumChainDenom,
+		DisplayDenom:  ShardeumDisplayDenom,
 		Decimals:      evmtypes.EighteenDecimals,
 	},
 	SixDecimalsChainID: {
@@ -37,21 +37,21 @@ var TestChainsCoinInfo = map[uint64]evmtypes.EvmCoinInfo{
 		Decimals:      evmtypes.TwoDecimals,
 	},
 	TestChainID1: {
-		Denom:         ExampleChainDenom,
-		ExtendedDenom: ExampleChainDenom,
-		DisplayDenom:  ExampleChainDenom,
+		Denom:         ShardeumChainDenom,
+		ExtendedDenom: ShardeumChainDenom,
+		DisplayDenom:  ShardeumChainDenom,
 		Decimals:      evmtypes.EighteenDecimals,
 	},
 	TestChainID2: {
-		Denom:         ExampleChainDenom,
-		ExtendedDenom: ExampleChainDenom,
-		DisplayDenom:  ExampleChainDenom,
+		Denom:         ShardeumChainDenom,
+		ExtendedDenom: ShardeumChainDenom,
+		DisplayDenom:  ShardeumChainDenom,
 		Decimals:      evmtypes.EighteenDecimals,
 	},
 	EVMChainID: {
-		Denom:         ExampleChainDenom,
-		ExtendedDenom: ExampleChainDenom,
-		DisplayDenom:  ExampleDisplayDenom,
+		Denom:         ShardeumChainDenom,
+		ExtendedDenom: ShardeumChainDenom,
+		DisplayDenom:  ShardeumDisplayDenom,
 		Decimals:      evmtypes.EighteenDecimals,
 	},
 }

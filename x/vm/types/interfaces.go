@@ -10,7 +10,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
+	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 
 	"cosmossdk.io/core/address"
 	"cosmossdk.io/math"

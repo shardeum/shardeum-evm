@@ -21,10 +21,10 @@ import (
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	cosmosevmtypes "github.com/cosmos/evm/types"
-	evmante "github.com/cosmos/evm/x/vm/ante"
-	"github.com/cosmos/evm/x/vm/statedb"
-	"github.com/cosmos/evm/x/vm/types"
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	evmante "github.com/shardeum/shardeum-evm/x/vm/ante"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"

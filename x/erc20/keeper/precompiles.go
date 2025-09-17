@@ -7,9 +7,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	"github.com/cosmos/evm/precompiles/erc20"
-	"github.com/cosmos/evm/precompiles/werc20"
-	"github.com/cosmos/evm/x/erc20/types"
+	"github.com/shardeum/shardeum-evm/precompiles/erc20"
+	"github.com/shardeum/shardeum-evm/precompiles/werc20"
+	"github.com/shardeum/shardeum-evm/x/erc20/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"

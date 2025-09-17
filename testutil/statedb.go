@@ -1,8 +1,8 @@
 package testutil
 
 import (
-	anteinterfaces "github.com/cosmos/evm/ante/interfaces"
-	"github.com/cosmos/evm/x/vm/statedb"
+	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

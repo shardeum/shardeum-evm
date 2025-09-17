@@ -3,10 +3,10 @@
 package testutil
 
 import (
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	"github.com/cosmos/evm/testutil/integration/evm/utils"
-	testkeyring "github.com/cosmos/evm/testutil/keyring"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
+	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/math"
 

@@ -6,12 +6,12 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	"github.com/cosmos/evm/testutil/integration/evm/utils"
-	testutils "github.com/cosmos/evm/testutil/integration/evm/utils"
-	"github.com/cosmos/evm/testutil/keyring"
-	erc20types "github.com/cosmos/evm/x/erc20/types"
-	transferkeeper "github.com/cosmos/evm/x/ibc/transfer/keeper"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
+	testutils "github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
+	"github.com/shardeum/shardeum-evm/testutil/keyring"
+	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
+	transferkeeper "github.com/shardeum/shardeum-evm/x/ibc/transfer/keeper"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	"github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 

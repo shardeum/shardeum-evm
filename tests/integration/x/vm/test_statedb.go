@@ -12,12 +12,12 @@ import (
 	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	testkeyring "github.com/cosmos/evm/testutil/keyring"
-	utiltx "github.com/cosmos/evm/testutil/tx"
-	"github.com/cosmos/evm/x/vm/statedb"
-	"github.com/cosmos/evm/x/vm/types"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/math"
 	"cosmossdk.io/store/prefix"

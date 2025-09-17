@@ -11,12 +11,12 @@ import (
 
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/evm/mempool/miner"
-	"github.com/cosmos/evm/mempool/txpool"
-	"github.com/cosmos/evm/mempool/txpool/legacypool"
-	"github.com/cosmos/evm/rpc/stream"
-	"github.com/cosmos/evm/x/precisebank/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/mempool/miner"
+	"github.com/shardeum/shardeum-evm/mempool/txpool"
+	"github.com/shardeum/shardeum-evm/mempool/txpool/legacypool"
+	"github.com/shardeum/shardeum-evm/rpc/stream"
+	"github.com/shardeum/shardeum-evm/x/precisebank/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"

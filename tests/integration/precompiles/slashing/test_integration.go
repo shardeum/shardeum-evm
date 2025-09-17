@@ -10,13 +10,13 @@ import (
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
-	cmn "github.com/cosmos/evm/precompiles/common"
-	"github.com/cosmos/evm/precompiles/slashing/testdata"
-	"github.com/cosmos/evm/precompiles/testutil"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	"github.com/cosmos/evm/testutil/integration/evm/utils"
-	testutiltypes "github.com/cosmos/evm/testutil/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
+	"github.com/shardeum/shardeum-evm/precompiles/slashing/testdata"
+	"github.com/shardeum/shardeum-evm/precompiles/testutil"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
+	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/math"
 

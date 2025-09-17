@@ -5,8 +5,8 @@ import (
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
 
-	cosmosevmtypes "github.com/cosmos/evm/types"
-	"github.com/cosmos/evm/utils"
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	"github.com/shardeum/shardeum-evm/utils"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

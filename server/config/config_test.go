@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 
-	serverconfig "github.com/cosmos/evm/server/config"
-	"github.com/cosmos/evm/testutil/constants"
+	serverconfig "github.com/shardeum/shardeum-evm/server/config"
+	"github.com/shardeum/shardeum-evm/testutil/constants"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -30,12 +30,12 @@ func TestGetConfig(t *testing.T) {
 			"test unmarshal embedded structs",
 			func() *viper.Viper {
 				v := viper.New()
-				v.Set("minimum-gas-prices", fmt.Sprintf("100%s", constants.ExampleAttoDenom))
+				v.Set("minimum-gas-prices", fmt.Sprintf("100%s", constants.ShardeumAttoDenom))
 				return v
 			},
 			func() serverconfig.Config {
 				cfg := serverconfig.DefaultConfig()
-				cfg.MinGasPrices = fmt.Sprintf("100%s", constants.ExampleAttoDenom)
+				cfg.MinGasPrices = fmt.Sprintf("100%s", constants.ShardeumAttoDenom)
 				return *cfg
 			},
 			false,

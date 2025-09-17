@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/hashicorp/go-metrics"
 
-	"github.com/cosmos/evm/contracts"
-	"github.com/cosmos/evm/x/erc20/types"
+	"github.com/shardeum/shardeum-evm/contracts"
+	"github.com/shardeum/shardeum-evm/x/erc20/types"
 
 	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/math"

@@ -17,11 +17,11 @@ import (
 	tmrpcclient "github.com/cometbft/cometbft/rpc/client"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 
-	evmmempool "github.com/cosmos/evm/mempool"
-	rpctypes "github.com/cosmos/evm/rpc/types"
-	"github.com/cosmos/evm/server/config"
-	cosmosevmtypes "github.com/cosmos/evm/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	evmmempool "github.com/shardeum/shardeum-evm/mempool"
+	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
+	"github.com/shardeum/shardeum-evm/server/config"
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/log"
 

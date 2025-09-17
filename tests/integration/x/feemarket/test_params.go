@@ -3,8 +3,8 @@ package feemarket
 import (
 	"reflect"
 
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	"github.com/cosmos/evm/x/feemarket/types"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	"github.com/shardeum/shardeum-evm/x/feemarket/types"
 )
 
 func (s *KeeperTestSuite) TestGetParams() {

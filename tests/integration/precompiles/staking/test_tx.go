@@ -9,12 +9,12 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	cmn "github.com/cosmos/evm/precompiles/common"
-	"github.com/cosmos/evm/precompiles/staking"
-	"github.com/cosmos/evm/precompiles/testutil"
-	testkeyring "github.com/cosmos/evm/testutil/keyring"
-	cosmosevmutiltx "github.com/cosmos/evm/testutil/tx"
-	"github.com/cosmos/evm/x/vm/statedb"
+	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
+	"github.com/shardeum/shardeum-evm/precompiles/staking"
+	"github.com/shardeum/shardeum-evm/precompiles/testutil"
+	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	cosmosevmutiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 
 	"cosmossdk.io/math"
 

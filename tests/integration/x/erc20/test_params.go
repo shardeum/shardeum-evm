@@ -1,7 +1,7 @@
 package erc20
 
 import (
-	"github.com/cosmos/evm/x/erc20/types"
+	"github.com/shardeum/shardeum-evm/x/erc20/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 
-	"github.com/cosmos/evm/types"
+	"github.com/shardeum/shardeum-evm/types"
 )
 
 // Validate performs a basic validation of a GenesisAccount fields.

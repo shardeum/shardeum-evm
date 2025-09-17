@@ -1,8 +1,8 @@
 package vm
 
 import (
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	evmante "github.com/cosmos/evm/x/vm/ante"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	evmante "github.com/shardeum/shardeum-evm/x/vm/ante"
 
 	storetypes "cosmossdk.io/store/types"
 )

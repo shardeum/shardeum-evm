@@ -5,15 +5,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/cosmos/evm/contracts"
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	utiltx "github.com/cosmos/evm/testutil/tx"
-	"github.com/cosmos/evm/x/erc20/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/contracts"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	"github.com/shardeum/shardeum-evm/x/erc20/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 func (s *KeeperTestSuite) TestCallEVM() {
-	wcosmosEVMContract := common.HexToAddress(testconstants.WEVMOSContractMainnet)
+	wcosmosEVMContract := common.HexToAddress(testconstants.ShardeumChainID)
 	testCases := []struct {
 		name    string
 		method  string
@@ -47,7 +47,7 @@ func (s *KeeperTestSuite) TestCallEVM() {
 
 func (s *KeeperTestSuite) TestCallEVMWithData() {
 	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
-	wcosmosEVMContract := common.HexToAddress(testconstants.WEVMOSContractMainnet)
+	wcosmosEVMContract := common.HexToAddress(testconstants.ShardeumChainID)
 	testCases := []struct {
 		name     string
 		from     common.Address

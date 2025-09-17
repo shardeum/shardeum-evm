@@ -1,8 +1,8 @@
 package network
 
 import (
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 type CoinInfo struct {

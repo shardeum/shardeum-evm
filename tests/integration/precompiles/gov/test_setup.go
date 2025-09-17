@@ -5,12 +5,12 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/evm/precompiles/gov"
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/testutil/integration/evm/factory"
-	"github.com/cosmos/evm/testutil/integration/evm/grpc"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	testkeyring "github.com/cosmos/evm/testutil/keyring"
+	"github.com/shardeum/shardeum-evm/precompiles/gov"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
 
 	"cosmossdk.io/math"
 
@@ -100,7 +100,7 @@ func (s *PrecompileTestSuite) SetupTest() {
 	bankGen := banktypes.DefaultGenesisState()
 	bankGen.Balances = []banktypes.Balance{{
 		Address: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		Coins:   sdk.NewCoins(sdk.NewCoin(testconstants.ExampleAttoDenom, math.NewInt(200))),
+		Coins:   sdk.NewCoins(sdk.NewCoin(testconstants.ShardeumAttoDenom, math.NewInt(200))),
 	}}
 	govGen := govv1.DefaultGenesisState()
 	govGen.StartingProposalId = 3
@@ -108,15 +108,15 @@ func (s *PrecompileTestSuite) SetupTest() {
 		{
 			ProposalId: 1,
 			Depositor:  keyring.GetAccAddr(0).String(),
-			Amount:     sdk.NewCoins(sdk.NewCoin(testconstants.ExampleAttoDenom, math.NewInt(100))),
+			Amount:     sdk.NewCoins(sdk.NewCoin(testconstants.ShardeumAttoDenom, math.NewInt(100))),
 		},
 		{
 			ProposalId: 2,
 			Depositor:  keyring.GetAccAddr(1).String(),
-			Amount:     sdk.NewCoins(sdk.NewCoin(testconstants.ExampleAttoDenom, math.NewInt(100))),
+			Amount:     sdk.NewCoins(sdk.NewCoin(testconstants.ShardeumAttoDenom, math.NewInt(100))),
 		},
 	}
-	govGen.Params.MinDeposit = sdk.NewCoins(sdk.NewCoin(testconstants.ExampleAttoDenom, math.NewInt(100)))
+	govGen.Params.MinDeposit = sdk.NewCoins(sdk.NewCoin(testconstants.ShardeumAttoDenom, math.NewInt(100)))
 	govGen.Params.ProposalCancelDest = keyring.GetAccAddr(2).String()
 	govGen.Proposals = append(govGen.Proposals, prop)
 	govGen.Proposals = append(govGen.Proposals, prop2)

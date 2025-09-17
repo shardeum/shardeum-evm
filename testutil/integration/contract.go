@@ -11,9 +11,9 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/evm"
-	"github.com/cosmos/evm/testutil/tx"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm"
+	"github.com/shardeum/shardeum-evm/testutil/tx"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -104,14 +104,14 @@ func DeployContract(
 // with the provided factoryAddress
 func DeployContractWithFactory(
 	ctx sdk.Context,
-	exampleApp evm.EvmApp,
+	shardeumApp evm.EvmApp,
 	priv cryptotypes.PrivKey,
 	factoryAddress common.Address,
 ) (common.Address, abci.ExecTxResult, error) {
 	chainID := evmtypes.GetEthChainConfig().ChainID
 	from := common.BytesToAddress(priv.PubKey().Address().Bytes())
-	factoryNonce := exampleApp.GetEVMKeeper().GetNonce(ctx, factoryAddress)
-	nonce := exampleApp.GetEVMKeeper().GetNonce(ctx, from)
+	factoryNonce := shardeumApp.GetEVMKeeper().GetNonce(ctx, factoryAddress)
+	nonce := shardeumApp.GetEVMKeeper().GetNonce(ctx, from)
 
 	msgEthereumTx := evmtypes.NewTx(&evmtypes.EvmTxArgs{
 		ChainID:  chainID,
@@ -122,12 +122,12 @@ func DeployContractWithFactory(
 	})
 	msgEthereumTx.From = from.Bytes()
 
-	res, err := DeliverEthTx(exampleApp, priv, msgEthereumTx)
+	res, err := DeliverEthTx(shardeumApp, priv, msgEthereumTx)
 	if err != nil {
 		return common.Address{}, abci.ExecTxResult{}, err
 	}
 
-	if _, err := CheckEthTxResponse(res, exampleApp.AppCodec()); err != nil {
+	if _, err := CheckEthTxResponse(res, shardeumApp.AppCodec()); err != nil {
 		return common.Address{}, abci.ExecTxResult{}, err
 	}
 

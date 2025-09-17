@@ -1,8 +1,8 @@
 package contracts
 
 import (
-	contractutils "github.com/cosmos/evm/contracts/utils"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	contractutils "github.com/shardeum/shardeum-evm/contracts/utils"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 func LoadFlashLoanContract() (evmtypes.CompiledContract, error) {

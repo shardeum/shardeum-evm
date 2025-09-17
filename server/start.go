@@ -27,12 +27,12 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 
 	dbm "github.com/cosmos/cosmos-db"
-	"github.com/cosmos/evm/indexer"
-	evmmempool "github.com/cosmos/evm/mempool"
-	ethdebug "github.com/cosmos/evm/rpc/namespaces/ethereum/debug"
-	cosmosevmserverconfig "github.com/cosmos/evm/server/config"
-	srvflags "github.com/cosmos/evm/server/flags"
-	cosmosevmtypes "github.com/cosmos/evm/types"
+	"github.com/shardeum/shardeum-evm/indexer"
+	evmmempool "github.com/shardeum/shardeum-evm/mempool"
+	ethdebug "github.com/shardeum/shardeum-evm/rpc/namespaces/ethereum/debug"
+	cosmosevmserverconfig "github.com/shardeum/shardeum-evm/server/config"
+	srvflags "github.com/shardeum/shardeum-evm/server/flags"
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"

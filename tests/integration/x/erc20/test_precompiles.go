@@ -7,9 +7,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	utiltx "github.com/cosmos/evm/testutil/tx"
-	"github.com/cosmos/evm/x/erc20/types"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	"github.com/shardeum/shardeum-evm/x/erc20/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -96,7 +96,7 @@ func (s *KeeperTestSuite) TestGetERC20PrecompileInstance() {
 func (s *KeeperTestSuite) TestGetNativePrecompiles() {
 	var ctx sdk.Context
 	testAddr := utiltx.GenerateAddress()
-	defaultWEVMOSAddr := common.HexToAddress(testconstants.WEVMOSContractMainnet)
+	defaultWEVMOSAddr := common.HexToAddress(testconstants.ShardeumChainID)
 
 	testCases := []struct {
 		name     string
@@ -139,7 +139,7 @@ func (s *KeeperTestSuite) TestGetNativePrecompiles() {
 func (s *KeeperTestSuite) TestSetNativePrecompile() {
 	var ctx sdk.Context
 	testAddr := utiltx.GenerateAddress()
-	defaultWEVMOSAddr := common.HexToAddress(testconstants.WEVMOSContractMainnet)
+	defaultWEVMOSAddr := common.HexToAddress(testconstants.ShardeumChainID)
 
 	testCases := []struct {
 		name     string
@@ -192,7 +192,7 @@ func (s *KeeperTestSuite) TestSetNativePrecompile() {
 func (s *KeeperTestSuite) TestDeleteNativePrecompile() {
 	var ctx sdk.Context
 	testAddr := utiltx.GenerateAddress()
-	defaultWEVMOSAddr := common.HexToAddress(testconstants.WEVMOSContractMainnet)
+	defaultWEVMOSAddr := common.HexToAddress(testconstants.ShardeumChainID)
 	unavailableAddr := common.HexToAddress("unavailable")
 
 	testCases := []struct {
@@ -285,7 +285,7 @@ func (s *KeeperTestSuite) TestDeleteNativePrecompile() {
 func (s *KeeperTestSuite) TestIsNativePrecompileAvailable() {
 	var ctx sdk.Context
 	testAddr := utiltx.GenerateAddress()
-	defaultWEVMOSAddr := common.HexToAddress(testconstants.WEVMOSContractMainnet)
+	defaultWEVMOSAddr := common.HexToAddress(testconstants.ShardeumChainID)
 	unavailableAddr := common.HexToAddress("unavailable")
 
 	testCases := []struct {

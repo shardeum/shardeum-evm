@@ -1,7 +1,7 @@
 package precisebank
 
 import (
-	"github.com/cosmos/evm/x/precisebank/types"
+	"github.com/shardeum/shardeum-evm/x/precisebank/types"
 
 	sdkmath "cosmossdk.io/math"
 

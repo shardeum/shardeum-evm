@@ -1,8 +1,8 @@
 package vm
 
 import (
-	"github.com/cosmos/evm/testutil/config"
-	"github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/testutil/config"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 func (s *KeeperTestSuite) TestParams() {

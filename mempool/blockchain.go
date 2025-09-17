@@ -11,10 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/params"
 
-	"github.com/cosmos/evm/mempool/txpool"
-	"github.com/cosmos/evm/mempool/txpool/legacypool"
-	"github.com/cosmos/evm/x/vm/statedb"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/mempool/txpool"
+	"github.com/shardeum/shardeum-evm/mempool/txpool/legacypool"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/log"

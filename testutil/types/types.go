@@ -3,7 +3,7 @@ package types
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdkmath "cosmossdk.io/math"
 

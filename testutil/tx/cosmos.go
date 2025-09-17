@@ -3,8 +3,8 @@ package tx
 import (
 	protov2 "google.golang.org/protobuf/proto"
 
-	"github.com/cosmos/evm"
-	"github.com/cosmos/evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm"
+	"github.com/shardeum/shardeum-evm/testutil/constants"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -16,7 +16,7 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 )
 
-var DefaultFee = sdk.NewCoin(constants.ExampleAttoDenom, sdkmath.NewInt(1e16)) // 0.01 AATOM
+var DefaultFee = sdk.NewCoin(constants.ShardeumAttoDenom, sdkmath.NewInt(1e16)) // 0.01 AATOM
 
 // CosmosTxArgs contains the params to create a cosmos tx
 type CosmosTxArgs struct {
@@ -51,7 +51,7 @@ func PrepareCosmosTx(
 
 	var fees sdk.Coins
 	if args.GasPrice != nil {
-		fees = sdk.Coins{{Denom: constants.ExampleAttoDenom, Amount: args.GasPrice.MulRaw(int64(args.Gas))}} //#nosec G115
+		fees = sdk.Coins{{Denom: constants.ShardeumAttoDenom, Amount: args.GasPrice.MulRaw(int64(args.Gas))}} //#nosec G115
 	} else {
 		fees = sdk.Coins{DefaultFee}
 	}

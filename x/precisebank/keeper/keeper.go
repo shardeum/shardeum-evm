@@ -3,8 +3,8 @@ package keeper
 import (
 	"context"
 
-	"github.com/cosmos/evm/x/precisebank/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/x/precisebank/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	storetypes "cosmossdk.io/store/types"
 

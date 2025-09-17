@@ -3,12 +3,12 @@ package keeper_test
 import (
 	"testing"
 
-	evmosencoding "github.com/cosmos/evm/encoding"
-	"github.com/cosmos/evm/testutil/config"
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/x/precisebank/keeper"
-	"github.com/cosmos/evm/x/precisebank/types"
-	"github.com/cosmos/evm/x/precisebank/types/mocks"
+	evmosencoding "github.com/shardeum/shardeum-evm/encoding"
+	"github.com/shardeum/shardeum-evm/testutil/config"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/x/precisebank/keeper"
+	"github.com/shardeum/shardeum-evm/x/precisebank/types"
+	"github.com/shardeum/shardeum-evm/x/precisebank/types/mocks"
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"

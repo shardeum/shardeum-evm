@@ -14,8 +14,8 @@ import (
 
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 
-	"github.com/cosmos/evm/rpc/stream"
-	"github.com/cosmos/evm/rpc/types"
+	"github.com/shardeum/shardeum-evm/rpc/stream"
+	"github.com/shardeum/shardeum-evm/rpc/types"
 
 	"cosmossdk.io/log"
 

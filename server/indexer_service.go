@@ -9,7 +9,7 @@ import (
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/types"
 
-	cosmosevmtypes "github.com/cosmos/evm/types"
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 )
 
 const (

@@ -12,17 +12,17 @@ import (
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
-	bank2 "github.com/cosmos/evm/precompiles/bank"
-	"github.com/cosmos/evm/precompiles/bank/testdata"
-	"github.com/cosmos/evm/precompiles/testutil"
-	"github.com/cosmos/evm/testutil/integration/evm/factory"
-	"github.com/cosmos/evm/testutil/integration/evm/grpc"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	"github.com/cosmos/evm/testutil/integration/evm/utils"
-	"github.com/cosmos/evm/testutil/keyring"
-	utiltx "github.com/cosmos/evm/testutil/tx"
-	testutiltypes "github.com/cosmos/evm/testutil/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	bank2 "github.com/shardeum/shardeum-evm/precompiles/bank"
+	"github.com/shardeum/shardeum-evm/precompiles/bank/testdata"
+	"github.com/shardeum/shardeum-evm/precompiles/testutil"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
+	"github.com/shardeum/shardeum-evm/testutil/keyring"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/math"
 

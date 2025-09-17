@@ -20,7 +20,7 @@ EXAMPLE_BINARY := shardeumd
 ###                              Repo Info                                  ###
 ###############################################################################
 
-HTTPS_GIT := https://github.com/cosmos/evm.git
+HTTPS_GIT := https://github.com/shardeum/shardeum-evm.git
 DOCKER := $(shell which docker)
 
 export GO111MODULE = on
@@ -29,12 +29,12 @@ export GO111MODULE = on
 ###                            Submodule Settings                           ###
 ###############################################################################
 
-# evmd is a separate module under ./evmd
-EVMD_DIR      := evmd
-EVMD_MAIN_PKG := ./cmd/evmd
+# shardeumd is a separate module under ./shardeumd
+SHARDEUMD_DIR      := shardeumd
+SHARDEUMD_MAIN_PKG := ./cmd/shardeumd
 
 ###############################################################################
-###                        Build & Install evmd                             ###
+###                        Build & Install shardeumd                             ###
 ###############################################################################
 
 # process build tags
@@ -48,7 +48,7 @@ build_tags := $(strip $(build_tags))
 
 # process linker flags
 
-ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=os \
+ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=shardeum \
           -X github.com/cosmos/cosmos-sdk/version.AppName=$(EXAMPLE_BINARY) \
           -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
           -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
@@ -90,8 +90,8 @@ endif
 # Build into $(BUILDDIR)
 build: go.sum $(BUILDDIR)/
 	@echo "🏗️  Building shardeumd to $(BUILDDIR)/$(EXAMPLE_BINARY) ..."
-	@cd $(EVMD_DIR) && CGO_ENABLED="1" \
-	  go build $(BUILD_FLAGS) -o $(BUILDDIR)/$(EXAMPLE_BINARY) $(EVMD_MAIN_PKG)
+	@cd $(SHARDEUMD_DIR) && CGO_ENABLED="1" \
+	  go build $(BUILD_FLAGS) -o $(BUILDDIR)/$(EXAMPLE_BINARY) $(SHARDEUMD_MAIN_PKG)
 
 # Cross-compile for Linux AMD64
 build-linux:
@@ -100,8 +100,8 @@ build-linux:
 # Install into $(BINDIR)
 install: go.sum
 	@echo "🚚  Installing shardeumd to $(BINDIR) ..."
-	@cd $(EVMD_DIR) && CGO_ENABLED="1" \
-	  go install $(BUILD_FLAGS) $(EVMD_MAIN_PKG)
+	@cd $(SHARDEUMD_DIR) && CGO_ENABLED="1" \
+	  go install $(BUILD_FLAGS) $(SHARDEUMD_MAIN_PKG)
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
@@ -129,13 +129,13 @@ vulncheck:
 
 PACKAGES_NOSIMULATION=$(shell go list ./... | grep -v '/simulation')
 PACKAGES_UNIT := $(shell go list ./... | grep -v '/tests/e2e$$' | grep -v '/simulation')
-PACKAGES_EVMD := $(shell cd evmd && go list ./... | grep -v '/simulation')
+PACKAGES_SHARDEUMD := $(shell cd shardeumd && go list ./... | grep -v '/simulation')
 COVERPKG_EVM  := $(shell go list ./... | grep -v '/tests/e2e$$' | grep -v '/simulation' | paste -sd, -)
 COVERPKG_ALL  := $(COVERPKG_EVM)
 COMMON_COVER_ARGS := -timeout=15m -covermode=atomic
 
 TEST_PACKAGES := ./...
-TEST_TARGETS := test-unit test-evmd test-unit-cover test-race
+TEST_TARGETS := test-unit test-shardeumd test-unit-cover test-race
 
 test-unit: ARGS=-timeout=15m
 test-unit: TEST_PACKAGES=$(PACKAGES_UNIT)
@@ -145,19 +145,19 @@ test-race: ARGS=-race
 test-race: TEST_PACKAGES=$(PACKAGES_UNIT)
 test-race: run-tests
 
-test-evmd: ARGS=-timeout=15m
-test-evmd:
-	@cd evmd && go test -tags=test -mod=readonly $(ARGS) $(EXTRA_ARGS) $(PACKAGES_EVMD)
+test-shardeumd: ARGS=-timeout=15m
+test-shardeumd:
+	@cd shardeumd && go test -tags=test -mod=readonly $(ARGS) $(EXTRA_ARGS) $(PACKAGES_SHARDEUMD)
 
 test-unit-cover: ARGS=-timeout=15m -coverprofile=coverage.txt -covermode=atomic
 test-unit-cover: TEST_PACKAGES=$(PACKAGES_UNIT)
 test-unit-cover: run-tests
 	@echo "🔍 Running evm (root) coverage..."
 	@go test -tags=test $(COMMON_COVER_ARGS) -coverpkg=$(COVERPKG_ALL) -coverprofile=coverage.txt ./...
-	@echo "🔍 Running evmd coverage..."
-	@cd evmd && go test -tags=test $(COMMON_COVER_ARGS) -coverpkg=$(COVERPKG_ALL) -coverprofile=coverage_evmd.txt ./...
-	@echo "🔀 Merging evmd coverage into root coverage..."
-	@tail -n +2 evmd/coverage_evmd.txt >> coverage.txt && rm evmd/coverage_evmd.txt
+	@echo "🔍 Running shardeumd coverage..."
+	@cd shardeumd && go test -tags=test $(COMMON_COVER_ARGS) -coverpkg=$(COVERPKG_ALL) -coverprofile=coverage_shardeumd.txt ./...
+	@echo "🔀 Merging shardeumd coverage into root coverage..."
+	@tail -n +2 shardeumd/coverage_shardeumd.txt >> coverage.txt && rm shardeumd/coverage_shardeumd.txt
 	@echo "🧹 Filtering ignored files from coverage.txt..."
 	@grep -v -E '/cmd/|/client/|/proto/|/testutil/|/mocks/|/test_.*\.go:|\.pb\.go:|\.pb\.gw\.go:|/x/[^/]+/module\.go:|/scripts/|/ibc/testing/|/version/|\.md:|\.pulsar\.go:' coverage.txt > tmp_coverage.txt && mv tmp_coverage.txt coverage.txt
 	@echo "📊 Coverage summary:"
@@ -168,8 +168,8 @@ test: test-unit
 test-all:
 	@echo "🔍 Running evm module tests..."
 	@go test -tags=test -mod=readonly -timeout=15m $(PACKAGES_NOSIMULATION)
-	@echo "🔍 Running evmd module tests..."
-	@cd evmd && go test -tags=test -mod=readonly -timeout=15m $(PACKAGES_EVMD)
+	@echo "🔍 Running shardeumd module tests..."
+	@cd shardeumd && go test -tags=test -mod=readonly -timeout=15m $(PACKAGES_SHARDEUMD)
 
 run-tests:
 ifneq (,$(shell which tparse 2>/dev/null))
@@ -294,7 +294,7 @@ proto-check-breaking:
 ###                                Releasing                                ###
 ###############################################################################
 
-PACKAGE_NAME:=github.com/cosmos/evm
+PACKAGE_NAME:=github.com/shardeum/shardeum-evm
 GOLANG_CROSS_VERSION  = v1.22
 GOPATH ?= '$(HOME)/go'
 release-dry-run:
@@ -332,7 +332,7 @@ release:
 ###############################################################################
 
 # Install the necessary dependencies, compile the solidity contracts found in the
-# Cosmos EVM repository and then clean up the contracts data.
+# Shardeum Cosmos repository and then clean up the contracts data.
 contracts-all: contracts-compile contracts-clean
 
 # Clean smart contract compilation artifacts, dependencies and cache files
@@ -340,7 +340,7 @@ contracts-clean:
 	@echo "Cleaning up the contracts directory..."
 	@python3 ./scripts/compile_smart_contracts/compile_smart_contracts.py --clean
 
-# Compile the solidity contracts found in the Cosmos EVM repository.
+# Compile the solidity contracts found in the Shardeum Cosmos repository.
 contracts-compile:
 	@echo "Compiling smart contracts..."
 	@python3 ./scripts/compile_smart_contracts/compile_smart_contracts.py --compile
@@ -355,10 +355,10 @@ contracts-add:
 ###############################################################################
 
 localnet-build-env:
-	$(MAKE) -C contrib/images evmd-env
+	$(MAKE) -C contrib/images shardeumd-env
 
 localnet-build-nodes:
-	$(DOCKER) run --rm -v $(CURDIR)/.testnets:/data cosmos/evmd \
+	$(DOCKER) run --rm -v $(CURDIR)/.testnets:/data cosmos/shardeumd \
 			  testnet init-files --validator-count 4 -o /data --starting-ip-address 192.168.10.2 --keyring-backend=test --chain-id=local-4221 --use-docker=true
 	docker compose up -d
 
@@ -388,14 +388,14 @@ add-node: build
 
 test-system: build-v04 build
 	mkdir -p ./tests/systemtests/binaries/
-	cp $(BUILDDIR)/evmd ./tests/systemtests/binaries/
+	cp $(BUILDDIR)/shardeumd ./tests/systemtests/binaries/
 	$(MAKE) -C tests/systemtests test
 
 build-v04:
 	mkdir -p ./tests/systemtests/binaries/v0.4
 	git checkout v0.4.1
 	make build
-	cp $(BUILDDIR)/evmd ./tests/systemtests/binaries/v0.4
+	cp $(BUILDDIR)/shardeumd ./tests/systemtests/binaries/v0.4
 	git checkout -
 
 mocks:

@@ -7,11 +7,11 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	"github.com/cosmos/evm/wallets/ledger"
-	"github.com/cosmos/evm/wallets/ledger/mocks"
-	"github.com/cosmos/evm/wallets/usbwallet"
+	"github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	"github.com/shardeum/shardeum-evm/wallets/ledger"
+	"github.com/shardeum/shardeum-evm/wallets/ledger/mocks"
+	"github.com/shardeum/shardeum-evm/wallets/usbwallet"
 
 	"cosmossdk.io/math"
 

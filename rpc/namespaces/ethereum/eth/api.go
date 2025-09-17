@@ -11,10 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
-	"github.com/cosmos/evm/rpc/backend"
-	rpctypes "github.com/cosmos/evm/rpc/types"
-	"github.com/cosmos/evm/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/rpc/backend"
+	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
+	"github.com/shardeum/shardeum-evm/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/log"
 )

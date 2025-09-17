@@ -17,11 +17,11 @@ import (
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 
-	"github.com/cosmos/evm/rpc/types"
-	cosmosevmtypes "github.com/cosmos/evm/types"
-	"github.com/cosmos/evm/utils"
-	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/rpc/types"
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	"github.com/shardeum/shardeum-evm/utils"
+	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/log"
 

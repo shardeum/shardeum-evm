@@ -1,11 +1,11 @@
 package config
 
 const (
-	// ExampleChainDenom is the denomination of the Cosmos EVM example chain's base coin.
-	ExampleChainDenom = "aatom"
+	// ShardeumChainDenom is the denomination of the Shardeum chain's base coin.
+	ShardeumChainDenom = "ashm"
 
-	// ExampleDisplayDenom is the display denomination of the Cosmos EVM example chain's base coin.
-	ExampleDisplayDenom = "atom"
+	// ShardeumDisplayDenom is the display denomination of the Shardeum chain's base coin.
+	ShardeumDisplayDenom = "shm"
 
 	// EighteenDecimalsChainID is the chain ID for the 18 decimals chain.
 	EighteenDecimalsChainID = 9001
@@ -26,6 +26,6 @@ const (
 	// TestChainID2 is test chain IDs for IBC E2E test
 	TestChainID2 = 9006
 
-	// WEVMOSContractMainnet is the WEVMOS contract address for mainnet
-	WEVMOSContractMainnet = "0xD4949664cD82660AaE99bEdc034a0deA8A0bd517"
+	// ShardeumChainID is the chain ID for Shardeum EVM chain.
+	ShardeumChainID = 8119
 )

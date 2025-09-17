@@ -10,11 +10,11 @@ import (
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
-	"github.com/cosmos/evm/testutil/integration/evm/grpc"
-	"github.com/cosmos/evm/testutil/keyring"
-	testutiltypes "github.com/cosmos/evm/testutil/types"
-	precisebanktypes "github.com/cosmos/evm/x/precisebank/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
+	"github.com/shardeum/shardeum-evm/testutil/keyring"
+	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
+	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"

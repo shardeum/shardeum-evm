@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 
-	precisebanktypes "github.com/cosmos/evm/x/precisebank/types"
+	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 )

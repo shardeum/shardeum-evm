@@ -7,14 +7,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/evm/contracts"
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/testutil/integration/evm/factory"
-	"github.com/cosmos/evm/testutil/integration/evm/grpc"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	testKeyring "github.com/cosmos/evm/testutil/keyring"
-	testutiltypes "github.com/cosmos/evm/testutil/types"
-	"github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/contracts"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	testKeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 func TestIterateContracts(t *testing.T, create network.CreateEvmApp, options ...network.ConfigOption) {
@@ -57,7 +57,7 @@ func TestIterateContracts(t *testing.T, create network.CreateEvmApp, options ...
 
 	network.App.GetEVMKeeper().IterateContracts(network.GetContext(), func(addr common.Address, codeHash common.Hash) bool {
 		// NOTE: we only care about the 2 contracts deployed above, not the ERC20 native precompile for the aatom denomination
-		if bytes.Equal(addr.Bytes(), common.HexToAddress(testconstants.WEVMOSContractMainnet).Bytes()) {
+		if bytes.Equal(addr.Bytes(), common.HexToAddress(testconstants.ShardeumChainID).Bytes()) {
 			return false
 		}
 

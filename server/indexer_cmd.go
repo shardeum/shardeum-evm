@@ -9,7 +9,7 @@ import (
 	sm "github.com/cometbft/cometbft/state"
 	cmtstore "github.com/cometbft/cometbft/store"
 
-	"github.com/cosmos/evm/indexer"
+	"github.com/shardeum/shardeum-evm/indexer"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"

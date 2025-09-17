@@ -7,11 +7,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/evm/ante/cosmos"
-	"github.com/cosmos/evm/encoding"
-	"github.com/cosmos/evm/testutil"
-	"github.com/cosmos/evm/testutil/constants"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/ante/cosmos"
+	"github.com/shardeum/shardeum-evm/encoding"
+	"github.com/shardeum/shardeum-evm/testutil"
+	"github.com/shardeum/shardeum-evm/testutil/constants"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"

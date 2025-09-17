@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
-	"github.com/cosmos/evm/types"
+	"github.com/shardeum/shardeum-evm/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v10/modules/core/24-host"
 
@@ -18,9 +18,9 @@ import (
 
 var (
 	// DefaultEVMDenom is the default value for the evm denom
-	DefaultEVMDenom = "atest"
+	DefaultEVMDenom = "ashm"
 	// DefaultEVMChainID is the default value for the evm chain ID
-	DefaultEVMChainID = "cosmos_262144-1"
+	DefaultEVMChainID = "shardeum_8119-1"
 	// DefaultEVMDecimals is the default value for the evm denom decimal precision
 	DefaultEVMDecimals uint64 = 18
 	// DefaultStaticPrecompiles defines the default active precompiles.

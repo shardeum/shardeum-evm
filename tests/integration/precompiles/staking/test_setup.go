@@ -3,12 +3,12 @@ package staking
 import (
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/evm/precompiles/staking"
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/testutil/integration/evm/factory"
-	"github.com/cosmos/evm/testutil/integration/evm/grpc"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	testkeyring "github.com/cosmos/evm/testutil/keyring"
+	"github.com/shardeum/shardeum-evm/precompiles/staking"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -47,7 +47,7 @@ func (s *PrecompileTestSuite) SetupTest() {
 	keyring := testkeyring.New(2)
 	customGenesis := network.CustomGenesisState{}
 	// mint some coin to fee collector
-	coins := sdk.NewCoins(sdk.NewCoin(testconstants.ExampleAttoDenom, sdkmath.NewInt(InitialTestBalance)))
+	coins := sdk.NewCoins(sdk.NewCoin(testconstants.ShardeumAttoDenom, sdkmath.NewInt(InitialTestBalance)))
 	balances := []banktypes.Balance{
 		{
 			Address: authtypes.NewModuleAddress(authtypes.FeeCollectorName).String(),

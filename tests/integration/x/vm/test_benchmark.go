@@ -8,10 +8,10 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/require"
 
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	utiltx "github.com/cosmos/evm/testutil/tx"
-	"github.com/cosmos/evm/x/vm/keeper/testdata"
-	"github.com/cosmos/evm/x/vm/types"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	"github.com/shardeum/shardeum-evm/x/vm/keeper/testdata"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -24,7 +24,7 @@ func SetupContract(b *testing.B) (*KeeperTestSuite, common.Address) {
 	suite := KeeperTestSuite{}
 	suite.SetupTest()
 
-	amt := sdk.Coins{sdk.NewInt64Coin(testconstants.ExampleAttoDenom, 1000000000000000000)}
+	amt := sdk.Coins{sdk.NewInt64Coin(testconstants.ShardeumAttoDenom, 1000000000000000000)}
 	err := suite.Network.App.GetBankKeeper().MintCoins(suite.Network.GetContext(), types.ModuleName, amt)
 	require.NoError(b, err)
 	err = suite.Network.App.GetBankKeeper().SendCoinsFromModuleToAccount(suite.Network.GetContext(), types.ModuleName, suite.Keyring.GetAddr(0).Bytes(), amt)
@@ -42,7 +42,7 @@ func SetupTestMessageCall(b *testing.B) (*KeeperTestSuite, common.Address) {
 	suite := KeeperTestSuite{}
 	suite.SetupTest()
 
-	amt := sdk.Coins{sdk.NewInt64Coin(testconstants.ExampleAttoDenom, 1000000000000000000)}
+	amt := sdk.Coins{sdk.NewInt64Coin(testconstants.ShardeumAttoDenom, 1000000000000000000)}
 	err := suite.Network.App.GetBankKeeper().MintCoins(suite.Network.GetContext(), types.ModuleName, amt)
 	require.NoError(b, err)
 	err = suite.Network.App.GetBankKeeper().SendCoinsFromModuleToAccount(suite.Network.GetContext(), types.ModuleName, suite.Keyring.GetAddr(0).Bytes(), amt)

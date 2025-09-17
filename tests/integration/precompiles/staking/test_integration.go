@@ -14,19 +14,19 @@ import (
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
-	compiledcontracts "github.com/cosmos/evm/contracts"
-	"github.com/cosmos/evm/crypto/ethsecp256k1"
-	cmn "github.com/cosmos/evm/precompiles/common"
-	"github.com/cosmos/evm/precompiles/staking"
-	"github.com/cosmos/evm/precompiles/staking/testdata"
-	"github.com/cosmos/evm/precompiles/testutil"
-	"github.com/cosmos/evm/precompiles/testutil/contracts"
-	cosmosevmutil "github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	"github.com/cosmos/evm/testutil/integration/evm/utils"
-	testutiltx "github.com/cosmos/evm/testutil/tx"
-	testutiltypes "github.com/cosmos/evm/testutil/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	compiledcontracts "github.com/shardeum/shardeum-evm/contracts"
+	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
+	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
+	"github.com/shardeum/shardeum-evm/precompiles/staking"
+	"github.com/shardeum/shardeum-evm/precompiles/staking/testdata"
+	"github.com/shardeum/shardeum-evm/precompiles/testutil"
+	"github.com/shardeum/shardeum-evm/precompiles/testutil/contracts"
+	cosmosevmutil "github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
+	testutiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
@@ -2673,7 +2673,7 @@ func TestPrecompileIntegrationTestSuite(t *testing.T, create network.CreateEvmAp
 				err = s.precompile.UnpackIntoInterface(&delOut, staking.DelegationMethod, ethRes.Ret)
 				Expect(err).To(BeNil(), "error while unpacking the delegation output: %v", err)
 				Expect(delOut.Balance.Amount.Int64()).To(Equal(int64(0)), "expected a different delegation balance")
-				Expect(delOut.Balance.Denom).To(Equal(cosmosevmutil.ExampleAttoDenom), "expected a different delegation balance")
+				Expect(delOut.Balance.Denom).To(Equal(cosmosevmutil.ShardeumAttoDenom), "expected a different delegation balance")
 			})
 
 			It("which exists should return the delegation", func() {
@@ -2694,7 +2694,7 @@ func TestPrecompileIntegrationTestSuite(t *testing.T, create network.CreateEvmAp
 				err = s.precompile.UnpackIntoInterface(&delOut, staking.DelegationMethod, ethRes.Ret)
 				Expect(err).To(BeNil(), "error while unpacking the delegation output: %v", err)
 				Expect(delOut.Balance).To(Equal(
-					cmn.Coin{Denom: cosmosevmutil.ExampleAttoDenom, Amount: big.NewInt(1e18)}),
+					cmn.Coin{Denom: cosmosevmutil.ShardeumAttoDenom, Amount: big.NewInt(1e18)}),
 					"expected a different delegation balance",
 				)
 			})

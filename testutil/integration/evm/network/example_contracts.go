@@ -1,7 +1,7 @@
 package network
 
 import (
-	testconstants "github.com/cosmos/evm/testutil/constants"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 )
 
 // chainsWEVMOSHex is an utility map used to retrieve the WEVMOS contract
@@ -9,7 +9,7 @@ import (
 //
 // TODO: refactor to define this in the example chain initialization and pass as function argument
 var chainsWEVMOSHex = map[testconstants.ChainID]string{
-	testconstants.ExampleChainID: testconstants.WEVMOSContractMainnet,
+	testconstants.ExampleChainID: testconstants.ShardeumChainID,
 }
 
 // GetWEVMOSContractHex returns the hex format of address for the WEVMOS contract

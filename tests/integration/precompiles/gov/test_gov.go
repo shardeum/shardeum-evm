@@ -9,10 +9,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/uint256"
 
-	"github.com/cosmos/evm/precompiles/gov"
-	"github.com/cosmos/evm/testutil"
-	"github.com/cosmos/evm/x/vm/statedb"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/precompiles/gov"
+	"github.com/shardeum/shardeum-evm/testutil"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 func (s *PrecompileTestSuite) TestIsTransaction() {

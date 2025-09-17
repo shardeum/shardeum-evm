@@ -5,9 +5,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/cosmos/evm/precompiles/bank"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	cosmosevmutiltx "github.com/cosmos/evm/testutil/tx"
+	"github.com/shardeum/shardeum-evm/precompiles/bank"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	cosmosevmutiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 
 	"cosmossdk.io/math"
 

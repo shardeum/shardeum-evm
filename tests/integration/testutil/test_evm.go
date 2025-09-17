@@ -7,14 +7,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/cosmos/evm/contracts"
-	testfactory "github.com/cosmos/evm/testutil/integration/evm/factory"
-	testhandler "github.com/cosmos/evm/testutil/integration/evm/grpc"
-	testnetwork "github.com/cosmos/evm/testutil/integration/evm/network"
-	"github.com/cosmos/evm/testutil/integration/evm/utils"
-	testkeyring "github.com/cosmos/evm/testutil/keyring"
-	testutiltypes "github.com/cosmos/evm/testutil/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/contracts"
+	testfactory "github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
+	testhandler "github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
+	testnetwork "github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
+	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 func (s *TestSuite) TestGetERC20Balance() {

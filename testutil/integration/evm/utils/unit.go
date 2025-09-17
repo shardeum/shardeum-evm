@@ -7,8 +7,8 @@ package utils
 import (
 	"fmt"
 
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	erc20types "github.com/cosmos/evm/x/erc20/types"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 
 	"cosmossdk.io/math"

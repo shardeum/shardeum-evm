@@ -4,11 +4,11 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/evm/testutil/integration/evm/factory"
-	"github.com/cosmos/evm/testutil/integration/evm/grpc"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	"github.com/cosmos/evm/testutil/keyring"
-	"github.com/cosmos/evm/x/erc20/types"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	"github.com/shardeum/shardeum-evm/testutil/keyring"
+	"github.com/shardeum/shardeum-evm/x/erc20/types"
 
 	sdkmath "cosmossdk.io/math"
 

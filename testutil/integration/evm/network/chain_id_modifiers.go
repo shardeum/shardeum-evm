@@ -5,10 +5,10 @@
 package network
 
 import (
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	erc20types "github.com/cosmos/evm/x/erc20/types"
-	"github.com/cosmos/evm/x/precisebank/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
+	"github.com/shardeum/shardeum-evm/x/precisebank/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
