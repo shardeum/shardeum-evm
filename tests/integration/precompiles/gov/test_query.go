@@ -7,10 +7,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	cmn "github.com/cosmos/evm/precompiles/common"
-	"github.com/cosmos/evm/precompiles/gov"
-	"github.com/cosmos/evm/precompiles/testutil"
-	testconstants "github.com/cosmos/evm/testutil/constants"
+	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
+	"github.com/shardeum/shardeum-evm/precompiles/gov"
+	"github.com/shardeum/shardeum-evm/precompiles/testutil"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 
 	"cosmossdk.io/math"
 
@@ -29,7 +29,7 @@ var (
 	govAcct = authtypes.NewModuleAddress(govtypes.ModuleName)
 	// TestProposalMsgs are msgs used on a proposal.
 	TestProposalMsgs = []sdk.Msg{
-		banktypes.NewMsgSend(govAcct, addr, sdk.NewCoins(sdk.NewCoin(testconstants.ExampleAttoDenom, math.NewInt(1000)))),
+		banktypes.NewMsgSend(govAcct, addr, sdk.NewCoins(sdk.NewCoin(testconstants.ShardeumAttoDenom, math.NewInt(1000)))),
 	}
 )
 

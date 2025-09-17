@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	"github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 // WithStaticPrecompiles sets the available static precompiled contracts.

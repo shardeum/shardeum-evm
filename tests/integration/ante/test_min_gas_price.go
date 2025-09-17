@@ -3,10 +3,10 @@ package ante
 import (
 	"fmt"
 
-	cosmosante "github.com/cosmos/evm/ante/cosmos"
-	"github.com/cosmos/evm/testutil"
-	"github.com/cosmos/evm/testutil/constants"
-	testutiltx "github.com/cosmos/evm/testutil/tx"
+	cosmosante "github.com/shardeum/shardeum-evm/ante/cosmos"
+	"github.com/shardeum/shardeum-evm/testutil"
+	"github.com/shardeum/shardeum-evm/testutil/constants"
+	testutiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 
 	"cosmossdk.io/math"
 
@@ -24,7 +24,7 @@ var execTypes = []struct {
 }
 
 func (s *AnteTestSuite) TestMinGasPriceDecorator() {
-	denom := constants.ExampleAttoDenom
+	denom := constants.ShardeumAttoDenom
 	testMsg := banktypes.MsgSend{
 		FromAddress: "cosmos1x8fhpj9nmhqk8z9kpgjt95ck2xwyue0ptzkucp",
 		ToAddress:   "cosmos1dx67l23hz9l0k9hcher8xz04uj7wf3yu26l2yn",

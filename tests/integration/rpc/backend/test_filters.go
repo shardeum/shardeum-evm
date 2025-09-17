@@ -6,9 +6,9 @@ import (
 
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/evm/rpc/backend/mocks"
-	ethrpc "github.com/cosmos/evm/rpc/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
+	ethrpc "github.com/shardeum/shardeum-evm/rpc/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 func (s *TestSuite) TestGetLogs() {

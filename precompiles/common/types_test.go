@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/evm/precompiles/common"
-	"github.com/cosmos/evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/precompiles/common"
+	"github.com/shardeum/shardeum-evm/testutil/constants"
 
 	"cosmossdk.io/math"
 
@@ -24,7 +24,7 @@ func TestNewCoinsResponse(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		coin := sdk.NewCoin(constants.ExampleAttoDenom, tc.amount)
+		coin := sdk.NewCoin(constants.ShardeumAttoDenom, tc.amount)
 		coins := sdk.NewCoins(coin)
 		res := common.NewCoinsResponse(coins)
 		require.Equal(t, 1, len(res))
@@ -41,7 +41,7 @@ func TestNewDecCoinsResponse(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		coin := sdk.NewDecCoin(constants.ExampleAttoDenom, tc.amount)
+		coin := sdk.NewDecCoin(constants.ShardeumAttoDenom, tc.amount)
 		coins := sdk.NewDecCoins(coin)
 		res := common.NewDecCoinsResponse(coins)
 		require.Equal(t, 1, len(res))

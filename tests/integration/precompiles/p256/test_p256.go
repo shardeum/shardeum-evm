@@ -11,8 +11,8 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 
-	"github.com/cosmos/evm/precompiles/p256"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/precompiles/p256"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 var trueValue = common.LeftPadBytes(common.Big1.Bytes(), 32)

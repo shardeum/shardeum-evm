@@ -11,9 +11,9 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/evm/x/erc20/client/cli"
-	"github.com/cosmos/evm/x/erc20/keeper"
-	"github.com/cosmos/evm/x/erc20/types"
+	"github.com/shardeum/shardeum-evm/x/erc20/client/cli"
+	"github.com/shardeum/shardeum-evm/x/erc20/keeper"
+	"github.com/shardeum/shardeum-evm/x/erc20/types"
 
 	"cosmossdk.io/core/appmodule"
 

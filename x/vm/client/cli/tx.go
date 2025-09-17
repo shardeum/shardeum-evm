@@ -12,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/evm/utils"
-	"github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/utils"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/core/address"
 

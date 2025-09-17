@@ -8,12 +8,12 @@ import (
 
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/evm"
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	cosmosevmtypes "github.com/cosmos/evm/types"
-	erc20types "github.com/cosmos/evm/x/erc20/types"
-	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
+	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	"github.com/cosmos/gogoproto/proto"
 
 	sdkmath "cosmossdk.io/math"
@@ -480,7 +480,7 @@ func setDefaultErc20GenesisState(cosmosEVMApp evm.EvmApp, evmChainID uint64, gen
 func newErc20GenesisState() *erc20types.GenesisState {
 	erc20GenState := erc20types.DefaultGenesisState()
 	erc20GenState.TokenPairs = testconstants.ExampleTokenPairs
-	erc20GenState.NativePrecompiles = []string{testconstants.WEVMOSContractMainnet}
+	erc20GenState.NativePrecompiles = []string{testconstants.ShardeumChainID}
 
 	return erc20GenState
 }

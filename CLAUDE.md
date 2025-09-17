@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Cosmos EVM fork (Shardeum-Cosmos) - a plug-and-play solution that adds EVM compatibility to Cosmos SDK chains. It's based on evmOS and maintained as an Apache 2.0 open-source project.
+This is a Shardeum Cosmos fork - a plug-and-play solution that adds EVM compatibility to Cosmos SDK chains. It's based on evmOS and maintained as an Apache 2.0 open-source project.
 
 ## Build and Development Commands
 
@@ -36,7 +36,7 @@ make add-node NODE_ID=node4  # Add a new node to running network
 make test                     # Run all unit tests
 make test-unit               # Unit tests only
 make test-race               # Race condition tests
-make test-evmd               # Test evmd module specifically
+make test-shardeumd               # Test shardeumd module specifically
 make test-unit-cover         # Generate coverage report
 
 # Other tests
@@ -89,14 +89,14 @@ The chain is organized into several key modules under `x/`:
 - `x/precisebank` - Precise bank operations
 
 ### Key Components
-- **evmd**: Example chain binary in `evmd/` directory demonstrating Cosmos EVM integration
+- **shardeumd**: Shardeum chain binary in `shardeumd/` directory demonstrating Shardeum Cosmos integration
 - **Precompiles**: Native Cosmos functionality accessible from Solidity (`precompiles/` directory)
 - **EVM Extensions**: Bridge between Cosmos SDK modules and Solidity contracts
 - **JSON-RPC**: Ethereum-compatible RPC endpoints in `rpc/` directory
 - **Ante Handlers**: Transaction validation and fee processing in `ante/` directory
 
 ### Development Configuration
-- **Chain ID**: `shardeum` (local), `cosmos_262144-1` (evmd example)
+- **Chain ID**: `shardeum` (local), `cosmos_262144-1` (shardeumd example)
 - **Native Token**: SHM (ashm, 18 decimals)
 - **Default Ports**:
   - RPC: 26657

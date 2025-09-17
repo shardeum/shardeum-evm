@@ -6,8 +6,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	"github.com/cosmos/evm/ibc"
-	cmn "github.com/cosmos/evm/precompiles/common"
+	"github.com/shardeum/shardeum-evm/ibc"
+	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 )
 
 // Errors that have formatted information are defined here as a string.

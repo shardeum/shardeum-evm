@@ -12,11 +12,11 @@ import (
 	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 
-	evmmempool "github.com/cosmos/evm/mempool"
-	"github.com/cosmos/evm/utils"
-	"github.com/cosmos/evm/x/vm/statedb"
-	"github.com/cosmos/evm/x/vm/types"
-	"github.com/cosmos/evm/x/vm/wrappers"
+	evmmempool "github.com/shardeum/shardeum-evm/mempool"
+	"github.com/shardeum/shardeum-evm/utils"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/x/vm/wrappers"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"

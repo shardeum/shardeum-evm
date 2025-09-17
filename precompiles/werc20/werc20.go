@@ -10,10 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	ibcutils "github.com/cosmos/evm/ibc"
-	cmn "github.com/cosmos/evm/precompiles/common"
-	erc20 "github.com/cosmos/evm/precompiles/erc20"
-	erc20types "github.com/cosmos/evm/x/erc20/types"
+	ibcutils "github.com/shardeum/shardeum-evm/ibc"
+	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
+	erc20 "github.com/shardeum/shardeum-evm/precompiles/erc20"
+	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 )
 
 // abiPath defines the path to the WERC-20 precompile ABI JSON file.

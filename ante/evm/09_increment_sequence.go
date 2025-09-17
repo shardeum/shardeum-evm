@@ -3,8 +3,8 @@ package evm
 import (
 	"math"
 
-	anteinterfaces "github.com/cosmos/evm/ante/interfaces"
-	"github.com/cosmos/evm/mempool"
+	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
+	"github.com/shardeum/shardeum-evm/mempool"
 
 	errorsmod "cosmossdk.io/errors"
 

@@ -17,11 +17,11 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 	cmtversion "github.com/cometbft/cometbft/version"
 
-	"github.com/cosmos/evm"
-	"github.com/cosmos/evm/crypto/ethsecp256k1"
-	"github.com/cosmos/evm/testutil/config"
-	"github.com/cosmos/evm/testutil/tx"
-	"github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm"
+	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
+	"github.com/shardeum/shardeum-evm/testutil/config"
+	"github.com/shardeum/shardeum-evm/testutil/tx"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
@@ -135,7 +135,7 @@ func NewTestChainWithValSet(tb testing.TB, isEVM bool, coord *Coordinator, chain
 			Address: acc.GetAddress().String(),
 			Coins: sdk.NewCoins(
 				sdk.NewCoin(sdk.DefaultBondDenom, amount),
-				sdk.NewCoin(config.ExampleChainDenom, amount),
+				sdk.NewCoin(config.ShardeumChainDenom, amount),
 			),
 		}
 

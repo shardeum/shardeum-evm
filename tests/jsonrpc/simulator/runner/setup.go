@@ -12,10 +12,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/cosmos/evm/tests/jsonrpc/simulator/config"
-	"github.com/cosmos/evm/tests/jsonrpc/simulator/contracts"
-	"github.com/cosmos/evm/tests/jsonrpc/simulator/types"
-	"github.com/cosmos/evm/tests/jsonrpc/simulator/utils"
+	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/config"
+	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/contracts"
+	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/types"
+	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/utils"
 )
 
 // Setup performs the complete setup: fund geth accounts, deploy contracts, and mint tokens

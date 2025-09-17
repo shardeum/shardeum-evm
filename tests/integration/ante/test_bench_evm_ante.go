@@ -7,12 +7,12 @@ import (
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	evmante "github.com/cosmos/evm/ante/evm"
-	"github.com/cosmos/evm/testutil"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	testutiltx "github.com/cosmos/evm/testutil/tx"
-	"github.com/cosmos/evm/x/vm/statedb"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	evmante "github.com/shardeum/shardeum-evm/ante/evm"
+	"github.com/shardeum/shardeum-evm/testutil"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	testutiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"

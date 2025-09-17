@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/x/erc20/types"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/x/erc20/types"
 
 	"cosmossdk.io/math"
 )
@@ -60,8 +60,8 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 						Enabled:      true,
 					},
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
-						Denom:        testconstants.ExampleAttoDenom,
+						Erc20Address: testconstants.ShardeumChainID,
+						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
@@ -85,8 +85,8 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 						Enabled:      true,
 					},
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
-						Denom:        testconstants.ExampleAttoDenom,
+						Erc20Address: testconstants.ShardeumChainID,
+						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
@@ -110,8 +110,8 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 						Enabled:      true,
 					},
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
-						Denom:        testconstants.ExampleAttoDenom,
+						Erc20Address: testconstants.ShardeumChainID,
+						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
@@ -135,8 +135,8 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 						Enabled:      true,
 					},
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
-						Denom:        testconstants.ExampleAttoDenom,
+						Erc20Address: testconstants.ShardeumChainID,
+						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
@@ -155,8 +155,8 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 						Enabled:      true,
 					},
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
-						Denom:        testconstants.ExampleAttoDenom,
+						Erc20Address: testconstants.ShardeumChainID,
+						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
@@ -186,13 +186,13 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				TokenPairs: testconstants.ExampleTokenPairs,
 				Allowances: []types.Allowance{
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
+						Erc20Address: testconstants.ShardeumChainID,
 						Owner:        testconstants.ExampleEvmAddressAlice,
 						Spender:      testconstants.ExampleEvmAddressBob,
 						Value:        math.NewInt(100),
 					},
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
+						Erc20Address: testconstants.ShardeumChainID,
 						Owner:        testconstants.ExampleEvmAddressAlice,
 						Spender:      testconstants.ExampleEvmAddressBob,
 						Value:        math.NewInt(100),
@@ -207,8 +207,8 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Params: types.DefaultParams(),
 				TokenPairs: []types.TokenPair{
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
-						Denom:        testconstants.ExampleAttoDenom,
+						Erc20Address: testconstants.ShardeumChainID,
+						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
@@ -229,14 +229,14 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Params: types.DefaultParams(),
 				TokenPairs: []types.TokenPair{
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
-						Denom:        testconstants.ExampleAttoDenom,
+						Erc20Address: testconstants.ShardeumChainID,
+						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
 				Allowances: []types.Allowance{
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
+						Erc20Address: testconstants.ShardeumChainID,
 						Owner:        "bad",
 						Spender:      testconstants.ExampleEvmAddressBob,
 						Value:        math.NewInt(-1),
@@ -251,14 +251,14 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Params: types.DefaultParams(),
 				TokenPairs: []types.TokenPair{
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
-						Denom:        testconstants.ExampleAttoDenom,
+						Erc20Address: testconstants.ShardeumChainID,
+						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
 				Allowances: []types.Allowance{
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
+						Erc20Address: testconstants.ShardeumChainID,
 						Owner:        testconstants.ExampleEvmAddressAlice,
 						Spender:      "bad",
 						Value:        math.NewInt(-1),
@@ -273,14 +273,14 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Params: types.DefaultParams(),
 				TokenPairs: []types.TokenPair{
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
-						Denom:        testconstants.ExampleAttoDenom,
+						Erc20Address: testconstants.ShardeumChainID,
+						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
 				Allowances: []types.Allowance{
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
+						Erc20Address: testconstants.ShardeumChainID,
 						Owner:        testconstants.ExampleEvmAddressAlice,
 						Spender:      testconstants.ExampleEvmAddressBob,
 						Value:        math.NewInt(0),
@@ -295,14 +295,14 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Params: types.DefaultParams(),
 				TokenPairs: []types.TokenPair{
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
-						Denom:        testconstants.ExampleAttoDenom,
+						Erc20Address: testconstants.ShardeumChainID,
+						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
 				Allowances: []types.Allowance{
 					{
-						Erc20Address: testconstants.WEVMOSContractMainnet,
+						Erc20Address: testconstants.ShardeumChainID,
 						Owner:        testconstants.ExampleEvmAddressAlice,
 						Spender:      testconstants.ExampleEvmAddressBob,
 						Value:        math.NewInt(-1),

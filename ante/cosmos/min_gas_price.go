@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"slices"
 
-	anteinterfaces "github.com/cosmos/evm/ante/interfaces"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"

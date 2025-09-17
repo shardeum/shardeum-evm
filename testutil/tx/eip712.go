@@ -6,10 +6,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
-	"github.com/cosmos/evm"
-	cryptocodec "github.com/cosmos/evm/crypto/codec"
-	"github.com/cosmos/evm/ethereum/eip712"
-	"github.com/cosmos/evm/types"
+	"github.com/shardeum/shardeum-evm"
+	cryptocodec "github.com/shardeum/shardeum-evm/crypto/codec"
+	"github.com/shardeum/shardeum-evm/ethereum/eip712"
+	"github.com/shardeum/shardeum-evm/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"

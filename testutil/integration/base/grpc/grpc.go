@@ -1,8 +1,8 @@
 package grpc
 
 import (
-	"github.com/cosmos/evm/testutil/integration/base/network"
-	precisebanktypes "github.com/cosmos/evm/x/precisebank/types"
+	"github.com/shardeum/shardeum-evm/testutil/integration/base/network"
+	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"

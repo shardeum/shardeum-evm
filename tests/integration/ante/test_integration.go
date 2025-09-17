@@ -10,14 +10,14 @@ import (
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	commonfactory "github.com/cosmos/evm/testutil/integration/base/factory"
-	"github.com/cosmos/evm/testutil/integration/evm/factory"
-	"github.com/cosmos/evm/testutil/integration/evm/grpc"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	"github.com/cosmos/evm/testutil/integration/evm/utils"
-	testkeyring "github.com/cosmos/evm/testutil/keyring"
-	testutiltx "github.com/cosmos/evm/testutil/tx"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	commonfactory "github.com/shardeum/shardeum-evm/testutil/integration/base/factory"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
+	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	testutiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 
 	"cosmossdk.io/math"
 
@@ -57,7 +57,7 @@ func (s *IntegrationTestSuite) SetupTest() {
 
 	// set non-zero inflation for rewards to accrue (use defaults from SDK for values)
 	mintGen := minttypes.DefaultGenesisState()
-	mintGen.Params.MintDenom = testconstants.ExampleAttoDenom
+	mintGen.Params.MintDenom = testconstants.ShardeumAttoDenom
 	customGen[minttypes.ModuleName] = mintGen
 
 	operatorsAddr := make([]sdk.AccAddress, 3)

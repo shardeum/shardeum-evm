@@ -3,10 +3,10 @@ package config
 import (
 	"encoding/json"
 
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	erc20types "github.com/cosmos/evm/x/erc20/types"
-	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
+	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 )
@@ -38,7 +38,7 @@ func NewEVMGenesisState() *evmtypes.GenesisState {
 func NewErc20GenesisState() *erc20types.GenesisState {
 	erc20GenState := erc20types.DefaultGenesisState()
 	erc20GenState.TokenPairs = testconstants.ExampleTokenPairs
-	erc20GenState.NativePrecompiles = []string{testconstants.WEVMOSContractMainnet}
+	erc20GenState.NativePrecompiles = []string{}
 
 	return erc20GenState
 }
@@ -48,7 +48,7 @@ func NewErc20GenesisState() *erc20types.GenesisState {
 // NOTE: for the example chain implementation we are also adding a default minter.
 func NewMintGenesisState() *minttypes.GenesisState {
 	mintGenState := minttypes.DefaultGenesisState()
-	mintGenState.Params.MintDenom = ExampleChainDenom
+	mintGenState.Params.MintDenom = ShardeumChainDenom
 
 	return mintGenState
 }

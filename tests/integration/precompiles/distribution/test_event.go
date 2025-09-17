@@ -8,12 +8,12 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 
-	cmn "github.com/cosmos/evm/precompiles/common"
-	"github.com/cosmos/evm/precompiles/distribution"
-	"github.com/cosmos/evm/precompiles/testutil"
-	"github.com/cosmos/evm/testutil/config"
-	"github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/x/vm/statedb"
+	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
+	"github.com/shardeum/shardeum-evm/precompiles/distribution"
+	"github.com/shardeum/shardeum-evm/precompiles/testutil"
+	"github.com/shardeum/shardeum-evm/testutil/config"
+	"github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
@@ -188,13 +188,13 @@ func (s *PrecompileTestSuite) TestWithdrawValidatorCommissionEvent() {
 			func(operatorAddress string) []interface{} {
 				valAddr, err := sdk.ValAddressFromBech32(operatorAddress)
 				s.Require().NoError(err)
-				valCommission := sdk.DecCoins{sdk.NewDecCoinFromDec(constants.ExampleAttoDenom, math.LegacyNewDecFromInt(amt))}
+				valCommission := sdk.DecCoins{sdk.NewDecCoinFromDec(constants.ShardeumAttoDenom, math.LegacyNewDecFromInt(amt))}
 				// set outstanding rewards
 				s.Require().NoError(s.network.App.GetDistrKeeper().SetValidatorOutstandingRewards(ctx, valAddr, types.ValidatorOutstandingRewards{Rewards: valCommission}))
 				// set commission
 				s.Require().NoError(s.network.App.GetDistrKeeper().SetValidatorAccumulatedCommission(ctx, valAddr, types.ValidatorAccumulatedCommission{Commission: valCommission}))
 				// set funds to distr mod to pay for commission
-				coins := sdk.NewCoins(sdk.NewCoin(constants.ExampleAttoDenom, amt))
+				coins := sdk.NewCoins(sdk.NewCoin(constants.ShardeumAttoDenom, amt))
 				err = s.mintCoinsForDistrMod(ctx, coins)
 				s.Require().NoError(err)
 				return []interface{}{
@@ -260,7 +260,7 @@ func (s *PrecompileTestSuite) TestClaimRewardsEvent() {
 	}{
 		{
 			"success",
-			sdk.NewCoins(sdk.NewCoin(constants.ExampleAttoDenom, math.NewInt(1e18))),
+			sdk.NewCoins(sdk.NewCoin(constants.ShardeumAttoDenom, math.NewInt(1e18))),
 			func() {
 				log := stDB.Logs()[0]
 				s.Require().Equal(log.Address, s.precompile.Address())
@@ -302,7 +302,7 @@ func (s *PrecompileTestSuite) TestFundCommunityPoolEvent() {
 	}{
 		{
 			"success - the correct event is emitted",
-			sdk.NewCoins(sdk.NewCoin(constants.ExampleAttoDenom, math.NewInt(1e18))),
+			sdk.NewCoins(sdk.NewCoin(constants.ShardeumAttoDenom, math.NewInt(1e18))),
 			func(coins sdk.Coins) {
 				log := stDB.Logs()[0]
 				s.Require().Equal(log.Address, s.precompile.Address())
@@ -315,7 +315,7 @@ func (s *PrecompileTestSuite) TestFundCommunityPoolEvent() {
 				err := cmn.UnpackLog(s.precompile.ABI, &fundCommunityPoolEvent, distribution.EventTypeFundCommunityPool, *log)
 				s.Require().NoError(err)
 				s.Require().Equal(s.keyring.GetAddr(0), fundCommunityPoolEvent.Depositor)
-				s.Require().Equal(constants.ExampleAttoDenom, fundCommunityPoolEvent.Denom)
+				s.Require().Equal(constants.ShardeumAttoDenom, fundCommunityPoolEvent.Denom)
 				s.Require().Equal(big.NewInt(1e18), fundCommunityPoolEvent.Amount)
 			},
 		},
@@ -323,7 +323,7 @@ func (s *PrecompileTestSuite) TestFundCommunityPoolEvent() {
 			// New multi-coin deposit test case
 			name: "success - multiple coins => multiple events emitted",
 			coins: sdk.NewCoins(
-				sdk.NewCoin(constants.ExampleAttoDenom, math.NewInt(10)),   // coin #1
+				sdk.NewCoin(constants.ShardeumAttoDenom, math.NewInt(10)),   // coin #1
 				sdk.NewCoin(constants.OtherCoinDenoms[0], math.NewInt(20)), // coin #2
 				sdk.NewCoin(constants.OtherCoinDenoms[1], math.NewInt(30)), // coin #3
 			).Sort(),
@@ -394,7 +394,7 @@ func (s *PrecompileTestSuite) TestDepositValidatorRewardsPoolEvent() {
 			func(operatorAddress string) ([]interface{}, sdk.Coins) {
 				coins := []cmn.Coin{
 					{
-						Denom:  constants.ExampleAttoDenom,
+						Denom:  constants.ShardeumAttoDenom,
 						Amount: big.NewInt(1e18),
 					},
 				}
@@ -425,7 +425,7 @@ func (s *PrecompileTestSuite) TestDepositValidatorRewardsPoolEvent() {
 				s.Require().NoError(err)
 				s.Require().Equal(depositValidatorRewardsPool.Depositor, s.keyring.GetAddr(0))
 				s.Require().Equal(depositValidatorRewardsPool.ValidatorAddress, common.BytesToAddress(valAddr.Bytes()))
-				s.Require().Equal(depositValidatorRewardsPool.Denom, constants.ExampleAttoDenom)
+				s.Require().Equal(depositValidatorRewardsPool.Denom, constants.ShardeumAttoDenom)
 				s.Require().Equal(depositValidatorRewardsPool.Amount, amt.BigInt())
 			},
 			20000,
@@ -437,7 +437,7 @@ func (s *PrecompileTestSuite) TestDepositValidatorRewardsPoolEvent() {
 			func(operatorAddress string) ([]interface{}, sdk.Coins) {
 				coins := []cmn.Coin{
 					{
-						Denom:  constants.ExampleAttoDenom,
+						Denom:  constants.ShardeumAttoDenom,
 						Amount: big.NewInt(1e18),
 					},
 					{

@@ -7,9 +7,9 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/evm/encoding"
-	utiltx "github.com/cosmos/evm/testutil/tx"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/encoding"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 func TestTxEncoding(t *testing.T) {

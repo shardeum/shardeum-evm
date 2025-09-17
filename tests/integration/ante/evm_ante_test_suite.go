@@ -10,14 +10,14 @@ import (
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/evm"
-	"github.com/cosmos/evm/crypto/ethsecp256k1"
-	"github.com/cosmos/evm/ethereum/eip712"
-	"github.com/cosmos/evm/testutil"
-	"github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	utiltx "github.com/cosmos/evm/testutil/tx"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm"
+	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
+	"github.com/shardeum/shardeum-evm/ethereum/eip712"
+	"github.com/shardeum/shardeum-evm/testutil"
+	"github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	ibctypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 
@@ -644,7 +644,7 @@ func PrepareAccountsForDelegationRewards(t *testing.T, ctx sdk.Context, app evm.
 
 	// set distribution module account balance which pays out the rewards
 	distrAcc := distrKeeper.GetDistributionAccount(ctx)
-	err := testutil.FundModuleAccount(ctx, bankKeeper, distrAcc.GetName(), sdk.NewCoins(sdk.NewCoin(constants.ExampleAttoDenom, totalRewards)))
+	err := testutil.FundModuleAccount(ctx, bankKeeper, distrAcc.GetName(), sdk.NewCoins(sdk.NewCoin(constants.ShardeumAttoDenom, totalRewards)))
 	if err != nil {
 		return sdk.Context{}, fmt.Errorf("failed to fund distribution module account: %s", err.Error())
 	}
@@ -668,14 +668,14 @@ func PrepareAccountsForDelegationRewards(t *testing.T, ctx sdk.Context, app evm.
 		if err != nil {
 			return sdk.Context{}, fmt.Errorf("failed to get staking params: %s", err.Error())
 		}
-		stakingParams.BondDenom = constants.ExampleAttoDenom
+		stakingParams.BondDenom = constants.ShardeumAttoDenom
 		stakingParams.MinCommissionRate = zeroDec
 		err = stakingKeeper.SetParams(ctx, stakingParams)
 		require.NoError(t, err)
 
 		stakingHelper := teststaking.NewHelper(t, ctx, stakingKeeper)
 		stakingHelper.Commission = stakingtypes.NewCommissionRates(zeroDec, zeroDec, zeroDec)
-		stakingHelper.Denom = constants.ExampleAttoDenom
+		stakingHelper.Denom = constants.ShardeumAttoDenom
 
 		valAddr := sdk.ValAddress(addr2.Bytes())
 		// self-delegate the same amount of tokens as the delegate address also stakes
@@ -693,7 +693,7 @@ func PrepareAccountsForDelegationRewards(t *testing.T, ctx sdk.Context, app evm.
 		if err != nil {
 			return sdk.Context{}, fmt.Errorf("failed to get validator: %s", err.Error())
 		}
-		allocatedRewards := sdk.NewDecCoins(sdk.NewDecCoin(constants.ExampleAttoDenom, reward.Mul(sdkmath.NewInt(2))))
+		allocatedRewards := sdk.NewDecCoins(sdk.NewDecCoin(constants.ShardeumAttoDenom, reward.Mul(sdkmath.NewInt(2))))
 		if err = distrKeeper.AllocateTokensToValidator(ctx, validator, allocatedRewards); err != nil {
 			return sdk.Context{}, fmt.Errorf("failed to allocate tokens to validator: %s", err.Error())
 		}

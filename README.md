@@ -1,65 +1,65 @@
 <img
 src="repo_header.png"
-alt="Cosmos EVM - A plug-and-play solution that adds EVM compatibility and customizability to your chain"
+alt="Shardeum Cosmos - A plug-and-play solution that adds EVM compatibility and customizability to your chain"
 />
 
 **Please note**: This repo is undergoing changes while the code is being audited and tested. For the time being we will
 be making v0.x releases. Some breaking changes might occur. While the original evmOS repo is currently being used in
-production on a few chains without fault, Interchain Labs will only mark the Cosmos EVM repository as stable with a v1
+production on a few chains without fault, Shardeum will only mark the Shardeum Cosmos repository as stable with a v1
 release after the audit, key stability features and benchmarking are completed.
 
-**Visit the official documentation for Cosmos EVM**: [evm.cosmos.network](https://evm.cosmos.network/)
+**Visit the official documentation for Shardeum**: [docs.shardeum.org](https://docs.shardeum.org/)
 
-## What is Cosmos EVM?
+## What is Shardeum Cosmos?
 
-Cosmos EVM is a plug-and-play solution that adds EVM compatibility
+Shardeum Cosmos is a plug-and-play solution that adds EVM compatibility
 and customizability to your Cosmos SDK chain.
 
 - Build an app-chain with the control and extensibility of the Cosmos SDK
 - With native support for EVM as VM and seamless EVM<>Cosmos wallet / token / user experience.
 - Leverage IBC with EVM, native support of ERC20 on Cosmos, and more with extensions and precompiles.
 
-Cosmos EVM is a fork of [evmOS](https://github.com/evmos/OS), maintained by Interchain Labs and the Interchain Foundation
+Shardeum Cosmos is a fork of [evmOS](https://github.com/evmos/OS), maintained by Shardeum
 after the latter funded Tharsis to open-source the original codebase.
 
-**Cosmos EVM is fully open-source under the Apache 2.0 license.** With this open-sourced version, you can get:
+**Shardeum Cosmos is fully open-source under the Apache 2.0 license.** With this open-sourced version, you can get:
 
-- Full access to Cosmos EVM's modules and updates
+- Full access to Shardeum Cosmos's modules and updates
 - Smooth onboarding experience for an existing or new Cosmos chain
 - Full access to product partnerships (block explorers, RPCs, indexers etc.)
 - Continuous upgrades, access to product and engineering support
 
-**Want to use Cosmos EVM but want to discuss it with an expert first? [Contact the Interchain Labs team](https://share-eu1.hsforms.com/2g6yO-PVaRoKj50rUgG4Pjg2e2sca).**
+**Want to use Shardeum Cosmos but want to discuss it with an expert first? [Contact the Shardeum team](https://shardeum.org/contact).**
 
 For live discussions or support regarding advisories, join the #cosmos-tech channel in Slack.
 [Get a Slack invite here](https://forms.gle/A8jawLgB8zuL1FN36) or join the [Telegram Group](https://t.me/cosmostechstack)
 
-## Plug-in Cosmos EVM into your chain
+## Plug-in Shardeum Cosmos into your chain
 
 ### Integration
 
-Cosmos EVM can easily be integrated into your existing chain
+Shardeum Cosmos can easily be integrated into your existing chain
 or added during the development of your upcoming chain launch
-by importing Cosmos EVM as a go module library.
-The Interchain Labs team provides you with integration guides and core protocol support depending on your needs and configurations.
+by importing Shardeum Cosmos as a go module library.
+The Shardeum team provides you with integration guides and core protocol support depending on your needs and configurations.
 **Updated documentation will be releasing soon!**
 
 ### Configurations
 
-Cosmos EVM solution is engineered to provide unique flexibility,
+Shardeum Cosmos solution is engineered to provide unique flexibility,
 empowering you to tailor every aspect of your Ethereum Virtual Machine (EVM) environment.
 Whether you're launching a new blockchain or optimizing an existing one,
-the Cosmos EVM offers a suite of features designed to meet the unique demands of your project.
+Shardeum Cosmos offers a suite of features designed to meet the unique demands of your project.
 
 #### Powerful defaults
 
-Cosmos EVM’s modules come out of the box with defaults that will get you up and running instantly.
+Shardeum Cosmos's modules come out of the box with defaults that will get you up and running instantly.
 
 When integrating all available modules you will get a *permissionless EVM-enabled* blockchain
 that *exposes JSON-RPC* endpoints for connectivity with all EVM tooling
 like wallets ([MetaMask](https://metamask.io/), [Rabby](https://rabby.io/), and others)
 or block explorers ([Blockscout](https://docs.blockscout.com/) and others).
-You will have access to *all of Cosmos EVM’ extensions*,
+You will have access to *all of Shardeum Cosmos' extensions*,
 which enable access to chain-native functionality
 through [Solidity](https://docs.soliditylang.org/en/v0.8.26/) smart contracts.
 Your chain provides a *seamless use of any IBC asset in the EVM*
@@ -122,7 +122,7 @@ Based on these powerful defaults, the feature set is easily and highly customiza
 
 - *Custom Improvement Proposals (Opcodes)*
 
-  Any Cosmos EVM user is provided the opportunity to customize bits of their EVM opcodes and add new ones.
+  Any Shardeum Cosmos user is provided the opportunity to customize bits of their EVM opcodes and add new ones.
   Read more on [custom operations here](https://cosmos-docs.mintlify.app/docs/documentation/smart-contracts/custom-improvement-proposals#custom-improvement-proposals).
 
 ### Forward-compatibility with Ethereum
@@ -136,7 +136,7 @@ while the handling of the transactions can diverge in e.g. result or cost.
 
 We like to coin the term **forward-compatible**
 as a description of our EVM solution,
-meaning that any Cosmos EVM chain can run any valid smart contract
+meaning that any Shardeum Cosmos chain can run any valid smart contract
 from Ethereum but can also implement new features that are
 not (yet) available on the standard Ethereum VM,
 thus moving the standard forward.
@@ -145,7 +145,7 @@ thus moving the standard forward.
 
 ### Quick Start - Single Node
 
-To run the example `evmd` chain, run the script using `./local_node.sh`
+To run the Shardeum `shardeumd` chain, run the script using `./local_node.sh`
 from the root folder of the repository.
 
 ```bash
@@ -153,7 +153,7 @@ from the root folder of the repository.
 ```
 
 This will:
-- Build the `evmd` binary
+- Build the `shardeumd` binary
 - Initialize a local testnet with the chain ID `shardeum`
 - Create funded dev accounts (dev0, dev1, dev2, dev3)
 - Start the node with JSON-RPC APIs enabled
@@ -324,7 +324,7 @@ The Shardeum testnet includes:
 
 ### Migrations
 
-We provide upgrade guides [here](./docs/migrations) for upgrading your chain from various Cosmos EVM versions.
+We provide upgrade guides [here](./docs/migrations) for upgrading your chain from various Shardeum Cosmos versions.
 
 ### Testing
 
@@ -370,11 +370,11 @@ We welcome open source contributions and discussions! For more on contributing, 
 
 ## Open-source License & Credits
 
-Cosmos EVM is open-source under the Apache 2.0 license, an extension of the license of the original codebase (https://github.com/evmos/OS)
+Shardeum Cosmos is open-source under the Apache 2.0 license, an extension of the license of the original codebase (https://github.com/evmos/OS)
 created by Tharsis and the evmOS team - who conducted the foundational work for EVM compatibility and
 interoperability in Cosmos.
 
 ### Key Contributors
 
-We at ICL want to thank our key contributors at [B-Harvest](https://bharvest.io/) and 
-[Mantra](https://www.mantrachain.io/) for contributing to and helping us drive the development of Cosmos EVM.
+We at Shardeum want to thank our key contributors at [B-Harvest](https://bharvest.io/) and 
+[Mantra](https://www.mantrachain.io/) for contributing to and helping us drive the development of Shardeum Cosmos.

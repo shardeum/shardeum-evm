@@ -3,13 +3,13 @@ package distribution
 import (
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/evm/precompiles/distribution"
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/testutil/integration/evm/factory"
-	"github.com/cosmos/evm/testutil/integration/evm/grpc"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	testkeyring "github.com/cosmos/evm/testutil/keyring"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/precompiles/distribution"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/math"
 	sdkmath "cosmossdk.io/math"
@@ -57,7 +57,7 @@ func (s *PrecompileTestSuite) SetupTest() {
 	customGen := network.CustomGenesisState{}
 
 	// mint some coin to fee collector
-	coins := sdk.NewCoins(sdk.NewCoin(testconstants.ExampleAttoDenom, sdkmath.NewInt(1000000000000000000)))
+	coins := sdk.NewCoins(sdk.NewCoin(testconstants.ShardeumAttoDenom, sdkmath.NewInt(1000000000000000000)))
 	balances := []banktypes.Balance{
 		{
 			Address: authtypes.NewModuleAddress(authtypes.FeeCollectorName).String(),
@@ -90,7 +90,7 @@ func (s *PrecompileTestSuite) SetupTest() {
 
 	// set non-zero inflation for rewards to accrue (use defaults from SDK for values)
 	mintGen := minttypes.DefaultGenesisState()
-	mintGen.Params.MintDenom = testconstants.ExampleAttoDenom
+	mintGen.Params.MintDenom = testconstants.ShardeumAttoDenom
 	customGen[minttypes.ModuleName] = mintGen
 
 	operatorsAddr := make([]sdk.AccAddress, 3)

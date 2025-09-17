@@ -3,7 +3,7 @@ package erc20
 import (
 	"math/big"
 
-	"github.com/cosmos/evm/precompiles/erc20"
+	"github.com/shardeum/shardeum-evm/precompiles/erc20"
 )
 
 func (s *PrecompileTestSuite) TestIsTransaction() {

@@ -6,8 +6,8 @@ import (
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 
-	testutiltypes "github.com/cosmos/evm/testutil/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 // CheckTxTopics checks if all expected topics are present in the transaction response

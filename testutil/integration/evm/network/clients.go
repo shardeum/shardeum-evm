@@ -1,11 +1,11 @@
 package network
 
 import (
-	erc20types "github.com/cosmos/evm/x/erc20/types"
-	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
-	precisebankkeeper "github.com/cosmos/evm/x/precisebank/keeper"
-	precisebanktypes "github.com/cosmos/evm/x/precisebank/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
+	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
+	precisebankkeeper "github.com/shardeum/shardeum-evm/x/precisebank/keeper"
+	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"

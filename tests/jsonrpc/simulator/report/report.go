@@ -10,9 +10,9 @@ import (
 	"github.com/fatih/color"
 	"github.com/xuri/excelize/v2"
 
-	"github.com/cosmos/evm/tests/jsonrpc/simulator/config"
-	"github.com/cosmos/evm/tests/jsonrpc/simulator/types"
-	"github.com/cosmos/evm/tests/jsonrpc/simulator/utils"
+	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/config"
+	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/types"
+	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/utils"
 )
 
 const totalWidth = 63

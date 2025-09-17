@@ -13,9 +13,9 @@ import (
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
 
-	"github.com/cosmos/evm/crypto/ethsecp256k1"
-	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
+	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 
 	errorsmod "cosmossdk.io/errors"

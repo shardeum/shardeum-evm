@@ -7,10 +7,10 @@ import (
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 
-	commonfactory "github.com/cosmos/evm/testutil/integration/base/factory"
-	"github.com/cosmos/evm/testutil/integration/evm/factory"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	commonfactory "github.com/shardeum/shardeum-evm/testutil/integration/base/factory"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"

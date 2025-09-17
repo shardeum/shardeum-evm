@@ -11,11 +11,11 @@ import (
 
 	cmtrpcclient "github.com/cometbft/cometbft/rpc/client"
 
-	"github.com/cosmos/evm/crypto/ethsecp256k1"
-	"github.com/cosmos/evm/rpc/backend/mocks"
-	"github.com/cosmos/evm/server/config"
-	"github.com/cosmos/evm/testutil/constants"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
+	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
+	"github.com/shardeum/shardeum-evm/server/config"
+	"github.com/shardeum/shardeum-evm/testutil/constants"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/math"
 
@@ -260,7 +260,7 @@ func (s *TestSuite) TestSetEtherbase() {
 				RegisterStatus(client)
 				RegisterValidatorAccount(QueryClient, s.acc)
 				RegisterParams(QueryClient, &header, 1)
-				c := sdk.NewDecCoin(constants.ExampleAttoDenom, math.NewIntFromBigInt(big.NewInt(1)))
+				c := sdk.NewDecCoin(constants.ShardeumAttoDenom, math.NewIntFromBigInt(big.NewInt(1)))
 				s.backend.Cfg.SetMinGasPrices(sdk.DecCoins{c})
 				delAddr, _ := s.backend.GetCoinbase()
 				// account, _ := s.backend.ClientCtx.AccountRetriever.GetAccount(s.backend.ClientCtx, delAddr)
@@ -285,7 +285,7 @@ func (s *TestSuite) TestSetEtherbase() {
 		//		QueryClient := s.backend.QueryClient.QueryClient.(*mocks.EVMQueryClient)
 		//		RegisterStatus(client)
 		//		RegisterValidatorAccount(QueryClient, s.acc)
-		//		c := sdk.NewDecCoin(testconstants.ExampleAttoDenom, math.NewIntFromBigInt(big.NewInt(1)))
+		//		c := sdk.NewDecCoin(testconstants.ShardeumAttoDenom, math.NewIntFromBigInt(big.NewInt(1)))
 		//		s.backend.Cfg.SetMinGasPrices(sdk.DecCoins{c})
 		//		delAddr, _ := s.backend.GetCoinbase()
 		//		account, _ := s.backend.ClientCtx.AccountRetriever.GetAccount(s.backend.ClientCtx, delAddr)

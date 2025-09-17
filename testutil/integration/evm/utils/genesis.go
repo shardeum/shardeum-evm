@@ -1,11 +1,11 @@
 package utils
 
 import (
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	testkeyring "github.com/cosmos/evm/testutil/keyring"
-	utiltx "github.com/cosmos/evm/testutil/tx"
-	erc20types "github.com/cosmos/evm/x/erc20/types"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -70,7 +70,7 @@ func CreateGenesisWithTokenPairs(keyring testkeyring.Keyring, denoms ...string) 
 	// with the WEVMOS (default is mainnet) and 'xmpl' tokens in the erc20 params
 	erc20GenesisState := erc20types.DefaultGenesisState()
 	erc20GenesisState.TokenPairs = tokenPairs
-	erc20GenesisState.NativePrecompiles = []string{testconstants.WEVMOSContractMainnet}
+	erc20GenesisState.NativePrecompiles = []string{testconstants.ShardeumChainID}
 	erc20GenesisState.DynamicPrecompiles = dynPrecAddr
 
 	// Combine module genesis states
@@ -87,7 +87,7 @@ func CreateGenesisWithTokenPairs(keyring testkeyring.Keyring, denoms ...string) 
 func NewErc20GenesisState() *erc20types.GenesisState {
 	erc20GenState := erc20types.DefaultGenesisState()
 	erc20GenState.TokenPairs = testconstants.ExampleTokenPairs
-	erc20GenState.NativePrecompiles = []string{testconstants.WEVMOSContractMainnet}
+	erc20GenState.NativePrecompiles = []string{testconstants.ShardeumChainID}
 
 	return erc20GenState
 }

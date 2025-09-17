@@ -3,8 +3,8 @@ package vm
 import (
 	"math/big"
 
-	"github.com/cosmos/evm/testutil/integration/evm/utils"
-	"github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"

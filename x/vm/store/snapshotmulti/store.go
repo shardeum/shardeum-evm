@@ -5,9 +5,9 @@ import (
 	"io"
 	"sort"
 
-	"github.com/cosmos/evm/x/vm/store/snapshotkv"
-	"github.com/cosmos/evm/x/vm/store/types"
-	vmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/x/vm/store/snapshotkv"
+	"github.com/shardeum/shardeum-evm/x/vm/store/types"
+	vmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	storetypes "cosmossdk.io/store/types"
 )

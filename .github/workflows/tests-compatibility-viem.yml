@@ -68,7 +68,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
       
-      - name: Build and install evmd
+      - name: Build and install shardeumd
         run: |
           make install
       

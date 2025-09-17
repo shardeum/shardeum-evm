@@ -1,7 +1,7 @@
 package feemarket
 
 import (
-	"github.com/cosmos/evm/testutil/integration/evm/network"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 
 	"cosmossdk.io/math"
 

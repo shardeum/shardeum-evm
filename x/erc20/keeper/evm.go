@@ -7,9 +7,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/cosmos/evm/contracts"
-	"github.com/cosmos/evm/utils"
-	"github.com/cosmos/evm/x/erc20/types"
+	"github.com/shardeum/shardeum-evm/contracts"
+	"github.com/shardeum/shardeum-evm/utils"
+	"github.com/shardeum/shardeum-evm/x/erc20/types"
 
 	errorsmod "cosmossdk.io/errors"
 

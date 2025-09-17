@@ -7,7 +7,7 @@ import (
 	"github.com/holiman/uint256"
 	"github.com/spf13/cast"
 
-	srvflags "github.com/cosmos/evm/server/flags"
+	srvflags "github.com/shardeum/shardeum-evm/server/flags"
 
 	"cosmossdk.io/log"
 

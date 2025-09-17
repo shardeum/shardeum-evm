@@ -15,20 +15,20 @@ import (
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
-	"github.com/cosmos/evm/contracts"
-	"github.com/cosmos/evm/precompiles/erc20"
-	"github.com/cosmos/evm/precompiles/erc20/testdata"
-	"github.com/cosmos/evm/precompiles/testutil"
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	"github.com/cosmos/evm/testutil/integration/evm/factory"
-	"github.com/cosmos/evm/testutil/integration/evm/grpc"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	"github.com/cosmos/evm/testutil/integration/evm/utils"
-	"github.com/cosmos/evm/testutil/keyring"
-	utiltx "github.com/cosmos/evm/testutil/tx"
-	testutiltypes "github.com/cosmos/evm/testutil/types"
-	erc20types "github.com/cosmos/evm/x/erc20/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/contracts"
+	"github.com/shardeum/shardeum-evm/precompiles/erc20"
+	"github.com/shardeum/shardeum-evm/precompiles/erc20/testdata"
+	"github.com/shardeum/shardeum-evm/precompiles/testutil"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
+	"github.com/shardeum/shardeum-evm/testutil/keyring"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
+	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/math"
 
@@ -251,7 +251,7 @@ func TestIntegrationTestSuite(t *testing.T, create network.CreateEvmApp, options
 			passCheck = failCheck.WithExpPass(true)
 
 			erc20Keeper := is.network.App.GetErc20Keeper()
-			available := erc20Keeper.IsNativePrecompileAvailable(is.network.GetContext(), common.HexToAddress(testconstants.WEVMOSContractMainnet))
+			available := erc20Keeper.IsNativePrecompileAvailable(is.network.GetContext(), common.HexToAddress(testconstants.ShardeumChainID))
 			Expect(available).To(BeTrue())
 
 			revertContractAddr, err = is.factory.DeployContract(
@@ -261,7 +261,7 @@ func TestIntegrationTestSuite(t *testing.T, create network.CreateEvmApp, options
 					Contract: revertCallerContract,
 					// NOTE: we're passing the precompile address to the constructor because that initiates the contract
 					// to make calls to the correct ERC20 precompile.
-					ConstructorArgs: []interface{}{common.HexToAddress(testconstants.WEVMOSContractMainnet)},
+					ConstructorArgs: []interface{}{common.HexToAddress(testconstants.ShardeumChainID)},
 				},
 			)
 			Expect(err).ToNot(HaveOccurred(), "failed to deploy reverter contract")

@@ -16,7 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	ethrpc "github.com/ethereum/go-ethereum/rpc"
 
-	"github.com/cosmos/evm/tests/jsonrpc/simulator/config"
+	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/config"
 )
 
 type Account struct {

@@ -6,8 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/suite"
 
-	testkeyring "github.com/cosmos/evm/testutil/keyring"
-	"github.com/cosmos/evm/x/vm/types"
+	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 type UnitTestSuite struct {

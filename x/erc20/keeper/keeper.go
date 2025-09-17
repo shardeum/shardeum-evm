@@ -3,8 +3,8 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/cosmos/evm/x/erc20/types"
-	transferkeeper "github.com/cosmos/evm/x/ibc/transfer/keeper"
+	"github.com/shardeum/shardeum-evm/x/erc20/types"
+	transferkeeper "github.com/shardeum/shardeum-evm/x/ibc/transfer/keeper"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"

@@ -23,7 +23,7 @@ To work around this, we rename those files to `test_*.go`, which:
 ## External Client Usage
 
 All tests defined here can be used by any client application that implements the `EvmApp` interface.
-You can find usage examples under `evmd/tests/integration`.
+You can find usage examples under `shardeumd/tests/integration`.
 
 For instance, if you want to test your own application with the Bank Precompile Integration Test Suite,
 implement your own `CreateApp` function and pass it in as shown below:
@@ -35,15 +35,15 @@ import (
     "testing"
 
     "github.com/stretchr/testify/suite"
-    "github.com/cosmos/evm/tests/integration/precompiles/bank"
+    "github.com/shardeum/shardeum-evm/tests/integration/precompiles/bank"
 )
 
 func TestBankPrecompileTestSuite(t *testing.T) {
-    s := bank.NewPrecompileTestSuite(CreateEvmd)
+    s := bank.NewPrecompileTestSuite(CreateShardeum)
     suite.Run(t, s)
 }
 
 func TestBankPrecompileIntegrationTestSuite(t *testing.T) {
-    bank.TestIntegrationSuite(t, CreateEvmd)
+    bank.TestIntegrationSuite(t, CreateShardeum)
 }
 ```

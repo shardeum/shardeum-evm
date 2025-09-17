@@ -9,14 +9,14 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	cmn "github.com/cosmos/evm/precompiles/common"
-	cmnmocks "github.com/cosmos/evm/precompiles/common/mocks"
-	testutil "github.com/cosmos/evm/testutil"
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	precisebanktypes "github.com/cosmos/evm/x/precisebank/types"
-	"github.com/cosmos/evm/x/vm/statedb"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
-	"github.com/cosmos/evm/x/vm/types/mocks"
+	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
+	cmnmocks "github.com/shardeum/shardeum-evm/precompiles/common/mocks"
+	testutil "github.com/shardeum/shardeum-evm/testutil"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/shardeum/shardeum-evm/x/vm/types/mocks"
 
 	storetypes "cosmossdk.io/store/types"
 

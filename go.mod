@@ -1,4 +1,4 @@
-module github.com/cosmos/evm
+module github.com/shardeum/shardeum-evm
 
 go 1.23.8
 

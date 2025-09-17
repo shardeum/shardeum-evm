@@ -3,11 +3,11 @@
 package testutil
 
 import (
-	testconstants "github.com/cosmos/evm/testutil/constants"
-	grpchandler "github.com/cosmos/evm/testutil/integration/evm/grpc"
-	"github.com/cosmos/evm/testutil/integration/evm/network"
-	testkeyring "github.com/cosmos/evm/testutil/keyring"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	grpchandler "github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
+	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/math"
 
@@ -98,9 +98,9 @@ func (s *TestSuite) TestWithChainID() {
 }
 
 func (s *TestSuite) TestWithBalances() {
-	key1Balance := sdk.NewCoins(sdk.NewInt64Coin(testconstants.ExampleAttoDenom, 1e18))
+	key1Balance := sdk.NewCoins(sdk.NewInt64Coin(testconstants.ShardeumAttoDenom, 1e18))
 	key2Balance := sdk.NewCoins(
-		sdk.NewInt64Coin(testconstants.ExampleAttoDenom, 2e18),
+		sdk.NewInt64Coin(testconstants.ShardeumAttoDenom, 2e18),
 		sdk.NewInt64Coin("other", 3e18),
 	)
 

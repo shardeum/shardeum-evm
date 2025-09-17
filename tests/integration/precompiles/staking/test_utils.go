@@ -11,7 +11,7 @@ import (
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
-	"github.com/cosmos/evm/precompiles/staking"
+	"github.com/shardeum/shardeum-evm/precompiles/staking"
 
 	"cosmossdk.io/math"
 

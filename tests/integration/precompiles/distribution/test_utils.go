@@ -1,8 +1,8 @@
 package distribution
 
 import (
-	"github.com/cosmos/evm/precompiles/staking"
-	"github.com/cosmos/evm/testutil/keyring"
+	"github.com/shardeum/shardeum-evm/precompiles/staking"
+	"github.com/shardeum/shardeum-evm/testutil/keyring"
 
 	"cosmossdk.io/math"
 

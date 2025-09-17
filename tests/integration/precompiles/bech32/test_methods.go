@@ -5,9 +5,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/cosmos/evm/precompiles/bech32"
-	cmn "github.com/cosmos/evm/precompiles/common"
-	"github.com/cosmos/evm/testutil/config"
+	"github.com/shardeum/shardeum-evm/precompiles/bech32"
+	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
+	"github.com/shardeum/shardeum-evm/testutil/config"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

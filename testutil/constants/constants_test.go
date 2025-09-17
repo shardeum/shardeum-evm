@@ -5,14 +5,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/evm/testutil/config"
-	"github.com/cosmos/evm/testutil/constants"
+	"github.com/shardeum/shardeum-evm/testutil/config"
+	"github.com/shardeum/shardeum-evm/testutil/constants"
 )
 
 func TestRequireSameTestDenom(t *testing.T) {
 	require.Equal(t,
-		constants.ExampleAttoDenom,
-		config.ExampleChainDenom,
+		constants.ShardeumAttoDenom,
+		config.ShardeumChainDenom,
 		"test denoms should be the same across the repo",
 	)
 }
@@ -27,8 +27,8 @@ func TestRequireSameTestBech32Prefix(t *testing.T) {
 
 func TestRequireSameWEVMOSMainnet(t *testing.T) {
 	require.Equal(t,
-		constants.WEVMOSContractMainnet,
-		config.WEVMOSContractMainnet,
+		constants.ShardeumChainID,
+		config.ShardeumChainID,
 		"wevmos contract addresses should be the same across the repo",
 	)
 }

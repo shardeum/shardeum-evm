@@ -1,8 +1,8 @@
 package constants
 
 import (
-	erc20types "github.com/cosmos/evm/x/erc20/types"
-	evmtypes "github.com/cosmos/evm/x/vm/types"
+	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/math"
 )
@@ -11,14 +11,14 @@ const (
 	// DefaultGasPrice is used in testing as the default to use for transactions
 	DefaultGasPrice = 20
 
-	// ExampleAttoDenom provides an example denom for use in tests
-	ExampleAttoDenom = "aatom"
+	// ShardeumAttoDenom provides the Shardeum atto denom for use in tests
+	ShardeumAttoDenom = "ashm"
 
-	// ExampleMicroDenom provides an example denom for use in tests
-	ExampleMicroDenom = "uatom"
+	// ShardeumMicroDenom provides the Shardeum micro denom for use in tests
+	ShardeumMicroDenom = "ushm"
 
-	// ExampleDisplayDenom provides an example display denom for use in tests
-	ExampleDisplayDenom = "atom"
+	// ShardeumDisplayDenom provides the Shardeum display denom for use in tests
+	ShardeumDisplayDenom = "shm"
 
 	// ExampleBech32Prefix provides an example Bech32 prefix for use in tests
 	ExampleBech32Prefix = "cosmos"
@@ -26,10 +26,11 @@ const (
 	// ExampleEIP155ChainID provides an example EIP-155 chain ID for use in tests
 	ExampleEIP155ChainID = 9001
 
-	// WEVMOSContractMainnet is the WEVMOS contract address for mainnet
-	WEVMOSContractMainnet = "0xD4949664cD82660AaE99bEdc034a0deA8A0bd517"
-	// WEVMOSContractTestnet is the WEVMOS contract address for testnet
-	WEVMOSContractTestnet = "0xcc491f589b45d4a3c679016195b3fb87d7848210"
+	// ShardeumEIP155ChainID provides the Shardeum EIP-155 chain ID for use in tests
+	ShardeumEIP155ChainID = 8119
+
+	// ShardeumMainChainID is the Shardeum main chain ID
+	ShardeumMainChainID = 8119
 	// ExampleEvmAddress1 is the example EVM address
 	ExampleEvmAddressAlice = "0x1e0DE5DB1a39F99cBc67B00fA3415181b3509e42"
 	// ExampleEvmAddress2 is the example EVM address
@@ -49,6 +50,12 @@ var (
 	ExampleChainID = ChainID{
 		ChainID:    ExampleChainIDPrefix + "-1",
 		EVMChainID: 9001,
+	}
+
+	// ShardeumChainID provides the Shardeum chain ID for use in tests
+	ShardeumChainID = ChainID{
+		ChainID:    "shardeum_8119-1",
+		EVMChainID: 8119,
 	}
 
 	// SixDecimalsChainID provides a chain ID which is being set up with 6 decimals
@@ -76,9 +83,9 @@ var (
 	// chain id
 	ExampleChainCoinInfo = map[ChainID]evmtypes.EvmCoinInfo{
 		ExampleChainID: {
-			Denom:         ExampleAttoDenom,
-			ExtendedDenom: ExampleAttoDenom,
-			DisplayDenom:  ExampleDisplayDenom,
+			Denom:         ShardeumAttoDenom,
+			ExtendedDenom: ShardeumAttoDenom,
+			DisplayDenom:  ShardeumDisplayDenom,
 			Decimals:      evmtypes.EighteenDecimals,
 		},
 		SixDecimalsChainID: {
@@ -111,8 +118,8 @@ var (
 	// implementation.
 	ExampleTokenPairs = []erc20types.TokenPair{
 		{
-			Erc20Address:  WEVMOSContractMainnet,
-			Denom:         ExampleAttoDenom,
+			Erc20Address:  "0x0000000000000000000000000000000000000000",
+			Denom:         ShardeumAttoDenom,
 			Enabled:       true,
 			ContractOwner: erc20types.OWNER_MODULE,
 		},
@@ -122,7 +129,7 @@ var (
 	// implementation.
 	ExampleAllowances = []erc20types.Allowance{
 		{
-			Erc20Address: WEVMOSContractMainnet,
+			Erc20Address: "0x0000000000000000000000000000000000000000",
 			Owner:        ExampleEvmAddressAlice,
 			Spender:      ExampleEvmAddressBob,
 			Value:        math.NewInt(100),

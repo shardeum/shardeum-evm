@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	"github.com/cosmos/evm/x/feemarket/types"
+	"github.com/shardeum/shardeum-evm/x/feemarket/types"
 
 	errorsmod "cosmossdk.io/errors"
 

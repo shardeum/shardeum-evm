@@ -5,8 +5,8 @@ import (
 	"flag"
 	"log"
 
-	"github.com/cosmos/evm/tests/jsonrpc/simulator/report"
-	"github.com/cosmos/evm/tests/jsonrpc/simulator/runner"
+	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/report"
+	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/runner"
 )
 
 func main() {
