@@ -15,13 +15,17 @@ cleanup() {
 # Trap signals for graceful shutdown
 trap cleanup SIGINT SIGTERM
 
+# Resolve repo root regardless of where the script is invoked from
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Parse command line arguments
 NODE_ID="${1:-}"
 SEED_NODE_RPC="${2:-http://localhost:26657}"
 CHAINID="shardeum-testnet"
-BASE_DIR="../.testnet"
+BASE_DIR="$REPO_ROOT/.testnet"
 MIN_GAS="0.000006ashm"
-BINARY="${BINARY:-../build/shardeumd}"
+BINARY="${BINARY:-$REPO_ROOT/build/shardeumd}"
 
 # Colors
 GREEN='\033[0;32m'
@@ -54,10 +58,11 @@ echo -e "${YELLOW}Using seed node: $SEED_NODE_RPC${NC}"
 if [ ! -f "$BINARY" ]; then
   if [ "$SKIP_BUILD" != "1" ]; then
     echo -e "${YELLOW}Binary not found, building shardeumd...${NC}"
-    (cd .. && make build)
+    (cd "$REPO_ROOT" && make build)
   fi
   if [ ! -f "$BINARY" ]; then
     echo -e "${RED}Error: Failed to build binary at $BINARY${NC}"
+    echo -e "${YELLOW}Tip:${NC} Run: 'make build' from $REPO_ROOT or set BINARY=/absolute/path/to/shardeumd"
     exit 1
   fi
 fi
@@ -132,14 +137,62 @@ SEED_ADDRESS="$SEED_NODE_ID@127.0.0.1:$SEED_P2P_PORT"
 echo -e "${YELLOW}Using seed: $SEED_ADDRESS${NC}"
 
 # Configure seeds and local development settings
+# 1) Set seeds to the provided seed node
+# 2) Auto-pick up to 3 existing peers as persistent_peers for better mesh connectivity
+# 3) Allow duplicate IPs for localhost multi-node setups
+
+# Build a comma-separated list of up to 3 persistent peers from existing nodes
+PERSISTENT_PEERS=""
+PEER_COUNT=0
+for existing_dir in "$BASE_DIR"/node*; do
+  [ -d "$existing_dir" ] || continue
+  existing_name=$(basename "$existing_dir")
+  # Skip the new node itself
+  if [ "$existing_name" = "$NODE_ID" ]; then
+    continue
+  fi
+  idx=${existing_name#node}
+
+  # Query each existing node's RPC for its node ID. If unavailable, skip.
+  rpc_port=$((26657 + idx))
+  p2p_port=$((27656 + idx))
+  peer_id=$(curl -s "http://localhost:${rpc_port}/status" | jq -r '.result.node_info.id')
+  if [ -n "$peer_id" ] && [ "$peer_id" != "null" ]; then
+    addr="${peer_id}@127.0.0.1:${p2p_port}"
+    if [ -z "$PERSISTENT_PEERS" ]; then
+      PERSISTENT_PEERS="$addr"
+    else
+      PERSISTENT_PEERS="$PERSISTENT_PEERS,$addr"
+    fi
+    PEER_COUNT=$((PEER_COUNT + 1))
+  fi
+
+  # Limit to 3 peers
+  if [ $PEER_COUNT -ge 3 ]; then
+    break
+  fi
+done
+
+# Escape for sed replacement
+_ESCAPED_PERSISTENT=$(printf '%s' "$PERSISTENT_PEERS" | sed 's/[\\/&]/\\&/g')
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
+  # Set seeds
   sed -i '' "s/seeds = \"\"/seeds = \"$SEED_ADDRESS\"/" "$NODE_DIR/config/config.toml"
-  sed -i '' "s/persistent_peers = \"\"//" "$NODE_DIR/config/config.toml"  # Keep empty
+  # Set persistent_peers (line exists by default), even if empty string
+  sed -i '' "s/^persistent_peers = \".*\"/persistent_peers = \"${_ESCAPED_PERSISTENT}\"/" "$NODE_DIR/config/config.toml"
+  # Allow duplicate IPs
   sed -i '' "s/allow_duplicate_ip = false/allow_duplicate_ip = true/" "$NODE_DIR/config/config.toml"
 else
   sed -i "s/seeds = \"\"/seeds = \"$SEED_ADDRESS\"/" "$NODE_DIR/config/config.toml"
-  sed -i "s/persistent_peers = \"\"//" "$NODE_DIR/config/config.toml"  # Keep empty
+  sed -i "s/^persistent_peers = \".*\"/persistent_peers = \"${_ESCAPED_PERSISTENT}\"/" "$NODE_DIR/config/config.toml"
   sed -i "s/allow_duplicate_ip = false/allow_duplicate_ip = true/" "$NODE_DIR/config/config.toml"
+fi
+
+if [ -n "$PERSISTENT_PEERS" ]; then
+  echo -e "${YELLOW}Configured persistent_peers (${PEER_COUNT}): ${PERSISTENT_PEERS}${NC}"
+else
+  echo -e "${YELLOW}No available existing peers discovered for persistent_peers; proceeding with seeds only${NC}"
 fi
 
 # Set up client configuration
