@@ -100,6 +100,7 @@
             }
 
             try {
+                // First add as Cosmos chain for staking support
                 await window.keplr.experimentalSuggestChain({
                     chainId: "shardeum-testnet",
                     chainName: "Shardeum Local",
@@ -108,6 +109,7 @@
                     bip44: {
                         coinType: 60,
                     },
+                    features: ["eth-address-gen", "eth-key-sign"],
                     bech32Config: {
                         bech32PrefixAccAddr: "shardeum",
                         bech32PrefixAccPub: "shardeumpub",
@@ -142,11 +144,32 @@
                     },
                 });
 
-                statusDiv.innerHTML = '<div class="success">✅ Shardeum Local network added to Keplr successfully!</div>';
+                statusDiv.innerHTML = '<div class="success">✅ Shardeum Local (Cosmos) added to Keplr successfully!</div>';
                 
-                // Enable the chain
+                // Then add as Ethereum-compatible chain for EVM transactions
+                await window.keplr.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0x1FB7', // 8119 in hex
+                        chainName: 'Shardeum Local EVM',
+                        nativeCurrency: {
+                            name: 'Shardeum',
+                            symbol: 'SHM',
+                            decimals: 18
+                        },
+                        rpcUrls: ['http://127.0.0.1:8545'],
+                        iconUrls: []
+                    }]
+                });
+
+                statusDiv.innerHTML += '<div class="success">✅ Shardeum Local (EVM) added to Keplr successfully!</div>';
+                
+                // Enable both modes
                 await window.keplr.enable("shardeum-testnet");
-                statusDiv.innerHTML += '<div class="success">✅ Shardeum chain enabled in Keplr!</div>';
+                await window.keplr.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+                statusDiv.innerHTML += '<div class="success">✅ Both Cosmos staking and EVM transactions enabled!</div>';
                 
             } catch (error) {
                 console.error('Error adding chain to Keplr:', error);
