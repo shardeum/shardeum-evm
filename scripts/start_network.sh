@@ -2,6 +2,10 @@
 
 set -e
 
+# Resolve repo root regardless of where the script is invoked from
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Cleanup function for graceful shutdown
 cleanup() {
   echo -e "\n${YELLOW}Shutting down nodes...${NC}"
@@ -14,9 +18,9 @@ trap cleanup SIGINT SIGTERM
 
 NODES="${1:-4}"
 CHAINID="shardeum-testnet"  # Use proper Shardeum chain ID
-BASE_DIR="../.testnet"
+BASE_DIR="$REPO_ROOT/.testnet"
 MIN_GAS="0.000006ashm"
-BINARY="${BINARY:-../build/shardeumd}"
+BINARY="${BINARY:-$REPO_ROOT/build/shardeumd}"
 
 # Colors
 GREEN='\033[0;32m'
@@ -33,19 +37,23 @@ pkill -f "shardeumd.*shardeum-testnet" || true
 # Build our own binary locally (skip if called from makefile)
 if [ "$SKIP_BUILD" != "1" ]; then
   echo -e "${YELLOW}Building shardeumd binary${NC}"
-  (cd .. && make build)
+  (cd "$REPO_ROOT" && make build)
 fi
 
-# Verify binary exists
+# Verify binary exists (build again if needed when SKIP_BUILD was set externally)
 if [ ! -f "$BINARY" ]; then
-  echo -e "${RED}Error: Binary not found at $BINARY${NC}"
-  echo "Make sure 'make build' completed successfully"
+  echo -e "${YELLOW}Binary not found at $BINARY, attempting to build...${NC}"
+  (cd "$REPO_ROOT" && make build)
+fi
+if [ ! -f "$BINARY" ]; then
+  echo -e "${RED}Error: Binary not found at $BINARY after build${NC}"
+  echo "Make sure 'make build' completed successfully or set BINARY=/absolute/path/to/shardeumd"
   exit 1
 fi
 
 # Verify genesis file exists
-if [ ! -f "../config/genesis.json" ]; then
-  echo -e "${RED}Error: Genesis file not found at ../config/genesis.json${NC}"
+if [ ! -f "$REPO_ROOT/config/genesis.json" ]; then
+  echo -e "${RED}Error: Genesis file not found at $REPO_ROOT/config/genesis.json${NC}"
   echo "Make sure you have the proper Shardeum network configuration"
   exit 1
 fi
@@ -60,7 +68,7 @@ mkdir -p "$NODE0_DIR"
 
 # Replace with our custom genesis immediately after init
 echo -e "${YELLOW}Using custom genesis with ashm denomination${NC}"
-cp "../config/genesis.json" "$NODE0_DIR/config/genesis.json"
+cp "$REPO_ROOT/config/genesis.json" "$NODE0_DIR/config/genesis.json"
 
 # Create validator key for node0 only
 echo -e "${YELLOW}Creating validator key for primary node${NC}"
