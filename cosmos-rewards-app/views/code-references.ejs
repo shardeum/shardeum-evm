@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Cosmos Rewards Calculator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">🌌 Cosmos Rewards</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link <%= currentPage === 'overview' ? 'active' : '' %>" href="/">📚 Overview</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <%= currentPage === 'calculator' ? 'active' : '' %>" href="/calculator">🧮 Calculator</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <%= currentPage === 'code-references' ? 'active' : '' %>" href="/code-references">💻 Code References</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid main-content">
+        <div class="row">
+            <!-- Sidebar Navigation -->
+            <div class="col-xl-3 col-lg-4">
+                <div class="code-sidebar">
+                    <div class="sidebar-header">
+                        <h4>💻 Code References</h4>
+                        <p class="text-muted">Quick navigation to code sections</p>
+                    </div>
+
+                    <div class="sidebar-nav">
+                        <div class="nav-section">
+                            <h6 class="nav-section-title">🔄 Execution Flow</h6>
+                            <a href="#execution-flow" class="nav-link-custom" data-section="execution-flow">
+                                <span class="nav-icon">📁</span>
+                                <span class="nav-text">Execution Flow Overview</span>
+                            </a>
+                        </div>
+
+                        <div class="nav-section">
+                            <h6 class="nav-section-title">⚡ Core Functions</h6>
+                            <a href="#beginblocker" class="nav-link-custom" data-section="beginblocker">
+                                <span class="nav-icon">🔧</span>
+                                <span class="nav-text">BeginBlocker Implementation</span>
+                                <span class="nav-file">abci.go</span>
+                            </a>
+                            <a href="#nextinflationrate" class="nav-link-custom" data-section="nextinflationrate">
+                                <span class="nav-icon">📊</span>
+                                <span class="nav-text">NextInflationRate</span>
+                                <span class="nav-file">minter.go</span>
+                            </a>
+                            <a href="#nextannualprovisions" class="nav-link-custom" data-section="nextannualprovisions">
+                                <span class="nav-icon">💰</span>
+                                <span class="nav-text">NextAnnualProvisions</span>
+                                <span class="nav-file">minter.go</span>
+                            </a>
+                            <a href="#blockprovision" class="nav-link-custom" data-section="blockprovision">
+                                <span class="nav-icon">🧱</span>
+                                <span class="nav-text">BlockProvision</span>
+                                <span class="nav-file">minter.go</span>
+                            </a>
+                            <a href="#bondedratio" class="nav-link-custom" data-section="bondedratio">
+                                <span class="nav-icon">🔗</span>
+                                <span class="nav-text">BondedRatio Calculation</span>
+                                <span class="nav-file">keeper.go</span>
+                            </a>
+                        </div>
+
+
+                        <div class="nav-section">
+                            <h6 class="nav-section-title">🎯 Quick Actions</h6>
+                            <a href="/calculator" class="nav-link-custom nav-link-external">
+                                <span class="nav-icon">🧮</span>
+                                <span class="nav-text">Try Calculator</span>
+                            </a>
+                            <a href="/" class="nav-link-custom nav-link-external">
+                                <span class="nav-icon">📚</span>
+                                <span class="nav-text">Overview Page</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-xl-9 col-lg-8">
+                <!-- Header -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h1 class="mb-0">💻 Code References & Implementation</h1>
+                            </div>
+                            <div class="card-body">
+                                <p class="lead">
+                                    Detailed code references showing how Cosmos SDK implements the inflation and reward mechanisms.
+                                    All examples are from Cosmos SDK v0.53.4 used in your Shardeum Cosmos chain.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Execution Flow -->
+                <div class="row mb-4" id="execution-flow">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>🔄 Execution Flow Overview</h3>
+                            </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <strong>Key Insight:</strong> Inflation adjusts <strong>every single block</strong> (~5 seconds) in the BeginBlocker function.
+                        </div>
+
+                        <h5>📁 File: <code>shardeumd/app.go:629-630</code></h5>
+                        <div class="code-block">
+<pre><code class="language-go">// BeginBlocker order - mint module runs FIRST every block
+app.ModuleManager.SetOrderBeginBlockers(
+    minttypes.ModuleName,  // &lt;-- Runs inflation calculation
+    // ... other modules
+)</code></pre>
+                        </div>
+
+                        <h5>📁 File: <code>shardeumd/app.go:856</code></h5>
+                        <div class="code-block">
+<pre><code class="language-go">// BeginBlocker application updates every begin block
+func (app *ShardeumApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+    return app.ModuleManager.BeginBlock(ctx)  // Calls mint module first
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                <!-- BeginBlocker Implementation -->
+                <div class="row mb-4" id="beginblocker">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>⚡ BeginBlocker Implementation</h3>
+                            </div>
+                    <div class="card-body">
+                        <h5>📁 File: <code>cosmos-sdk/x/mint/keeper/abci.go</code></h5>
+                        <div class="code-block">
+<pre><code class="language-go">// BeginBlocker mints new tokens for the previous block.
+func (k Keeper) BeginBlocker(ctx context.Context) error {
+    defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
+
+    // Get current bonding ratio from staking module
+    bondedRatio, err := k.BondedRatio(ctx)
+    if err != nil {
+        return err
+    }
+
+    // Get current minter state and parameters
+    minter, err := k.Minter.Get(ctx)
+    if err != nil {
+        return err
+    }
+
+    params, err := k.Params.Get(ctx)
+    if err != nil {
+        return err
+    }
+
+    // THIS IS WHERE INFLATION ADJUSTS EVERY BLOCK
+    minter.Inflation = minter.NextInflationRate(params, bondedRatio)
+    minter.AnnualProvisions = minter.NextAnnualProvisions(params, k.TokenSupply(ctx))
+
+    // Store updated minter
+    if err := k.Minter.Set(ctx, minter); err != nil {
+        return err
+    }
+
+    // Calculate and mint new tokens for this block
+    blockProvision := minter.BlockProvision(params)
+    if blockProvision.IsPositive() {
+        err := k.MintCoins(ctx, sdk.NewCoins(blockProvision))
+        if err != nil {
+            return err
+        }
+
+        // Send to fee collector for distribution
+        err = k.AddCollectedFees(ctx, sdk.NewCoins(blockProvision))
+        if err != nil {
+            return err
+        }
+    }
+
+    return nil
+}</code></pre>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <strong>🔑 Key Point:</strong> The <code>minter.NextInflationRate()</code> function is called every block,
+                            making tiny adjustments based on the current bonding ratio.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                <!-- NextInflationRate Implementation -->
+                <div class="row mb-4" id="nextinflationrate">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>📊 NextInflationRate Implementation</h3>
+                            </div>
+                    <div class="card-body">
+                        <h5>📁 File: <code>cosmos-sdk/x/mint/types/minter.go</code></h5>
+                        <div class="code-block">
+<pre><code class="language-go">// NextInflationRate returns the new inflation rate for the next hour.
+func (m Minter) NextInflationRate(params Params, bondedRatio math.LegacyDec) math.LegacyDec {
+    // Get parameters from your genesis.json
+    inflationRateChangePerYear := params.InflationRateChange  // 0.13 (13%)
+    inflationMin := params.InflationMin                       // 0.07 (7%)
+    inflationMax := params.InflationMax                       // 0.20 (20%)
+    bondedRatioTarget := params.GoalBonded                    // 0.67 (67%)
+
+    if bondedRatio.LT(bondedRatioTarget) {
+        // UNDER-STAKED: Increase inflation to attract more stakers
+        inflationRate := m.Inflation.Add(
+            inflationRateChangePerYear.Mul(
+                bondedRatioTarget.Sub(bondedRatio)
+            ).Quo(math.LegacyNewDec(int64(params.BlocksPerYear)))  // KEY: Divide by blocks per year
+        )
+
+        // Cap at maximum inflation
+        if inflationRate.GT(inflationMax) {
+            inflationRate = inflationMax
+        }
+        return inflationRate
+
+    } else {
+        // OVER-STAKED: Decrease inflation to encourage unstaking
+        inflationRate := m.Inflation.Sub(
+            inflationRateChangePerYear.Mul(
+                bondedRatio.Sub(bondedRatioTarget)
+            ).Quo(math.LegacyNewDec(int64(params.BlocksPerYear)))
+        )
+
+        // Cap at minimum inflation
+        if inflationRate.LT(inflationMin) {
+            inflationRate = inflationMin
+        }
+        return inflationRate
+    }
+}</code></pre>
+                        </div>
+
+                        <div class="calculation-details">
+                            <h5>🧮 Mathematical Formula Breakdown</h5>
+                            <div class="calculation-step">
+                                <strong>Gap Calculation:</strong><br>
+                                <div class="calculation-formula">gap = |goal_bonded - current_bonded|</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Per-Block Adjustment:</strong><br>
+                                <div class="calculation-formula">adjustment = (inflation_rate_change × gap) ÷ blocks_per_year</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>New Inflation:</strong><br>
+                                <div class="calculation-formula">
+                                    if under-staked: new_inflation = current_inflation + adjustment<br>
+                                    if over-staked: new_inflation = current_inflation - adjustment
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                <!-- NextAnnualProvisions -->
+                <div class="row mb-4" id="nextannualprovisions">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>💰 NextAnnualProvisions Implementation</h3>
+                            </div>
+                    <div class="card-body">
+                        <h5>📁 File: <code>cosmos-sdk/x/mint/types/minter.go</code></h5>
+                        <div class="code-block">
+<pre><code class="language-go">// NextAnnualProvisions returns the annual provisions based on current total supply and inflation rate.
+func (m Minter) NextAnnualProvisions(params Params, totalSupply math.Int) math.LegacyDec {
+    return m.Inflation.Mul(math.LegacyNewDecFromInt(totalSupply))
+}</code></pre>
+                        </div>
+
+                        <div class="calculation-details">
+                            <h5>📈 Annual Provisions Formula</h5>
+                            <div class="calculation-formula">
+                                Annual Provisions = Current Inflation Rate × Total Supply<br><br>
+                                <strong>Example:</strong><br>
+                                = 13% × 1,000,000,000 SHM<br>
+                                = 130,000,000 SHM per year
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <strong>💡 Distribution:</strong> Annual provisions are split between community pool (2%) and validator rewards (98%).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                <!-- BlockProvision -->
+                <div class="row mb-4" id="blockprovision">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>🧱 BlockProvision Implementation</h3>
+                            </div>
+                    <div class="card-body">
+                        <h5>📁 File: <code>cosmos-sdk/x/mint/types/minter.go</code></h5>
+                        <div class="code-block">
+<pre><code class="language-go">// BlockProvision returns the provisions for a block based on the annual provisions rate.
+func (m Minter) BlockProvision(params Params) sdk.Coin {
+    provisionAmt := m.AnnualProvisions.QuoInt(math.NewInt(int64(params.BlocksPerYear)))
+    return sdk.NewCoin(params.MintDenom, provisionAmt.TruncateInt())
+}</code></pre>
+                        </div>
+
+                        <div class="calculation-details">
+                            <h5>⏰ Block Provision Formula</h5>
+                            <div class="calculation-formula">
+                                Block Provision = Annual Provisions ÷ Blocks Per Year<br><br>
+                                <strong>Example:</strong><br>
+                                = 130,000,000 SHM ÷ 6,311,520 blocks<br>
+                                = ~20,600 SHM per block<br>
+                                = ~20,600 SHM every ~5 seconds
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <strong>⚡ Real-time Minting:</strong> This amount is minted and distributed to validators/delegators every single block.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                <!-- BondedRatio Calculation -->
+                <div class="row mb-4" id="bondedratio">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>🔗 BondedRatio Calculation</h3>
+                            </div>
+                    <div class="card-body">
+                        <h5>📁 File: <code>cosmos-sdk/x/mint/keeper/keeper.go</code></h5>
+                        <div class="code-block">
+<pre><code class="language-go">// BondedRatio the current fraction of the staking token which is currently bonded
+func (k Keeper) BondedRatio(ctx context.Context) (math.LegacyDec, error) {
+    bondedTokens, err := k.StakingTokenSupply(ctx)
+    if err != nil {
+        return math.LegacyZeroDec(), err
+    }
+
+    totalSupply := k.TokenSupply(ctx)
+    if totalSupply.IsZero() {
+        return math.LegacyZeroDec(), nil
+    }
+
+    return math.LegacyNewDecFromInt(bondedTokens).QuoInt(totalSupply), nil
+}</code></pre>
+                        </div>
+
+                        <div class="calculation-details">
+                            <h5>📊 Bonded Ratio Formula</h5>
+                            <div class="calculation-formula">
+                                Bonded Ratio = Total Staked Tokens ÷ Total Supply<br><br>
+                                <strong>Example:</strong><br>
+                                = 500,000,000 SHM ÷ 1,000,000,000 SHM<br>
+                                = 0.50 (50% bonded)
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <strong>🎯 Target:</strong> Your genesis sets goal_bonded = 67%, so the system tries to maintain 670M SHM staked.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Real Example Timeline -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>⏰ Real Example: Timeline with Code Execution</h3>
+                    </div>
+                    <div class="card-body">
+                        <h5>Scenario: Network drops to 50% bonded</h5>
+
+                        <div class="timeline-container">
+                            <div class="timeline-item">
+                                <span class="timeline-period">Block 1:</span>
+                                <span class="timeline-value">BeginBlocker() called → NextInflationRate() → 13.00000035%</span>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-period">Block 17,280 (Day 1):</span>
+                                <span class="timeline-value">17,280 BeginBlocker() calls later → 13.006048%</span>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-period">Block 120,960 (Week 1):</span>
+                                <span class="timeline-value">Continuous micro-adjustments → 13.042336%</span>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-period">Block 525,960 (Month 1):</span>
+                                <span class="timeline-value">Higher APR attracts stakers → 60% bonded, slower growth</span>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-period">Block 1,500,000 (Month 3):</span>
+                                <span class="timeline-value">Equilibrium restored → 67% bonded, stable 13% inflation</span>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-success">
+                            <strong>🎯 Result:</strong> The system self-corrects through economic incentives, maintaining network security without manual intervention.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parameter Impact Summary -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📈 Parameter Impact Summary</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Your Value</th>
+                                        <th>Impact if Increased</th>
+                                        <th>Impact if Decreased</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>inflation_rate_change</code></td>
+                                        <td>13%</td>
+                                        <td>Faster response to bonding changes</td>
+                                        <td>Slower, smoother adjustments</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>inflation_max</code></td>
+                                        <td>20%</td>
+                                        <td>Higher rewards when under-staked</td>
+                                        <td>Lower maximum rewards</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>inflation_min</code></td>
+                                        <td>7%</td>
+                                        <td>Higher baseline rewards</td>
+                                        <td>Lower rewards when over-staked</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>goal_bonded</code></td>
+                                        <td>67%</td>
+                                        <td>Higher target staking ratio</td>
+                                        <td>Lower target, more liquid tokens</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>community_tax</code></td>
+                                        <td>2%</td>
+                                        <td>More treasury funding</td>
+                                        <td>More rewards to validators</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="row">
+            <div class="col-12 text-center">
+                <div class="card">
+                    <div class="card-body">
+                        <h4>🧮 Experiment with the Parameters</h4>
+                        <p>Now that you understand the code, try adjusting parameters in our calculator to see their real-time impact.</p>
+                        <a href="/calculator" class="btn btn-primary btn-lg">Try the Calculator →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load Prism.js with proper error handling
+        function loadPrism() {
+            const coreScript = document.createElement('script');
+            coreScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js';
+            coreScript.onload = function() {
+                const goScript = document.createElement('script');
+                goScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js';
+                goScript.onload = function() {
+                    if (typeof Prism !== 'undefined') {
+                        Prism.highlightAll();
+                    }
+                };
+                goScript.onerror = function() {
+                    console.warn('Failed to load Prism Go component');
+                };
+                document.head.appendChild(goScript);
+            };
+            coreScript.onerror = function() {
+                console.warn('Failed to load Prism core');
+            };
+            document.head.appendChild(coreScript);
+        }
+        
+        // Load Prism after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadPrism);
+        } else {
+            loadPrism();
+        }
+    </script>
+    <script src="/js/main.js"></script>
+    <script src="/js/code-references.js"></script>
+</body>
+</html>

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Cosmos Rewards Calculator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">🌌 Cosmos Rewards</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link <%= currentPage === 'overview' ? 'active' : '' %>" href="/">📚 Overview</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <%= currentPage === 'calculator' ? 'active' : '' %>" href="/calculator">🧮 Calculator</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <%= currentPage === 'code-references' ? 'active' : '' %>" href="/code-references">💻 Code References</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid main-content">
+        <div class="row">
+            <!-- Sidebar Navigation -->
+            <div class="col-xl-3 col-lg-4">
+                <div class="code-sidebar">
+                    <div class="sidebar-header">
+                        <h4>🧮 Calculator Sections</h4>
+                        <p class="text-muted">Quick navigation to calculation sections</p>
+                    </div>
+
+                    <div class="sidebar-nav">
+                        <div class="nav-section">
+                            <h6 class="nav-section-title">⚙️ Configuration</h6>
+                            <a href="#network-parameters" class="nav-link-custom" data-section="network-parameters">
+                                <span class="nav-icon">⚙️</span>
+                                <span class="nav-text">Network Parameters</span>
+                            </a>
+                        </div>
+
+                        <div class="nav-section">
+                            <h6 class="nav-section-title">📊 Calculations</h6>
+                            <a href="#current-inflation" class="nav-link-custom" data-section="current-inflation">
+                                <span class="nav-icon">🎯</span>
+                                <span class="nav-text">Current Inflation Rate</span>
+                            </a>
+                            <a href="#inflation-impact" class="nav-link-custom" data-section="inflation-impact">
+                                <span class="nav-icon">📈</span>
+                                <span class="nav-text">Per-Block Change</span>
+                            </a>
+                            <a href="#timeline-projection" class="nav-link-custom" data-section="timeline-projection">
+                                <span class="nav-icon">⏱️</span>
+                                <span class="nav-text">Per-Block Timeline</span>
+                            </a>
+                            <a href="#annual-provisions" class="nav-link-custom" data-section="annual-provisions">
+                                <span class="nav-icon">💰</span>
+                                <span class="nav-text">Annual Provisions</span>
+                            </a>
+                            <a href="#block-provisions" class="nav-link-custom" data-section="block-provisions">
+                                <span class="nav-icon">🧱</span>
+                                <span class="nav-text">Block Provisions</span>
+                            </a>
+                            <a href="#apr-calculation" class="nav-link-custom" data-section="apr-calculation">
+                                <span class="nav-icon">💹</span>
+                                <span class="nav-text">APR Calculation</span>
+                            </a>
+                            <a href="#chart-visualization" class="nav-link-custom" data-section="chart-visualization">
+                                <span class="nav-icon">📊</span>
+                                <span class="nav-text">Chart Visualization</span>
+                            </a>
+                        </div>
+
+                        <div class="nav-section">
+                            <h6 class="nav-section-title">📖 Legend</h6>
+                            <div class="legend-compact">
+                                <div class="legend-item-compact">
+                                    <span class="legend-var">inflation_rate_change</span>
+                                    <span class="legend-desc">Speed of adjustment</span>
+                                </div>
+                                <div class="legend-item-compact">
+                                    <span class="legend-var">inflation_max/min</span>
+                                    <span class="legend-desc">Inflation bounds</span>
+                                </div>
+                                <div class="legend-item-compact">
+                                    <span class="legend-var">goal_bonded</span>
+                                    <span class="legend-desc">Target staking ratio</span>
+                                </div>
+                                <div class="legend-item-compact">
+                                    <span class="legend-var">current_bonded</span>
+                                    <span class="legend-desc">Actual staking %</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="nav-section">
+                            <h6 class="nav-section-title">🎯 Quick Actions</h6>
+                            <button class="nav-link-custom nav-link-external w-100 mb-2" onclick="loadScenario('under-staked')">
+                                <span class="nav-icon">📉</span>
+                                <span class="nav-text">Under-staked (40%)</span>
+                            </button>
+                            <button class="nav-link-custom nav-link-external w-100 mb-2" onclick="loadScenario('target')">
+                                <span class="nav-icon">🎯</span>
+                                <span class="nav-text">Target (67%)</span>
+                            </button>
+                            <button class="nav-link-custom nav-link-external w-100" onclick="loadScenario('over-staked')">
+                                <span class="nav-icon">📈</span>
+                                <span class="nav-text">Over-staked (85%)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-xl-9 col-lg-8">
+                <!-- Header -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h1 class="mb-0">🧮 Cosmos Rewards Calculator</h1>
+                            </div>
+                            <div class="card-body">
+                                <p class="lead">Interactive tool to understand how inflation and staking parameters affect node rewards</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Parameters -->
+                <div class="calculation-section" id="network-parameters">
+                    <div class="calculation-header">
+                        <h3 class="calculation-title">⚙️ Network Parameters</h3>
+                        <p class="text-muted mb-4">Configure the core blockchain parameters that control inflation and reward distribution</p>
+                    </div>
+
+                    <div class="row">
+                        <!-- Inflation Controls -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="parameter-group">
+                                <h5 class="parameter-group-title">
+                                    <span class="parameter-icon">🎯</span>
+                                    Inflation Controls
+                                </h5>
+                                <p class="parameter-group-desc">Parameters that govern how inflation adjusts over time</p>
+
+                                <div class="parameter-item">
+                                    <label class="parameter-label">
+                                        <span class="label-text">Inflation Rate Change (%)</span>
+                                        <span class="label-desc">Speed of inflation adjustment per year</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control parameter-input" id="inflationRateChange" value="13" step="0.1" min="0" max="100">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="parameter-item">
+                                    <label class="parameter-label">
+                                        <span class="label-text">Inflation Maximum (%)</span>
+                                        <span class="label-desc">Ceiling when network is under-staked</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control parameter-input" id="inflationMax" value="20" step="0.1" min="0" max="100">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="parameter-item">
+                                    <label class="parameter-label">
+                                        <span class="label-text">Inflation Minimum (%)</span>
+                                        <span class="label-desc">Floor when network is over-staked</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control parameter-input" id="inflationMin" value="7" step="0.1" min="0" max="100">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="parameter-item">
+                                    <label class="parameter-label">
+                                        <span class="label-text">Goal Bonded (%)</span>
+                                        <span class="label-desc">Target staking ratio for equilibrium</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control parameter-input" id="goalBonded" value="67" step="0.1" min="0" max="100">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="parameter-item">
+                                    <label class="parameter-label">
+                                        <span class="label-text">Initial Inflation Rate (%)</span>
+                                        <span class="label-desc">Starting inflation rate for the chart</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control parameter-input" id="initialInflation" value="13" step="0.1" min="0" max="100">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Network & Economic Settings -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="parameter-group">
+                                <h5 class="parameter-group-title">
+                                    <span class="parameter-icon">🏦</span>
+                                    Network & Economic Settings
+                                </h5>
+                                <p class="parameter-group-desc">Core network parameters and current market conditions</p>
+
+                                <div class="parameter-item">
+                                    <label class="parameter-label">
+                                        <span class="label-text">Blocks Per Year</span>
+                                        <span class="label-desc">Annual block production (~5 sec blocks)</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control parameter-input" id="blocksPerYear" value="6311520" step="1000">
+                                        <span class="input-group-text">blocks</span>
+                                    </div>
+                                </div>
+
+                                <div class="parameter-item">
+                                    <label class="parameter-label">
+                                        <span class="label-text">Current Bonded (%)</span>
+                                        <span class="label-desc">Actual percentage currently staked</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control parameter-input" id="currentBonded" value="50" step="0.1" min="0" max="100">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="parameter-item">
+                                    <label class="parameter-label">
+                                        <span class="label-text">Total Supply</span>
+                                        <span class="label-desc">Total tokens in circulation</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control parameter-input" id="totalSupply" value="1000000000" step="1000000">
+                                        <span class="input-group-text">tokens</span>
+                                    </div>
+                                </div>
+
+                                <div class="parameter-item">
+                                    <label class="parameter-label">
+                                        <span class="label-text">Validator Commission (%)</span>
+                                        <span class="label-desc">Fee validators charge delegators</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control parameter-input" id="validatorCommission" value="5" step="0.1" min="0" max="100">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Preset Scenarios -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="preset-scenarios">
+                                <h6 class="preset-title">
+                                    <span class="preset-icon">🎯</span>
+                                    Quick Scenarios
+                                </h6>
+                                <div class="preset-buttons">
+                                    <button class="btn btn-outline-primary preset-btn" onclick="loadScenario('under-staked')">
+                                        <span class="preset-emoji">📉</span>
+                                        <span class="preset-text">
+                                            <strong>Under-staked</strong>
+                                            <small>40% bonded</small>
+                                        </span>
+                                    </button>
+                                    <button class="btn btn-outline-primary preset-btn" onclick="loadScenario('target')">
+                                        <span class="preset-emoji">🎯</span>
+                                        <span class="preset-text">
+                                            <strong>Target</strong>
+                                            <small>67% bonded</small>
+                                        </span>
+                                    </button>
+                                    <button class="btn btn-outline-primary preset-btn" onclick="loadScenario('over-staked')">
+                                        <span class="preset-emoji">📈</span>
+                                        <span class="preset-text">
+                                            <strong>Over-staked</strong>
+                                            <small>85% bonded</small>
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Inflation Rate Calculation -->
+                <div class="calculation-section" id="current-inflation">
+                    <div class="calculation-header">
+                        <h3 class="calculation-title">🎯 Current Inflation Rate Calculation</h3>
+                        <button class="btn show-calculations-btn" onclick="toggleCalculations('current-inflation-calc')">
+                            Show Formula
+                        </button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="result-box">
+                                <div class="result-value" id="actualCurrentInflation">13.00%</div>
+                                <div class="result-label">Calculated Current Rate</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="result-box" style="background-color: var(--warning-color);">
+                                <div class="result-value" id="bondingGap">-17%</div>
+                                <div class="result-label">Bonding Gap</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="result-box" style="background-color: var(--success-color);">
+                                <div class="result-value" id="inflationDirection">Increasing</div>
+                                <div class="result-label">Direction</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapse-content" id="current-inflation-calc" style="display: none;">
+                        <div class="calculation-details">
+                            <h5>🧮 Current Inflation Rate Formula</h5>
+                            <div class="calculation-step">
+                                <strong>Step 1:</strong> Calculate bonding gap<br>
+                                <div class="calculation-formula">Gap = |Current Bonded - Goal Bonded| = |<span id="current-bonded-calc">50</span>% - <span id="goal-bonded-calc">67</span>%| = <span id="bonding-gap-calc">17</span>%</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Step 2:</strong> Calculate per-block adjustment (Cosmos SDK Formula)<br>
+                                <div class="calculation-formula">Per-Block Adjustment = (Inflation Rate Change × Gap) ÷ Blocks Per Year<br>
+                                = <span id="rate-change-calc">13</span>% × <span id="gap-calc">17</span>% ÷ <span id="blocks-per-year-calc">6,311,520</span> = <span id="adjustment-calc">0.000035</span>%</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Step 3:</strong> Apply adjustment to base rate<br>
+                                <div class="calculation-formula" id="adjustment-formula">
+                                    Since Current Bonded &lt; Goal Bonded: <strong>Add</strong> adjustment<br>
+                                    Current Inflation = 13% + 3.3% = <span id="final-inflation-calc">16.3%</span>
+                                </div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Step 4:</strong> Apply bounds check<br>
+                                <div class="calculation-formula">Final Rate = max(<span id="min-bound">7%</span>, min(<span id="max-bound">20%</span>, <span id="calculated-rate">16.3%</span>)) = <span id="bounded-rate">16.3%</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inflation Rate Impact -->
+                <div class="calculation-section" id="inflation-impact">
+                    <div class="calculation-header">
+                        <h3 class="calculation-title">📈 Per-Block Inflation Change</h3>
+                        <button class="btn show-calculations-btn" onclick="toggleCalculations('inflation-calc')">
+                            Show Calculations
+                        </button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="result-box">
+                                <div class="result-value" id="currentInflation">13.00%</div>
+                                <div class="result-label">Current Inflation Rate</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="result-box" style="background-color: var(--warning-color);">
+                                <div class="result-value" id="perBlockChange">+0.00000035%</div>
+                                <div class="result-label">Per-Block Change</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapse-content" id="inflation-calc" style="display: none;">
+                        <div class="calculation-details">
+                            <h5>📊 How Inflation Rate Change Influences Inflation</h5>
+                            <div class="calculation-step">
+                                <strong>Step 1:</strong> Calculate bonding gap<br>
+                                <div class="calculation-formula">Gap = |Goal Bonded - Current Bonded| = |<span id="calc-goal">67</span>% - <span id="calc-current">50</span>%| = <span id="calc-gap">17</span>%</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Step 2:</strong> Calculate gap ratio<br>
+                                <div class="calculation-formula">Gap Ratio = Gap / Goal Bonded = <span id="calc-gap-2">17</span>% / <span id="calc-goal-2">67</span>% = <span id="calc-gap-ratio">0.254</span></div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Step 3:</strong> Calculate per-block change<br>
+                                <div class="calculation-formula">Per-Block Change = (Inflation Rate Change × Gap Ratio) / Blocks Per Year<br>
+                                = (<span id="calc-rate-change">13</span>% × <span id="calc-gap-ratio-2">0.254</span>) / <span id="calc-blocks">6,311,520</span><br>
+                                = <span id="calc-per-block">0.00000035%</span> per block</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Step 4:</strong> Determine direction<br>
+                                <div class="calculation-formula">Since Current Bonded &lt; Goal Bonded: <strong>Inflation increases</strong> by <span id="calc-direction">0.00000035%</span> per block</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Per-Block Timeline -->
+                <div class="calculation-section" id="timeline-projection">
+                    <div class="calculation-header">
+                        <h3 class="calculation-title">⏱️ Per-Block Timeline Projection</h3>
+                        <button class="btn show-calculations-btn" onclick="toggleCalculations('timeline-calc')">
+                            Show Calculations
+                        </button>
+                    </div>
+
+                    <div class="timeline-container">
+                        <div class="timeline-item">
+                            <span class="timeline-period">Block 1:</span>
+                            <span class="timeline-value" id="block-1">Inflation: 13.000000%</span>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="timeline-period">Block 17,280 (Day 1):</span>
+                            <span class="timeline-value" id="block-day">Inflation: 13.006048%</span>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="timeline-period">Block 120,960 (Week 1):</span>
+                            <span class="timeline-value" id="block-week">Inflation: 13.042336%</span>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="timeline-period">Block 525,960 (Month 1):</span>
+                            <span class="timeline-value" id="block-month">Inflation: 13.184086%</span>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="timeline-period">Block 6,311,520 (Year 1):</span>
+                            <span class="timeline-value" id="block-year">Inflation: 15.21% (theoretical max)</span>
+                        </div>
+                    </div>
+
+                    <div class="collapse-content" id="timeline-calc" style="display: none;">
+                        <div class="calculation-details">
+                            <h5>⏰ Timeline Calculation Method</h5>
+                            <div class="calculation-step">
+                                <strong>Formula:</strong> New Inflation = Current Inflation + (Per-Block Change × Number of Blocks)<br>
+                                <div class="calculation-formula">Day 1: 13% + (<span id="timeline-per-block">0.00000035%</span> × 17,280) = 13% + 0.006048% = 13.006048%</div>
+                            </div>
+                            <div class="alert alert-warning">
+                                <strong>⚠️ Important Note:</strong> This assumes bonding ratio stays constant. In reality, higher rewards attract more stakers, slowing the inflation increase.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Annual Provisions -->
+                <div class="calculation-section" id="annual-provisions">
+                    <div class="calculation-header">
+                        <h3 class="calculation-title">💰 Annual Provisions</h3>
+                        <button class="btn show-calculations-btn" onclick="toggleCalculations('annual-calc')">
+                            Show Calculations
+                        </button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="result-box">
+                                <div class="result-value" id="totalMinted">130M</div>
+                                <div class="result-label">Total Minted Annually</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="result-box" style="background-color: var(--warning-color);">
+                                <div class="result-value" id="communityPool">2.6M</div>
+                                <div class="result-label">Community Pool (2%)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="result-box" style="background-color: var(--success-color);">
+                                <div class="result-value" id="validatorRewards">127.4M</div>
+                                <div class="result-label">Validator Rewards</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapse-content" id="annual-calc" style="display: none;">
+                        <div class="calculation-details">
+                            <h5>💰 Annual Provisions Calculation</h5>
+                            <div class="calculation-step">
+                                <strong>Step 1:</strong> Calculate total minted tokens<br>
+                                <div class="calculation-formula">Total Minted = Inflation Rate × Total Supply<br>
+                                = <span id="annual-inflation">13%</span> × <span id="annual-supply">1,000,000,000</span> = <span id="annual-total">130,000,000</span> tokens</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Step 2:</strong> Calculate community pool allocation<br>
+                                <div class="calculation-formula">Community Pool = Total Minted × Community Tax<br>
+                                = <span id="annual-total-2">130,000,000</span> × 2% = <span id="annual-community">2,600,000</span> tokens</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Step 3:</strong> Calculate validator rewards<br>
+                                <div class="calculation-formula">Validator Rewards = Total Minted - Community Pool<br>
+                                = <span id="annual-total-3">130,000,000</span> - <span id="annual-community-2">2,600,000</span> = <span id="annual-validators">127,400,000</span> tokens</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Block Provisions -->
+                <div class="calculation-section" id="block-provisions">
+                    <div class="calculation-header">
+                        <h3 class="calculation-title">🧱 Block Provisions</h3>
+                        <button class="btn show-calculations-btn" onclick="toggleCalculations('block-calc')">
+                            Show Calculations
+                        </button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="result-box">
+                                <div class="result-value" id="perBlockProvision">20,186</div>
+                                <div class="result-label">Tokens Per Block</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="result-box" style="background-color: var(--warning-color);">
+                                <div class="result-value" id="blockTime">~5 sec</div>
+                                <div class="result-label">Block Time</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapse-content" id="block-calc" style="display: none;">
+                        <div class="calculation-details">
+                            <h5>🧱 Block Provision Calculation</h5>
+                            <div class="calculation-step">
+                                <strong>Formula:</strong> Per-Block Provision = Annual Validator Rewards / Blocks Per Year<br>
+                                <div class="calculation-formula">Per-Block = <span id="block-annual">127,400,000</span> / <span id="block-blocks">6,311,520</span> = <span id="block-result">20,186</span> tokens per block</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Block Time:</strong> Seconds per year / Blocks per year<br>
+                                <div class="calculation-formula">Block Time = 31,536,000 seconds / <span id="block-blocks-2">6,311,520</span> blocks = <span id="block-time-calc">4.99</span> seconds</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- APR Calculation -->
+                <div class="calculation-section" id="apr-calculation">
+                    <div class="calculation-header">
+                        <h3 class="calculation-title">📊 APR Calculation</h3>
+                        <button class="btn show-calculations-btn" onclick="toggleCalculations('apr-calc')">
+                            Show Calculations
+                        </button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="result-box">
+                                <div class="result-value" id="validatorAPR">20.1%</div>
+                                <div class="result-label">Validator APR (with commission)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="result-box" style="background-color: var(--success-color);">
+                                <div class="result-value" id="delegatorAPR">19.1%</div>
+                                <div class="result-label">Delegator APR (after commission)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="result-box" style="background-color: var(--warning-color);">
+                                <div class="result-value" id="commissionEarnings">1.27M</div>
+                                <div class="result-label">Validator Commission Earnings</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapse-content" id="apr-calc" style="display: none;">
+                        <div class="calculation-details">
+                            <h5>📊 APR Calculation Method</h5>
+                            <div class="calculation-step">
+                                <strong>Step 1:</strong> Calculate total staked tokens<br>
+                                <div class="calculation-formula">Total Staked = Total Supply × Current Bonded<br>
+                                = <span id="apr-supply">1,000,000,000</span> × <span id="apr-bonded">50%</span> = <span id="apr-staked">500,000,000</span> tokens</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Step 2:</strong> Calculate base APR (before commission)<br>
+                                <div class="calculation-formula">Base APR = Validator Rewards / Total Staked<br>
+                                = <span id="apr-rewards">127,400,000</span> / <span id="apr-staked-2">500,000,000</span> = <span id="apr-base">25.48%</span></div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Step 3:</strong> Calculate delegator APR (after commission)<br>
+                                <div class="calculation-formula">Delegator APR = Base APR × (1 - Commission)<br>
+                                = <span id="apr-base-2">25.48%</span> × (1 - <span id="apr-commission">5%</span>) = <span id="apr-delegator-calc">24.21%</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Chart -->
+                <div class="calculation-section" id="chart-visualization">
+                    <div class="calculation-header">
+                        <h3 class="calculation-title">📈 Inflation Rate Over Time</h3>
+                        <div class="chart-controls">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary chart-period-btn active" data-period="blocks" onclick="switchChartPeriod('blocks')">
+                                    🧱 Blocks
+                                </button>
+                                <button type="button" class="btn btn-outline-primary chart-period-btn" data-period="days" onclick="switchChartPeriod('days')">
+                                    📅 Days
+                                </button>
+                                <button type="button" class="btn btn-outline-primary chart-period-btn" data-period="months" onclick="switchChartPeriod('months')">
+                                    📆 Months
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="inflationChart"></canvas>
+                    </div>
+
+                    <div class="chart-info-panel">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="chart-stat">
+                                    <div class="stat-label">Starting Rate</div>
+                                    <div class="stat-value" id="chart-start-rate">13.00%</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="chart-stat">
+                                    <div class="stat-label">Rate After Period</div>
+                                    <div class="stat-value" id="chart-end-rate">13.21%</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="chart-stat">
+                                    <div class="stat-label">Total Change</div>
+                                    <div class="stat-value" id="chart-total-change">+0.21%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapse-content" id="chart-info" style="display: none;">
+                        <div class="calculation-details">
+                            <h5>📊 Understanding the Time-Based Chart</h5>
+                            <div class="calculation-step">
+                                <strong>Blocks View:</strong> Shows inflation change per individual block<br>
+                                <div class="calculation-formula">Displays up to 1000 blocks with micro-adjustments</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Days View:</strong> Shows daily inflation progression<br>
+                                <div class="calculation-formula">Each day contains ~17,280 blocks (5-second intervals)</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Months View:</strong> Shows long-term inflation trends<br>
+                                <div class="calculation-formula">Demonstrates the self-correcting mechanism over time</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Key Insight:</strong> Inflation adjusts continuously every block<br>
+                                <div class="calculation-formula">The curve shows how small per-block changes accumulate over time</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/main.js?v=<%= Date.now() %>"></script>
+    <script src="/js/calculator.js?v=<%= Date.now() %>"></script>
+    <script>
+        // Initialize sidebar navigation for calculator
+        document.addEventListener('DOMContentLoaded', () => {
+            // Setup smooth scrolling for calculator sections
+            document.querySelectorAll('.nav-link-custom[href^="#"]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+
+                    if (targetElement) {
+                        const headerOffset = 140;
+                        const elementPosition = targetElement.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                        window.scrollTo({
+                            top: offsetPosition,
+                            behavior: 'smooth'
+                        });
+
+                        // Update active state
+                        document.querySelectorAll('.nav-link-custom').forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
+                    }
+                });
+            });
+
+            // Setup intersection observer for active section highlighting
+            const observerOptions = {
+                root: null,
+                rootMargin: '-20% 0px -60% 0px',
+                threshold: 0
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const sectionId = entry.target.id;
+                        const navLink = document.querySelector(`.nav-link-custom[href="#${sectionId}"]`);
+                        if (navLink) {
+                            document.querySelectorAll('.nav-link-custom').forEach(link => {
+                                link.classList.remove('active');
+                            });
+                            navLink.classList.add('active');
+                        }
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all calculation sections
+            document.querySelectorAll('.calculation-section[id]').forEach(section => {
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>
