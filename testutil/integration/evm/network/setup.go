@@ -480,7 +480,7 @@ func setDefaultErc20GenesisState(cosmosEVMApp evm.EvmApp, evmChainID uint64, gen
 func newErc20GenesisState() *erc20types.GenesisState {
 	erc20GenState := erc20types.DefaultGenesisState()
 	erc20GenState.TokenPairs = testconstants.ExampleTokenPairs
-	erc20GenState.NativePrecompiles = []string{testconstants.ShardeumChainID}
+	erc20GenState.NativePrecompiles = []string{testconstants.ShardeumChainID.ChainID}
 
 	return erc20GenState
 }

@@ -1,33 +1,17 @@
 package config
 
 const (
-	// ShardeumChainDenom is the denomination of the Shardeum chain's base coin.
-	ShardeumChainDenom = "ashm"
+	// ShardeumBaseDenom is the base denomination of the Shardeum chain's coin (6 decimals for Cosmos).
+	ShardeumBaseDenom = "shm"
+
+	// ShardeumExtendedDenom is the extended denomination for EVM operations (18 decimals).
+	ShardeumExtendedDenom = "ashm"
 
 	// ShardeumDisplayDenom is the display denomination of the Shardeum chain's base coin.
 	ShardeumDisplayDenom = "shm"
 
-	// EighteenDecimalsChainID is the chain ID for the 18 decimals chain.
-	EighteenDecimalsChainID = 9001
-
-	// SixDecimalsChainID is the chain ID for the 6 decimals chain.
-	SixDecimalsChainID = 9002
-
-	// TwelveDecimalsChainID is the chain ID for the 12 decimals chain.
-	TwelveDecimalsChainID = 9003
-
-	// TwoDecimalsChainID is the chain ID for the 2 decimals chain.
-	TwoDecimalsChainID = 9004
-
 	// ShardeumChainID is the chain ID for Shardeum EVM chain.
 	ShardeumChainID = 8119
-
-	CosmosChainID = 262144
-
-	// TestChainID1 is test chain IDs for IBC E2E test
-	TestChainID1 = 9005
-	// TestChainID2 is test chain IDs for IBC E2E test
-	TestChainID2 = 9006
 
 	// DefaultChainID is the default Shardeum chain ID for testing
 	DefaultChainID = "shardeum_8119-1"

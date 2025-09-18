@@ -34,6 +34,9 @@ import (
 	feemarketkeeper "github.com/shardeum/shardeum-evm/x/feemarket/keeper"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	ibccallbackskeeper "github.com/shardeum/shardeum-evm/x/ibc/callbacks/keeper"
+	"github.com/shardeum/shardeum-evm/x/precisebank"
+	precisebankkeeper "github.com/shardeum/shardeum-evm/x/precisebank/keeper"
+	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	evmdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
@@ -188,6 +191,7 @@ type ShardeumApp struct {
 	FeeMarketKeeper   feemarketkeeper.Keeper
 	EVMKeeper         *evmkeeper.Keeper
 	Erc20Keeper       erc20keeper.Keeper
+	PreciseBankKeeper precisebankkeeper.Keeper
 	EVMMempool        *evmmempool.ExperimentalEVMMempool
 
 	// the module manager
@@ -271,7 +275,7 @@ func NewShardeumApp(
 		// ibc keys
 		ibcexported.StoreKey, ibctransfertypes.StoreKey,
 		// Cosmos EVM store keys
-		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey,
+		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, precisebanktypes.StoreKey,
 	)
 
 	tkeys := storetypes.NewTransientStoreKeys(evmtypes.TransientKey, feemarkettypes.TransientKey)
@@ -327,6 +331,13 @@ func NewShardeumApp(
 		evmdconfig.BlockedAddresses(),
 		authAddr,
 		logger,
+	)
+
+	app.PreciseBankKeeper = precisebankkeeper.NewKeeper(
+		appCodec,
+		keys[precisebanktypes.StoreKey],
+		app.BankKeeper,
+		app.AccountKeeper,
 	)
 
 	// optional: enable sign mode textual by overwriting the default tx config (after setting the bank keeper)
@@ -596,6 +607,7 @@ func NewShardeumApp(
 		vm.NewAppModule(app.EVMKeeper, app.AccountKeeper, app.AccountKeeper.AddressCodec()),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper),
+		precisebank.NewAppModule(app.PreciseBankKeeper, app.BankKeeper, app.AccountKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager which is in charge of setting up basic,
@@ -635,6 +647,7 @@ func NewShardeumApp(
 		// Cosmos EVM BeginBlockers
 		erc20types.ModuleName, feemarkettypes.ModuleName,
 		evmtypes.ModuleName, // NOTE: EVM BeginBlocker must come after FeeMarket BeginBlocker
+		precisebanktypes.ModuleName,
 
 		// TODO: remove no-ops? check if all are no-ops before removing
 		distrtypes.ModuleName, slashingtypes.ModuleName,
@@ -652,7 +665,7 @@ func NewShardeumApp(
 		authtypes.ModuleName, banktypes.ModuleName,
 
 		// Cosmos EVM EndBlockers
-		evmtypes.ModuleName, erc20types.ModuleName, feemarkettypes.ModuleName,
+		evmtypes.ModuleName, erc20types.ModuleName, feemarkettypes.ModuleName, precisebanktypes.ModuleName,
 
 		// no-ops
 		ibcexported.ModuleName, ibctransfertypes.ModuleName,
@@ -679,6 +692,7 @@ func NewShardeumApp(
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		erc20types.ModuleName,
+		precisebanktypes.ModuleName,
 
 		ibctransfertypes.ModuleName,
 		genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,

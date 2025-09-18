@@ -9,7 +9,7 @@ import (
 //
 // TODO: refactor to define this in the example chain initialization and pass as function argument
 var chainsWEVMOSHex = map[testconstants.ChainID]string{
-	testconstants.ExampleChainID: testconstants.ShardeumChainID,
+	testconstants.ExampleChainID: testconstants.ShardeumChainID.ChainID,
 }
 
 // GetWEVMOSContractHex returns the hex format of address for the WEVMOS contract
