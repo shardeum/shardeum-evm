@@ -102,7 +102,6 @@ def extract_shardeum_accounts(db_path: str,
             WHERE json_extract(data, '$.accountType') = 0 
               AND json_extract(data, '$.account.balance.value') IS NOT NULL
               AND json_extract(data, '$.account.balance.value') <> '0'
-              AND length(json_extract(data, '$.account.balance.value')) >= 10
             ORDER BY length(json_extract(data, '$.account.balance.value')) DESC
         """
     else:
@@ -116,7 +115,6 @@ def extract_shardeum_accounts(db_path: str,
             WHERE json_extract(data, '$.accountType') = 0 
               AND json_extract(data, '$.account.balance.value') IS NOT NULL
               AND json_extract(data, '$.account.balance.value') <> '0'
-              AND length(json_extract(data, '$.account.balance.value')) >= 10
             ORDER BY length(json_extract(data, '$.account.balance.value')) DESC
         """
     
@@ -244,15 +242,12 @@ def update_genesis_with_accounts(genesis_path: str,
         address = account_data['address']
         balance = account_data['balance']
         nonce = account_data['nonce']
-        unique_id = account_data['unique_id']
         
         # Update auth accounts
         if address in existing_accounts:
             # Update existing account
             if include_nonce:
                 existing_accounts[address]['sequence'] = str(nonce)
-            # Add unique_id to existing account
-            existing_accounts[address]['shardeum_id'] = unique_id
             updated_accounts += 1
         else:
             # Add new account
@@ -261,8 +256,7 @@ def update_genesis_with_accounts(genesis_path: str,
                 "address": address,
                 "pub_key": None,
                 "account_number": str(next_account_number),
-                "sequence": str(nonce) if include_nonce else "0",
-                "shardeum_id": unique_id
+                "sequence": str(nonce) if include_nonce else "0"
             }
             genesis['app_state']['auth']['accounts'].append(new_account)
             new_accounts += 1

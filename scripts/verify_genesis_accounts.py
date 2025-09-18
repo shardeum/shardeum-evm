@@ -83,33 +83,40 @@ def extract_shardeum_accounts(db_path: str, min_balance: int = 0, max_accounts: 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
+    # Build base WHERE conditions
+    base_conditions = "json_extract(data, '$.accountType') = 0"
+    
+    # When using balance_multiplier, we can't filter by min_balance at SQL level since
+    # the multiplier is applied in Python. Always include accounts and filter in Python.
+    # Only exclude accounts with missing balance data
+    base_conditions += " AND json_extract(data, '$.account.balance.value') IS NOT NULL"
+    
+    # Only apply SQL-level balance filtering if no multiplier is used and min_balance > 0
+    if balance_multiplier == 1 and min_balance > 0:
+        # Safe to filter at SQL level when no multiplier is applied
+        base_conditions += " AND json_extract(data, '$.account.balance.value') <> '0'"
+    
     if include_nonce:
-        query = """
+        query = f"""
             SELECT 
               accountId as unique_id,
               substr(accountId, 1, 40) as eth_addr,
               json_extract(data, '$.account.balance.value') as balance_hex,
               json_extract(data, '$.account.nonce.value') as nonce_hex
             FROM accounts 
-            WHERE json_extract(data, '$.accountType') = 0 
-              AND json_extract(data, '$.account.balance.value') IS NOT NULL
-              AND json_extract(data, '$.account.balance.value') <> '0'
-              AND length(json_extract(data, '$.account.balance.value')) >= 10
-            ORDER BY length(json_extract(data, '$.account.balance.value')) DESC
+            WHERE {base_conditions}
+            ORDER BY CAST('0x' || COALESCE(json_extract(data, '$.account.balance.value'), '0') AS INTEGER) DESC
         """
     else:
-        query = """
+        query = f"""
             SELECT 
               accountId as unique_id,
               substr(accountId, 1, 40) as eth_addr,
               json_extract(data, '$.account.balance.value') as balance_hex,
               '0' as nonce_hex
             FROM accounts 
-            WHERE json_extract(data, '$.accountType') = 0 
-              AND json_extract(data, '$.account.balance.value') IS NOT NULL
-              AND json_extract(data, '$.account.balance.value') <> '0'
-              AND length(json_extract(data, '$.account.balance.value')) >= 10
-            ORDER BY length(json_extract(data, '$.account.balance.value')) DESC
+            WHERE {base_conditions}
+            ORDER BY CAST('0x' || COALESCE(json_extract(data, '$.account.balance.value'), '0') AS INTEGER) DESC
         """
     
     if max_accounts > 0:
@@ -126,16 +133,20 @@ def extract_shardeum_accounts(db_path: str, min_balance: int = 0, max_accounts: 
         balance_hex = row[2]
         nonce_hex = row[3] if include_nonce and len(row) > 3 else '0'
         
-        if not eth_addr or not balance_hex:
+        if not eth_addr:
             continue
 
         cosmos_addr = fast_bech32_encode(eth_addr)
         
+        # Convert balance - handle null, empty, or zero values
         try:
-            balance_dec = int(balance_hex, 16)
+            if not balance_hex or balance_hex == '0' or balance_hex == '':
+                balance_dec = 0
+            else:
+                balance_dec = int(balance_hex, 16)
         except ValueError:
-            print(f"Warning: Invalid balance hex {balance_hex} for address {eth_addr}", file=sys.stderr)
-            continue
+            print(f"Warning: Invalid balance hex '{balance_hex}' for address {eth_addr}", file=sys.stderr)
+            balance_dec = 0
         
         # Apply balance multiplier
         balance_dec = balance_dec * balance_multiplier
@@ -167,7 +178,7 @@ def load_genesis_accounts(genesis_path: str, include_nonce: bool = False, balanc
     """
     Load accounts, balances, sequences (nonces), and unique IDs from genesis.json
     Returns: (account_data_dict, total_supply)
-    where account_data_dict = {address: {'balance': int, 'sequence': int, 'shardeum_id': str}}
+    where account_data_dict = {address: {'balance': int, 'sequence': int}}
     """
     print(f"Loading genesis accounts from {genesis_path}...")
     print(f"Options: include_nonce={include_nonce}, balance_multiplier={balance_multiplier}")
@@ -183,8 +194,7 @@ def load_genesis_accounts(genesis_path: str, include_nonce: bool = False, balanc
     for acc in auth_accounts:
         address = acc.get('address')
         sequence = int(acc.get('sequence', '0')) if include_nonce else 0
-        shardeum_id = acc.get('shardeum_id', '')
-        account_data[address] = {'balance': 0, 'sequence': sequence, 'shardeum_id': shardeum_id}
+        account_data[address] = {'balance': 0, 'sequence': sequence}
     
     # Extract balances from bank.balances
     bank_balances = genesis.get('app_state', {}).get('bank', {}).get('balances', [])
@@ -198,7 +208,7 @@ def load_genesis_accounts(genesis_path: str, include_nonce: bool = False, balanc
                 amount = int(coin.get('amount', 0))
                 
                 if address not in account_data:
-                    account_data[address] = {'balance': 0, 'sequence': 0, 'shardeum_id': ''}
+                    account_data[address] = {'balance': 0, 'sequence': 0}
                 
                 account_data[address]['balance'] = amount
                 total_supply += amount
@@ -220,18 +230,15 @@ def verify_accounts(shardeum_accounts: List[Tuple[str, int, int, str]],
         'missing_accounts': [],
         'balance_mismatches': [],
         'nonce_mismatches': [],
-        'unique_id_mismatches': [],
         'matched_accounts': 0,
         'total_shardeum_supply': sum(balance for _, balance, _, _ in shardeum_accounts),
         'matched_supply': 0,
         'check_nonce': check_nonce,
-        'unique_shardeum_ids': len(set(uid for _, _, _, uid in shardeum_accounts)),
-        'unique_genesis_ids': len([addr for addr, data in genesis_data.items() if data.get('shardeum_id')])
     }
     
     # Create dict for easy lookup
-    shardeum_dict = {addr: {'balance': balance, 'nonce': nonce, 'unique_id': unique_id} 
-                     for addr, balance, nonce, unique_id in shardeum_accounts}
+    shardeum_dict = {addr: {'balance': balance, 'nonce': nonce} 
+                     for addr, balance, nonce, _ in shardeum_accounts}
     
     for address, expected_balance, expected_nonce, expected_unique_id in shardeum_accounts:
         if address not in genesis_data:
@@ -244,11 +251,8 @@ def verify_accounts(shardeum_accounts: List[Tuple[str, int, int, str]],
         else:
             genesis_balance = genesis_data[address].get('balance', 0)
             genesis_sequence = genesis_data[address].get('sequence', 0)
-            genesis_unique_id = genesis_data[address].get('shardeum_id', '')
-            
             balance_match = genesis_balance == expected_balance
             nonce_match = genesis_sequence == expected_nonce if check_nonce else True
-            unique_id_match = genesis_unique_id == expected_unique_id
             
             if not balance_match:
                 results['balance_mismatches'].append({
@@ -266,14 +270,7 @@ def verify_accounts(shardeum_accounts: List[Tuple[str, int, int, str]],
                     'difference': genesis_sequence - expected_nonce
                 })
             
-            if not unique_id_match:
-                results['unique_id_mismatches'].append({
-                    'address': address,
-                    'expected_unique_id': expected_unique_id,
-                    'genesis_unique_id': genesis_unique_id
-                })
-            
-            if balance_match and nonce_match and unique_id_match:
+            if balance_match and nonce_match:
                 results['matched_accounts'] += 1
                 results['matched_supply'] += expected_balance
     
@@ -295,7 +292,6 @@ def verify_accounts(shardeum_accounts: List[Tuple[str, int, int, str]],
     
     is_valid = (len(results['missing_accounts']) == 0 and 
                 len(results['balance_mismatches']) == 0 and
-                len(results['unique_id_mismatches']) == 0 and
                 (not check_nonce or len(results['nonce_mismatches']) == 0))
     
     return is_valid, results
@@ -311,14 +307,9 @@ def print_report(results: Dict):
     print(f"Matched accounts:              {results['matched_accounts']:,}")
     print(f"Missing accounts:              {len(results['missing_accounts']):,}")
     print(f"Balance mismatches:            {len(results['balance_mismatches']):,}")
-    print(f"Unique ID mismatches:          {len(results.get('unique_id_mismatches', [])):,}")
     
     if results.get('check_nonce'):
         print(f"Nonce mismatches:              {len(results.get('nonce_mismatches', [])):,}")
-    
-    print(f"\nUnique ID Verification:")
-    print(f"Unique IDs in Shardeum DB:     {results.get('unique_shardeum_ids', 0):,}")
-    print(f"Unique IDs in Genesis:         {results.get('unique_genesis_ids', 0):,}")
     
     print(f"\nSupply Information:")
     print(f"Total Shardeum supply:         {results['total_shardeum_supply']:,} ashm")
@@ -355,41 +346,25 @@ def print_report(results: Dict):
         if len(results['nonce_mismatches']) > 10:
             print(f"  ... and {len(results['nonce_mismatches']) - 10} more")
     
-    if results.get('unique_id_mismatches'):
-        print(f"\n❌ UNIQUE ID MISMATCHES ({len(results['unique_id_mismatches'])}):")
-        for i, mismatch in enumerate(results['unique_id_mismatches'][:10]):  # Show first 10
-            print(f"  {i+1}. {mismatch['address']}")
-            print(f"     Expected ID: {mismatch['expected_unique_id'][:32]}...")
-            print(f"     Genesis ID:  {mismatch['genesis_unique_id'][:32]}...")
-        if len(results['unique_id_mismatches']) > 10:
-            print(f"  ... and {len(results['unique_id_mismatches']) - 10} more")
-    
     print("\n" + "="*80)
     
     check_nonce = results.get('check_nonce', False)
-    unique_id_count_match = results.get('unique_shardeum_ids', 0) == results.get('unique_genesis_ids', 0)
     
     if check_nonce:
         if (len(results['missing_accounts']) == 0 and 
             len(results['balance_mismatches']) == 0 and 
-            len(results.get('unique_id_mismatches', [])) == 0 and
-            len(results.get('nonce_mismatches', [])) == 0 and
-            unique_id_count_match):
-            print("✅ VERIFICATION PASSED: All accounts, balances, unique IDs, and nonces are correctly imported!")
+            len(results.get('nonce_mismatches', [])) == 0):
+            print("✅ VERIFICATION PASSED: All accounts, balances, and nonces are correctly imported!")
         else:
             print("❌ VERIFICATION FAILED: Some accounts are missing or have incorrect data!")
     else:
         if (len(results['missing_accounts']) == 0 and 
             len(results['balance_mismatches']) == 0 and 
-            len(results.get('unique_id_mismatches', [])) == 0 and
-            unique_id_count_match):
-            print("✅ VERIFICATION PASSED: All accounts, balances, and unique IDs are correctly imported!")
+            len(results.get('nonce_mismatches', [])) == 0):
+            print("✅ VERIFICATION PASSED: All accounts, balances, and nonces are correctly imported!")
         else:
             print("❌ VERIFICATION FAILED: Some accounts are missing or have incorrect data!")
-    
-    if not unique_id_count_match:
-        print(f"⚠️  WARNING: Unique ID count mismatch - Shardeum: {results.get('unique_shardeum_ids', 0)}, Genesis: {results.get('unique_genesis_ids', 0)}")
-    
+            
     print("="*80)
 
 def main():
@@ -458,6 +433,11 @@ Examples:
         
         # Print report
         print_report(results)
+
+        print("Total Genesis accounts (including validator account): ", results['total_genesis'])
+        print("Total Shardeum accounts: ", results['total_shardeum'])
+        print("Total Genesis supply (including validator balance): ", total_supply)
+        print("Total Shardeum supply: ", results['total_shardeum_supply'])
         
         # Exit with appropriate code
         sys.exit(0 if is_valid else 1)
