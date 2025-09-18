@@ -34,7 +34,7 @@
             },
             {
               "denom": "shm",
-              "exponent": 18,
+              "exponent": 12,
               "aliases": []
             }
           ],
@@ -123,7 +123,7 @@
       "params": {
         "min_deposit": [
           {
-            "denom": "ashm",
+            "denom": "shm",
             "amount": "10000000"
           }
         ],
@@ -139,7 +139,7 @@
         "expedited_threshold": "0.667000000000000000",
         "expedited_min_deposit": [
           {
-            "denom": "ashm",
+            "denom": "shm",
             "amount": "50000000"
           }
         ],
@@ -237,7 +237,7 @@
         "annual_provisions": "0.000000000000000000"
       },
       "params": {
-        "mint_denom": "ashm",
+        "mint_denom": "shm",
         "inflation_rate_change": "0.130000000000000000",
         "inflation_max": "0.200000000000000000",
         "inflation_min": "0.070000000000000000",

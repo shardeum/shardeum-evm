@@ -24,7 +24,7 @@ NODE_ID="${1:-}"
 SEED_NODE_RPC="${2:-http://localhost:26657}"
 CHAINID="shardeum-testnet"
 BASE_DIR="$REPO_ROOT/.testnet"
-MIN_GAS="0.000006ashm"
+MIN_GAS="0.000006shm"
 BINARY="${BINARY:-$REPO_ROOT/build/shardeumd}"
 
 # Colors

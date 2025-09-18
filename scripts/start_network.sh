@@ -19,7 +19,7 @@ trap cleanup SIGINT SIGTERM
 NODES="${1:-4}"
 CHAINID="shardeum-testnet"  # Use proper Shardeum chain ID
 BASE_DIR="$REPO_ROOT/.testnet"
-MIN_GAS="0.000006ashm"
+MIN_GAS="0.000006shm"
 BINARY="${BINARY:-$REPO_ROOT/build/shardeumd}"
 
 # Colors
@@ -67,7 +67,7 @@ mkdir -p "$NODE0_DIR"
 "$BINARY" init "node0" --chain-id "$CHAINID" --home "$NODE0_DIR" --overwrite > /dev/null 2>&1
 
 # Replace with our custom genesis immediately after init
-echo -e "${YELLOW}Using custom genesis with ashm denomination${NC}"
+echo -e "${YELLOW}Using custom genesis with shm denomination for Cosmos, ashm for EVM${NC}"
 cp "$REPO_ROOT/config/genesis.json" "$NODE0_DIR/config/genesis.json"
 
 # Create validator key for node0 only
@@ -96,26 +96,26 @@ echo "doll midnight silk carpet brush boring pluck office gown inquiry duck chie
 
 # Add validator account to genesis  
 echo -e "${YELLOW}Adding validator account to genesis${NC}"
-"$BINARY" genesis add-genesis-account "validator" 100000000000000000000000000ashm \
+"$BINARY" genesis add-genesis-account "validator" 3000000000000000000000000ashm \
   --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
 
 # Add dev accounts to genesis with test balances
 echo -e "${YELLOW}Adding dev accounts to genesis${NC}"
-"$BINARY" genesis add-genesis-account "dev0" 10000000000000000000000000ashm \
+"$BINARY" genesis add-genesis-account "dev0" 10000000shm \
   --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
 
-"$BINARY" genesis add-genesis-account "dev1" 10000000000000000000000000ashm \
+"$BINARY" genesis add-genesis-account "dev1" 10000000shm \
   --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
 
-"$BINARY" genesis add-genesis-account "dev2" 10000000000000000000000000ashm \
+"$BINARY" genesis add-genesis-account "dev2" 10000000shm \
   --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
 
-"$BINARY" genesis add-genesis-account "dev3" 10000000000000000000000000ashm \
+"$BINARY" genesis add-genesis-account "dev3" 10000000shm \
   --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
 
 # Create genesis transaction for validator
 echo -e "${YELLOW}Creating genesis transaction for validator${NC}"
-"$BINARY" genesis gentx "validator" 1000000000000000000ashm \
+"$BINARY" genesis gentx "validator" 2000000000000000000000000ashm \
   --chain-id "$CHAINID" \
   --moniker "node0" \
   --commission-rate="0.10" \
@@ -285,7 +285,7 @@ echo "  dev0: 0xC6Fe5D33615a1C52c08018c47E8Bc53646A0E101 | cosmos1cml96vmptgw99s
 echo "  dev1: 0x963EBDf2e1f8DB8707D05FC75bfeFFBa1B5BaC17 | cosmos1jcltmuhplrdcwp7stlr4hlhlhgd4htqh3a79sq"
 echo "  dev2: 0x40a0cb1C63e026A81B55EE1308586E21eec1eFa9 | cosmos1gzsvk8rruqn2sx64acfsskrwy8hvrmafqkaze8"
 echo "  dev3: 0x498B5AeC5D439b733dC2F58AB489783A23FB26dA | cosmos1fx944mzagwdhx0wz7k9tfztc8g3lkfk6rrgv6l"
-echo "  Each account has 10,000,000 ashm tokens for testing"
+echo "  Each account has 10,000,000 shm tokens for testing (via Cosmos) and equivalent ashm via EVM"
 echo
 echo -e "${YELLOW}Network is running. Press Ctrl+C to stop all nodes.${NC}"
 
