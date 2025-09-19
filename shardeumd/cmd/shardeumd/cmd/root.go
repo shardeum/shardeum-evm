@@ -63,7 +63,7 @@ func NewRootCmd() *cobra.Command {
 		nil,
 		true,
 		simtestutil.EmptyAppOptions{},
-		evmdconfig.EVMChainID,
+		evmdconfig.ShardeumChainID(),
 		noOpEvmAppOptions,
 	)
 
@@ -130,7 +130,7 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
-			customAppTemplate, customAppConfig := evmdconfig.InitAppConfig(evmdconfig.BaseDenom, evmdconfig.EVMChainID)
+			customAppTemplate, customAppConfig := evmdconfig.InitAppConfig(evmdconfig.ShardeumChainDenom(), evmdconfig.ShardeumChainID())
 			customTMConfig := initCometConfig()
 
 			return sdkserver.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customTMConfig)
@@ -148,7 +148,7 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	if initClientCtx.ChainID != "" {
-		if err := evmdconfig.EvmAppOptions(evmdconfig.EVMChainID); err != nil {
+		if err := evmdconfig.EvmAppOptions(evmdconfig.ShardeumChainID()); err != nil {
 			panic(err)
 		}
 	}
@@ -319,7 +319,7 @@ func newApp(
 	return shardeumd.NewShardeumApp(
 		logger, db, traceStore, true,
 		appOpts,
-		evmdconfig.EVMChainID,
+		evmdconfig.ShardeumChainID(),
 		evmdconfig.EvmAppOptions,
 		baseappOptions...,
 	)
@@ -361,13 +361,13 @@ func appExport(
 	}
 
 	if height != -1 {
-		shardeumApp = shardeumd.NewShardeumApp(logger, db, traceStore, false, appOpts, evmdconfig.EVMChainID, evmdconfig.EvmAppOptions, baseapp.SetChainID(chainID))
+		shardeumApp = shardeumd.NewShardeumApp(logger, db, traceStore, false, appOpts, evmdconfig.ShardeumChainID(), evmdconfig.EvmAppOptions, baseapp.SetChainID(chainID))
 
 		if err := shardeumApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		shardeumApp = shardeumd.NewShardeumApp(logger, db, traceStore, true, appOpts, evmdconfig.EVMChainID, evmdconfig.EvmAppOptions, baseapp.SetChainID(chainID))
+		shardeumApp = shardeumd.NewShardeumApp(logger, db, traceStore, true, appOpts, evmdconfig.ShardeumChainID(), evmdconfig.EvmAppOptions, baseapp.SetChainID(chainID))
 	}
 
 	return shardeumApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)

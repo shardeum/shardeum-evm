@@ -7,19 +7,20 @@ A high-performance EVM-compatible blockchain that provides seamless Ethereum com
 
 ### Multi-Node Testnet
 
-For testing with multiple validators, you can use either the Makefile target or the script directly:
+For testing with multiple validators, you can use either the Makefile target or the script directly. You can also specify which network to use:
 
 ```bash
 # Using Makefile (recommended)
-make start-network
+make start-network                 # Start 4 nodes on local network (default)
+make start-network NETWORK=testnet # Start 4 nodes on testnet
 
 # Or directly using the script
-./scripts/start_network.sh [number_of_nodes]
+./scripts/start_network.sh [number_of_nodes] [--network network_name]
 ```
 
 This script will:
 - Build the `shardeumd` binary 
-- Initialize nodes with the Shardeum testnet configuration
+- Initialize nodes with the specified network configuration
 - Set up a bootstrap validator on node0
 - Configure seed-based peer discovery (node0 acts as seed)
 - Start all nodes with proper port assignments
@@ -27,36 +28,42 @@ This script will:
 Examples:
 ```bash
 # Using Makefile
-make start-network                 # Start 4 nodes (default)
-make start-network NODES=6         # Start 6 nodes
+make start-network                          # Start 4 nodes on local network (default)
+make start-network NODES=6                  # Start 6 nodes on local network
+make start-network NETWORK=testnet          # Start 4 nodes on testnet
+make start-network NODES=6 NETWORK=devnet   # Start 6 nodes on devnet
 
 # Using script directly 
-./scripts/start_network.sh         # Start 4 nodes (default)
-./scripts/start_network.sh 6       # Start 6 nodes
+./scripts/start_network.sh                  # Start 4 nodes on local network (default)
+./scripts/start_network.sh 6                # Start 6 nodes on local network
+./scripts/start_network.sh 4 --network testnet  # Start 4 nodes on testnet
+./scripts/start_network.sh 6 --network devnet   # Start 6 nodes on devnet
 ```
 
 #### Adding Nodes to Running Network
 
-You can dynamically add more nodes to an existing testnet:
+You can dynamically add more nodes to an existing network:
 
 ```bash
 # Using Makefile (recommended)
-make add-node NODE_ID=node4 [SEED_RPC=http://localhost:26657]
+make add-node NODE_ID=node4 [SEED_RPC=http://localhost:26657] [NETWORK=local]
 
 # Or directly using the script
-./scripts/add_node.sh <node_id> [seed_rpc_endpoint]
+./scripts/add_node.sh <node_id> [--seed-rpc seed_endpoint] [--network network_name]
 ```
 
 Examples:
 ```bash
 # Using Makefile
-make add-node NODE_ID=node4                           # Add node4, connect to default seed at localhost:26657
-make add-node NODE_ID=node5 SEED_RPC=http://localhost:26658  # Add node5, connect to specific node as seed
+make add-node NODE_ID=node4                           # Add node4 to local network (default)
+make add-node NODE_ID=node5 NETWORK=testnet           # Add node5 to testnet
+make add-node NODE_ID=node6 SEED_RPC=http://localhost:26658 NETWORK=devnet  # Add node6 to devnet with specific seed
 
 # Using script directly
-./scripts/add_node.sh node4                           # Add node4, connect to default seed at localhost:26657
-./scripts/add_node.sh node5 http://localhost:26658    # Add node5, connect to specific node as seed
-./scripts/add_node.sh 6                               # Add node6 (ID automatically prefixed)
+./scripts/add_node.sh node4                           # Add node4 to local network (default)
+./scripts/add_node.sh node5 --network testnet         # Add node5 to testnet
+./scripts/add_node.sh node6 --seed-rpc http://localhost:26658 --network devnet  # Add node6 to devnet with specific seed
+./scripts/add_node.sh 6                               # Add node6 (ID automatically prefixed) to local network
 ```
 
 The script will:
@@ -158,3 +165,108 @@ echo '  - "your second mnemonic phrase here"' >> my_mnemonics.yaml
 ```bash
 ./local_node.sh --remote-debugging
 ```
+
+## Network Configuration System
+
+The Shardeum Cosmos fork supports multiple network configurations through JSON files and environment variables, allowing you to easily deploy to different networks without manual intervention.
+
+### Available Networks
+
+The following networks are preconfigured:
+
+| Network | Chain ID | EVM Chain ID | Description |
+|---------|----------|--------------|-------------|
+| mainnet | shardeum-1 | 8119 | Production mainnet |
+| testnet | shardeum-testnet | 8119 | Public testnet |
+| devnet | shardeum-devnet | 8119 | Development network |
+| local | shardeum-local | 8119 | Local development |
+
+### Network Configuration Usage
+
+#### Using Environment Variables
+
+Set the network using environment variables:
+
+```bash
+# Set environment for testnet
+export SHARDEUM_NETWORK=testnet
+
+# Now run commands without --network flag
+./scripts/start_network.sh 4
+./scripts/add_node.sh node4
+```
+
+Or override specific parameters:
+
+```bash
+# Use testnet config but with custom chain ID
+export SHARDEUM_NETWORK=testnet
+export SHARDEUM_CHAIN_ID=my-custom-chain
+./scripts/start_network.sh 4
+```
+
+#### Environment Variables Reference
+
+All network parameters can be overridden with environment variables:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `SHARDEUM_NETWORK` | Network name | `testnet` |
+| `SHARDEUM_CHAIN_ID` | Cosmos chain ID | `shardeum-testnet` |
+| `SHARDEUM_EVM_CHAIN_ID` | EVM chain ID | `8119` |
+| `SHARDEUM_BASE_DENOM` | Base denomination | `ashm` |
+| `SHARDEUM_DISPLAY_DENOM` | Display denomination | `shm` |
+| `SHARDEUM_RPC_PORT` | RPC port | `26657` |
+| `SHARDEUM_REST_PORT` | REST API port | `1317` |
+| `SHARDEUM_JSON_RPC_PORT` | JSON-RPC port | `8545` |
+| `SHARDEUM_WEBSOCKET_PORT` | WebSocket port | `8546` |
+| `SHARDEUM_GRPC_PORT` | gRPC port | `9090` |
+
+### Creating Custom Networks
+
+1. Create a new configuration file in `configs/`:
+
+```bash
+cp configs/testnet.json configs/mynetwork.json
+```
+
+2. Edit the configuration:
+
+```json
+{
+  "name": "mynetwork",
+  "chain_id": "my-custom-chain",
+  "evm_chain_id": 9999,
+  "base_denom": "mycoin",
+  "display_denom": "my",
+  "decimals": 18,
+  "bech32_prefix": "my",
+  "ports": {
+    "rpc": "26657",
+    "rest": "1317", 
+    "json_rpc": "8545",
+    "websocket": "8546",
+    "grpc": "9090"
+  },
+  "genesis_file": "mynetwork-genesis.json"
+}
+```
+
+3. Use your custom network:
+
+```bash
+./scripts/start_network.sh 4 --network mynetwork
+make start-network NETWORK=mynetwork
+```
+
+### Genesis Files
+
+Each network can have its own genesis file in the `config/` directory:
+
+- `config/mainnet-genesis.json` - Mainnet genesis
+- `config/testnet-genesis.json` - Testnet genesis  
+- `config/devnet-genesis.json` - Devnet genesis
+- `config/local-genesis.json` - Local genesis
+- `config/genesis.json` - Default fallback
+
+The system automatically uses the network-specific genesis file if it exists, otherwise falls back to the default.

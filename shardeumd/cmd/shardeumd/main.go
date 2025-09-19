@@ -22,7 +22,11 @@ func main() {
 }
 
 func setupSDKConfig() {
+	// Initialize chains coin info with network configurations
+	evmdconfig.InitializeChainsCoinInfo()
+	
 	config := sdk.GetConfig()
 	evmdconfig.SetBech32Prefixes(config)
+	evmdconfig.SetBip44CoinType(config)
 	config.Seal()
 }

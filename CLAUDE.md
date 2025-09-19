@@ -25,9 +25,19 @@ make build-linux              # Cross-compile for Linux AMD64
 ./local_node.sh --remote-debugging  # Build for remote debugging
 
 # Multi-node testnet
-make start-network            # Start 4 nodes (default)
-./scripts/start_network.sh 6  # Start 6 nodes
-make add-node NODE_ID=node4  # Add a new node to running network
+make start-network                    # Start 4 nodes on local network (default)
+make start-network NETWORK=testnet   # Start 4 nodes on testnet network
+make start-network NODES=6           # Start 6 nodes on local network
+make start-network NETWORK=mainnet NODES=6  # Start 6 nodes on mainnet
+
+# Add nodes to running network
+make add-node NODE_ID=node4                          # Add node4 to local network (default)
+make add-node NODE_ID=node5 NETWORK=testnet          # Add node5 to testnet network
+make add-node NODE_ID=node6 SEED_RPC=http://localhost:26657  # Add node6 with custom seed RPC
+
+# Direct script usage (alternative)
+./scripts/start_network.sh 6 --network testnet       # Start 6 nodes on testnet
+./scripts/add_node.sh node4 --network mainnet        # Add node4 to mainnet
 ```
 
 ### Testing Commands
@@ -78,6 +88,29 @@ make contracts-compile      # Compile Solidity contracts
 make contracts-clean        # Clean compilation artifacts
 ```
 
+## Available Networks
+
+The following predefined networks are available for development and testing:
+
+### Network Configurations
+- **local**: Development network (`shardeum-local`, EVM Chain ID: 8119)
+- **testnet**: Test network (`shardeum-testnet`, EVM Chain ID: 8119)  
+- **devnet**: Development staging network (`shardeum-devnet`, EVM Chain ID: 8119)
+- **mainnet**: Production network (`shardeum-1`, EVM Chain ID: 8119)
+
+### Network Selection
+Use the `NETWORK` parameter with make commands or `--network` flag with scripts:
+- **Default**: `local` network is used when no network is specified
+- **Makefile**: `make start-network NETWORK=testnet`
+- **Scripts**: `./scripts/start_network.sh 4 --network mainnet`
+
+### Environment Variables
+You can also set the network using environment variables:
+```bash
+export SHARDEUM_NETWORK=testnet
+./scripts/start_network.sh 4  # Will use testnet
+```
+
 ## Architecture Overview
 
 ### Module Structure
@@ -96,14 +129,16 @@ The chain is organized into several key modules under `x/`:
 - **Ante Handlers**: Transaction validation and fee processing in `ante/` directory
 
 ### Development Configuration
-- **Chain ID**: `shardeum` (local), `cosmos_262144-1` (shardeumd example)
+- **Chain IDs**: Automatically selected based on network (see Available Networks section)
 - **Native Token**: SHM (ashm, 18 decimals)
-- **Default Ports**:
+- **Default Ports** (configurable per network):
   - RPC: 26657
   - REST API: 1317
   - JSON-RPC: 8545
   - WebSocket: 8546
+  - GRPC: 9090
 - **Pre-funded Dev Accounts**: 4 accounts (dev0-dev3) with both Ethereum and Cosmos addresses
+- **Default Network**: `local` for development, configurable via `NETWORK` parameter
 
 ### Testing Infrastructure
 - Integration tests in `tests/integration/` - reusable test harnesses for precompiles

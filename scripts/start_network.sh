@@ -6,6 +6,104 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Show usage information
+usage() {
+  echo "Usage: $0 [num_nodes] [options]"
+  echo "Options:"
+  echo "  --network <name>     Network to use (mainnet, testnet, devnet, local)"
+  echo "  --chain-id <id>      Override chain ID"
+  echo "  --help               Show this help message"
+  echo ""
+  echo "Environment variables:"
+  echo "  SHARDEUM_NETWORK     Network to use (overrides --network)"
+  echo "  SHARDEUM_CHAIN_ID    Chain ID to use (overrides --chain-id)"
+  echo "  BINARY               Path to shardeumd binary"
+  echo ""
+  echo "Examples:"
+  echo "  $0 4 --network testnet"
+  echo "  $0 6 --network devnet --chain-id shardeum-dev-1"
+  echo "  SHARDEUM_NETWORK=mainnet $0 4"
+  exit 1
+}
+
+# Parse command line arguments
+NODES=""
+NETWORK=""
+CUSTOM_CHAIN_ID=""
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --network)
+      NETWORK="$2"
+      shift 2
+      ;;
+    --chain-id)
+      CUSTOM_CHAIN_ID="$2"
+      shift 2
+      ;;
+    --help)
+      echo "Usage: $0 [num_nodes] [options]"
+      echo "Options:"
+      echo "  --network <name>     Network to use (mainnet, testnet, devnet, local)"
+      echo "  --chain-id <id>      Override chain ID"
+      echo "  --help               Show this help message"
+      echo ""
+      echo "Environment variables:"
+      echo "  SHARDEUM_NETWORK     Network to use (overrides --network)"
+      echo "  SHARDEUM_CHAIN_ID    Chain ID to use (overrides --chain-id)"
+      echo "  BINARY               Path to shardeumd binary"
+      echo ""
+      echo "Examples:"
+      echo "  $0 4 --network testnet"
+      echo "  $0 6 --network devnet --chain-id shardeum-dev-1"
+      echo "  SHARDEUM_NETWORK=mainnet $0 4"
+      exit 0
+      ;;
+    --*)
+      echo "Unknown option: $1"
+      usage
+      ;;
+    *)
+      if [[ -z "$NODES" ]]; then
+        NODES="$1"
+      else
+        echo "Unknown argument: $1"
+        usage
+      fi
+      shift
+      ;;
+  esac
+done
+
+# Set defaults
+NODES="${NODES:-4}"
+NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-testnet}}"
+
+# Load network configuration
+CONFIG_FILE="$REPO_ROOT/configs/$NETWORK.json"
+if [ ! -f "$CONFIG_FILE" ]; then
+  echo -e "${RED}Error: Network configuration file not found: $CONFIG_FILE${NC}"
+  echo "Available networks:"
+  ls -1 "$REPO_ROOT/configs"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
+  exit 1
+fi
+
+# Read network configuration
+CHAINID=$(jq -r '.chain_id' "$CONFIG_FILE")
+EVM_CHAIN_ID=$(jq -r '.evm_chain_id' "$CONFIG_FILE")
+BASE_DENOM=$(jq -r '.base_denom' "$CONFIG_FILE")
+
+# Override chain ID if provided
+if [[ -n "$CUSTOM_CHAIN_ID" ]]; then
+  CHAINID="$CUSTOM_CHAIN_ID"
+elif [[ -n "$SHARDEUM_CHAIN_ID" ]]; then
+  CHAINID="$SHARDEUM_CHAIN_ID"
+fi
+
+BASE_DIR="$REPO_ROOT/.testnet"
+MIN_GAS="0.000006$BASE_DENOM"
+BINARY="${BINARY:-$REPO_ROOT/build/shardeumd}"
+
 # Cleanup function for graceful shutdown
 cleanup() {
   echo -e "\n${YELLOW}Shutting down nodes...${NC}"
@@ -16,23 +114,21 @@ cleanup() {
 # Trap signals for graceful shutdown
 trap cleanup SIGINT SIGTERM
 
-NODES="${1:-4}"
-CHAINID="shardeum-testnet"  # Use proper Shardeum chain ID
-BASE_DIR="$REPO_ROOT/.testnet"
-MIN_GAS="0.000006ashm"
-BINARY="${BINARY:-$REPO_ROOT/build/shardeumd}"
-
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${GREEN}Starting $NODES node Shardeum testnet${NC}"
+echo -e "${GREEN}Starting $NODES node Shardeum $NETWORK network${NC}"
+echo -e "${YELLOW}Network: $NETWORK${NC}"
+echo -e "${YELLOW}Chain ID: $CHAINID${NC}"
+echo -e "${YELLOW}EVM Chain ID: $EVM_CHAIN_ID${NC}"
+echo -e "${YELLOW}Base Denomination: $BASE_DENOM${NC}"
 
 # Clean up
 rm -rf "$BASE_DIR"
-pkill -f "shardeumd.*shardeum-testnet" || true
+pkill -f "shardeumd.*$CHAINID" || true
 
 # Build our own binary locally (skip if called from makefile)
 if [ "$SKIP_BUILD" != "1" ]; then
@@ -51,9 +147,18 @@ if [ ! -f "$BINARY" ]; then
   exit 1
 fi
 
+# Determine genesis file to use
+GENESIS_FILE=$(jq -r '.genesis_file // "genesis.json"' "$CONFIG_FILE")
+GENESIS_PATH="$REPO_ROOT/config/$GENESIS_FILE"
+
+# Fallback to default genesis if network-specific one doesn't exist
+if [ ! -f "$GENESIS_PATH" ]; then
+  GENESIS_PATH="$REPO_ROOT/config/genesis.json"
+fi
+
 # Verify genesis file exists
-if [ ! -f "$REPO_ROOT/config/genesis.json" ]; then
-  echo -e "${RED}Error: Genesis file not found at $REPO_ROOT/config/genesis.json${NC}"
+if [ ! -f "$GENESIS_PATH" ]; then
+  echo -e "${RED}Error: Genesis file not found at $GENESIS_PATH${NC}"
   echo "Make sure you have the proper Shardeum network configuration"
   exit 1
 fi
@@ -63,12 +168,16 @@ echo -e "${YELLOW}Initializing primary node${NC}"
 NODE0_DIR="$BASE_DIR/node0"
 mkdir -p "$NODE0_DIR"
 
+# Set environment variables for the binary to pick up network config
+export SHARDEUM_NETWORK="$NETWORK"
+export SHARDEUM_CHAIN_ID="$CHAINID"
+
 # Initialize node0 with proper chain-id to get correct genesis template
 "$BINARY" init "node0" --chain-id "$CHAINID" --home "$NODE0_DIR" --overwrite > /dev/null 2>&1
 
 # Replace with our custom genesis immediately after init
-echo -e "${YELLOW}Using custom genesis with ashm denomination${NC}"
-cp "$REPO_ROOT/config/genesis.json" "$NODE0_DIR/config/genesis.json"
+echo -e "${YELLOW}Using custom genesis for $NETWORK network: $GENESIS_FILE${NC}"
+cp "$GENESIS_PATH" "$NODE0_DIR/config/genesis.json"
 
 # Create validator key for node0 only
 echo -e "${YELLOW}Creating validator key for primary node${NC}"
