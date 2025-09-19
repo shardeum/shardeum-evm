@@ -1,8 +1,8 @@
 package ante
 
 import (
-	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
+	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
@@ -18,19 +18,20 @@ import (
 // HandlerOptions defines the list of module keepers required to run the Cosmos EVM
 // AnteHandler decorators.
 type HandlerOptions struct {
-	Cdc                    codec.BinaryCodec
-	AccountKeeper          anteinterfaces.AccountKeeper
-	BankKeeper             anteinterfaces.BankKeeper
-	IBCKeeper              *ibckeeper.Keeper
-	FeeMarketKeeper        anteinterfaces.FeeMarketKeeper
-	EvmKeeper              anteinterfaces.EVMKeeper
-	FeegrantKeeper         ante.FeegrantKeeper
-	ExtensionOptionChecker ante.ExtensionOptionChecker
-	SignModeHandler        *txsigning.HandlerMap
-	SigGasConsumer         func(meter storetypes.GasMeter, sig signing.SignatureV2, params authtypes.Params) error
-	MaxTxGasWanted         uint64
-	TxFeeChecker           ante.TxFeeChecker
-	PendingTxListener      PendingTxListener
+	Cdc                      codec.BinaryCodec
+	AccountKeeper            anteinterfaces.AccountKeeper
+	BankKeeper               anteinterfaces.BankKeeper
+	IBCKeeper                *ibckeeper.Keeper
+	FeeMarketKeeper          anteinterfaces.FeeMarketKeeper
+	EvmKeeper                anteinterfaces.EVMKeeper
+	FeegrantKeeper           ante.FeegrantKeeper
+	ValidatorWhitelistKeeper anteinterfaces.ValidatorWhitelistKeeper
+	ExtensionOptionChecker   ante.ExtensionOptionChecker
+	SignModeHandler          *txsigning.HandlerMap
+	SigGasConsumer           func(meter storetypes.GasMeter, sig signing.SignatureV2, params authtypes.Params) error
+	MaxTxGasWanted           uint64
+	TxFeeChecker             ante.TxFeeChecker
+	PendingTxListener        PendingTxListener
 }
 
 // Validate checks if the keepers are defined

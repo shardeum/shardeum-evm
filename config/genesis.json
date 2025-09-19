@@ -226,6 +226,12 @@
       "total_escrowed": []
     },
     "upgrade": {},
+    "validatorwhitelist": {
+      "params": {
+        "enabled": false,
+        "allowlist": []
+      }
+    },
     "vesting": {},
     "precisebank": {
       "balances": [],
