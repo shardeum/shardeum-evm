@@ -12,17 +12,22 @@ usage() {
   echo "Options:"
   echo "  --network <name>     Network to use (mainnet, testnet, devnet, local)"
   echo "  --chain-id <id>      Override chain ID"
+  echo "  --create2-factory     Deploy create2 factory to genesis (default: false)"
+  echo "  --allow-unprotected-txs Enable unprotected transactions (default: false)"
   echo "  --help               Show this help message"
   echo ""
   echo "Environment variables:"
   echo "  SHARDEUM_NETWORK     Network to use (overrides --network)"
   echo "  SHARDEUM_CHAIN_ID    Chain ID to use (overrides --chain-id)"
+
   echo "  BINARY               Path to shardeumd binary"
   echo ""
   echo "Examples:"
   echo "  $0 4 --network testnet"
   echo "  $0 6 --network devnet --chain-id shardeum-dev-1"
   echo "  SHARDEUM_NETWORK=mainnet $0 4"
+  echo "  $0 --create2-factory                  # Start with create2 factory deployed"
+  echo "  $0 --allow-unprotected-txs            # Start with unprotected txs enabled"
   exit 1
 }
 
@@ -30,6 +35,8 @@ usage() {
 NODES=""
 NETWORK=""
 CUSTOM_CHAIN_ID=""
+DEPLOY_CREATE2_FACTORY="false"
+ALLOW_UNPROTECTED_TXS="false"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -40,6 +47,15 @@ while [[ $# -gt 0 ]]; do
     --chain-id)
       CUSTOM_CHAIN_ID="$2"
       shift 2
+      ;;
+
+    --create2-factory)
+      DEPLOY_CREATE2_FACTORY="true"
+      shift
+      ;;
+    --allow-unprotected-txs)
+      ALLOW_UNPROTECTED_TXS="true"
+      shift
       ;;
     --help)
       echo "Usage: $0 [num_nodes] [options]"
@@ -221,6 +237,41 @@ echo -e "${YELLOW}Adding dev accounts to genesis${NC}"
 
 "$BINARY" genesis add-genesis-account "dev3" 10000000000000000000000000ashm \
   --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
+# Deploy create2 factory if requested
+if [ "$DEPLOY_CREATE2_FACTORY" = "true" ]; then
+  echo -e "${YELLOW}Deploying create2 factory to genesis${NC}"
+  
+  # Create2 factory constants
+  create2_addr="4e59b44847b379578588920ca78fbf26c0b4956c"
+  create2_code="7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3"
+  
+  # Add create2 factory account to genesis with 0 balance
+  "$BINARY" genesis add-genesis-account "$("$BINARY" keys parse "$create2_addr" --output json | jq -r '.formats[0]')" 0ashm --home "$NODE0_DIR" > /dev/null 2>&1
+  
+  # Update genesis with create2 factory details
+  TMP_GENESIS="$NODE0_DIR/config/genesis_tmp.json"
+  
+  # Set nonce to 1 for the create2 factory account
+  jq --arg addr "0x$create2_addr" \
+     '(.app_state.auth.accounts[] | select(.address == ($addr | ascii_downcase)) | .sequence) = "1"' \
+     "$NODE0_DIR/config/genesis.json" > "$TMP_GENESIS" && mv "$TMP_GENESIS" "$NODE0_DIR/config/genesis.json"
+  
+  # Add EVM account with code
+  jq --arg addr "0x$create2_addr" --arg code "$create2_code" \
+     '.app_state.evm.accounts += [{"address": $addr, "code": $code, "storage": []}]' \
+     "$NODE0_DIR/config/genesis.json" > "$TMP_GENESIS" && mv "$TMP_GENESIS" "$NODE0_DIR/config/genesis.json"
+fi
+
+# Enable unprotected transactions if requested
+if [ "$ALLOW_UNPROTECTED_TXS" = "true" ]; then
+  echo -e "${YELLOW}Enabling unprotected transactions in genesis${NC}"
+  
+  # Update genesis to allow unprotected transactions
+  TMP_GENESIS="$NODE0_DIR/config/genesis_tmp.json"
+  jq '.app_state.evm.params.allow_unprotected_txs = true' \
+     "$NODE0_DIR/config/genesis.json" > "$TMP_GENESIS" && mv "$TMP_GENESIS" "$NODE0_DIR/config/genesis.json"
+fi
+
 
 # Create genesis transaction for validator
 echo -e "${YELLOW}Creating genesis transaction for validator${NC}"
