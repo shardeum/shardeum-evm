@@ -50,7 +50,7 @@ func NewErc20GenesisState() *erc20types.GenesisState {
 // NOTE: for the example chain implementation we are also adding a default minter.
 func NewMintGenesisState() *minttypes.GenesisState {
 	mintGenState := minttypes.DefaultGenesisState()
-	mintGenState.Params.MintDenom = config.ShardeumChainDenom
+	mintGenState.Params.MintDenom = config.ShardeumChainDenom()
 
 	return mintGenState
 }

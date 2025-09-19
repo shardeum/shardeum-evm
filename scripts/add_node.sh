@@ -2,6 +2,124 @@
 
 set -e
 
+# Resolve repo root regardless of where the script is invoked from
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Parse command line arguments
+NODE_ID=""
+SEED_NODE_RPC=""
+NETWORK=""
+CUSTOM_CHAIN_ID=""
+
+# Usage function
+usage() {
+  echo "Usage: $0 <node_id> [options]"
+  echo "  node_id: Unique identifier for the new node (e.g., node4, node5)"
+  echo ""
+  echo "Options:"
+  echo "  --seed-rpc <url>     RPC endpoint of seed node (default: http://localhost:26657)"
+  echo "  --network <name>     Network to use (mainnet, testnet, devnet, local)"
+  echo "  --chain-id <id>      Override chain ID"
+  echo "  --help               Show this help message"
+  echo ""
+  echo "Environment variables:"
+  echo "  SHARDEUM_NETWORK     Network to use (overrides --network)"
+  echo "  SHARDEUM_CHAIN_ID    Chain ID to use (overrides --chain-id)"
+  echo "  BINARY               Path to shardeumd binary"
+  echo ""
+  echo "Examples:"
+  echo "  $0 node4 --network testnet"
+  echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
+  exit 1
+}
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --seed-rpc)
+      SEED_NODE_RPC="$2"
+      shift 2
+      ;;
+    --network)
+      NETWORK="$2"
+      shift 2
+      ;;
+    --chain-id)
+      CUSTOM_CHAIN_ID="$2"
+      shift 2
+      ;;
+    --help)
+      echo "Usage: $0 <node_id> [options]"
+      echo "  node_id: Unique identifier for the new node (e.g., node4, node5)"
+      echo ""
+      echo "Options:"
+      echo "  --seed-rpc <url>     RPC endpoint of seed node (default: http://localhost:26657)"
+      echo "  --network <name>     Network to use (mainnet, testnet, devnet, local)"
+      echo "  --chain-id <id>      Override chain ID"
+      echo "  --help               Show this help message"
+      echo ""
+      echo "Environment variables:"
+      echo "  SHARDEUM_NETWORK     Network to use (overrides --network)"
+      echo "  SHARDEUM_CHAIN_ID    Chain ID to use (overrides --chain-id)"
+      echo "  BINARY               Path to shardeumd binary"
+      echo ""
+      echo "Examples:"
+      echo "  $0 node4 --network testnet"
+      echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
+      exit 0
+      ;;
+    --*)
+      echo "Unknown option: $1"
+      usage
+      ;;
+    *)
+      if [[ -z "$NODE_ID" ]]; then
+        NODE_ID="$1"
+      else
+        echo "Unknown argument: $1"
+        usage
+      fi
+      shift
+      ;;
+  esac
+done
+
+# Validate required arguments
+if [[ -z "$NODE_ID" ]]; then
+  echo "Error: node_id is required"
+  usage
+fi
+
+# Set defaults
+SEED_NODE_RPC="${SEED_NODE_RPC:-http://localhost:26657}"
+NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-testnet}}"
+
+# Load network configuration
+CONFIG_FILE="$REPO_ROOT/configs/$NETWORK.json"
+if [ ! -f "$CONFIG_FILE" ]; then
+  echo -e "${RED}Error: Network configuration file not found: $CONFIG_FILE${NC}"
+  echo "Available networks:"
+  ls -1 "$REPO_ROOT/configs"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
+  exit 1
+fi
+
+# Read network configuration
+CHAINID=$(jq -r '.chain_id' "$CONFIG_FILE")
+EVM_CHAIN_ID=$(jq -r '.evm_chain_id' "$CONFIG_FILE")
+BASE_DENOM=$(jq -r '.base_denom' "$CONFIG_FILE")
+
+# Override chain ID if provided
+if [[ -n "$CUSTOM_CHAIN_ID" ]]; then
+  CHAINID="$CUSTOM_CHAIN_ID"
+elif [[ -n "$SHARDEUM_CHAIN_ID" ]]; then
+  CHAINID="$SHARDEUM_CHAIN_ID"
+fi
+
+BASE_DIR="$REPO_ROOT/.testnet"
+MIN_GAS="0.000006$BASE_DENOM"
+BINARY="${BINARY:-$REPO_ROOT/build/shardeumd}"
+
 # Cleanup function for graceful shutdown
 cleanup() {
   echo -e "\n${YELLOW}Shutting down node...${NC}"
@@ -14,18 +132,6 @@ cleanup() {
 
 # Trap signals for graceful shutdown
 trap cleanup SIGINT SIGTERM
-
-# Resolve repo root regardless of where the script is invoked from
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-# Parse command line arguments
-NODE_ID="${1:-}"
-SEED_NODE_RPC="${2:-http://localhost:26657}"
-CHAINID="shardeum-testnet"
-BASE_DIR="$REPO_ROOT/.testnet"
-MIN_GAS="0.000006ashm"
-BINARY="${BINARY:-$REPO_ROOT/build/shardeumd}"
 
 # Colors
 GREEN='\033[0;32m'

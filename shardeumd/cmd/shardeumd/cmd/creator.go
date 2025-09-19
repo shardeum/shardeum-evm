@@ -94,7 +94,7 @@ func (a appCreator) newApp(
 		traceStore,
 		true,
 		simtestutil.EmptyAppOptions{},
-		evmdconfig.EVMChainID,
+		evmdconfig.ShardeumChainID(),
 		evmdconfig.EvmAppOptions,
 		baseappOptions...,
 	)
@@ -137,7 +137,7 @@ func (a appCreator) appExport(
 		traceStore,
 		loadLatest,
 		appOpts,
-		evmdconfig.EVMChainID,
+		evmdconfig.ShardeumChainID(),
 		evmdconfig.EvmAppOptions,
 	)
 

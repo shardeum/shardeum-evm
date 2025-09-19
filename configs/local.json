@@ -1,0 +1,17 @@
+{
+  "name": "local",
+  "chain_id": "shardeum-local",
+  "evm_chain_id": 8119,
+  "base_denom": "ashm",
+  "display_denom": "shm",
+  "decimals": 18,
+  "bech32_prefix": "shardeum",
+  "ports": {
+    "rpc": "26657",
+    "rest": "1317",
+    "json_rpc": "8545",
+    "websocket": "8546",
+    "grpc": "9090"
+  },
+  "genesis_file": "local-genesis.json"
+}
