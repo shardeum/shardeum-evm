@@ -241,6 +241,9 @@ cp "$GENESIS_TO_USE" "$NODE0_DIR/config/genesis.json"
 echo -e "${YELLOW}Creating validator key for primary node${NC}"
 "$BINARY" keys add "validator" --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1 || true
 
+# Add dev accounts to keyring only (no balances in genesis)
+echo -e "${YELLOW}Adding dev accounts to keyring${NC}"
+
 if [ "$ADD_DEV_ACCOUNTS" = "true" ]; then
   echo -e "${YELLOW}Adding dev accounts to keyring${NC}"
   echo "copper push brief egg scan entry inform record adjust fossil boss egg comic alien upon aspect dry avoid interest fury window hint race symptom" | "$BINARY" keys add "dev0" --keyring-backend test --home "$NODE0_DIR" --recover --algo eth_secp256k1 > /dev/null 2>&1 || true
@@ -255,14 +258,6 @@ fi
 echo -e "${YELLOW}Adding validator account to genesis${NC}"
 "$BINARY" genesis add-genesis-account "validator" 100000000000000000000000000${BASE_DENOM} \
   --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
-
-if [ "$ADD_DEV_ACCOUNTS" = "true" ]; then
-  echo -e "${YELLOW}Adding dev accounts to genesis${NC}"
-  "$BINARY" genesis add-genesis-account "dev0" 10000000000000000000000000${BASE_DENOM} --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
-  "$BINARY" genesis add-genesis-account "dev1" 10000000000000000000000000${BASE_DENOM} --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
-  "$BINARY" genesis add-genesis-account "dev2" 10000000000000000000000000${BASE_DENOM} --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
-  "$BINARY" genesis add-genesis-account "dev3" 10000000000000000000000000${BASE_DENOM} --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
-fi
 
 # -----------------------------
 # Optional: Deploy create2 factory & unprotected txs
@@ -447,15 +442,14 @@ echo "Stop: pkill -f 'shardeumd.*$CHAINID' or Ctrl+C"
 echo "Logs: $BASE_DIR/node*/node.log"
 echo
 echo "Add more nodes: ./scripts/add_node.sh <node_id>"
-if [ "$ADD_DEV_ACCOUNTS" = "true" ]; then
-  echo
-  echo -e "${GREEN}Dev accounts available for testing:${NC}"
-  echo "  dev0: 0xC6Fe5D33615a1C52c08018c47E8Bc53646A0E101 | shardeum1cml96vmptgw99syqrrz8az79xer2pcgpayxvjl"
-  echo "  dev1: 0x963EBDf2e1f8DB8707D05FC75bfeFFBa1B5BaC17 | shardeum1jcltmuhplrdcwp7stlr4hlhlhgd4htqhtvey7v"
-  echo "  dev2: 0x40a0cb1C63e026A81B55EE1308586E21eec1eFa9 | shardeum1gzsvk8rruqn2sx64acfsskrwy8hvrmaf686rht"
-  echo "  dev3: 0x498B5AeC5D439b733dC2F58AB489783A23FB26dA | shardeum1fx944mzagwdhx0wz7k9tfztc8g3lkfk6ej0d5n"
-  echo "  Each account has 10,000,000 ${BASE_DENOM} tokens for testing"
-fi
+echo
+echo -e "${GREEN}Preset accounts funded for testing:${NC}"
+echo "  1f1545Eb7EE5C3C1c4784ee9ddE5D26A9f76F77C | shardeum1ru25t6m7uhpur3rcfm5amewjd20hdamul9rj9u"
+echo "  F151bBcDD3754A675a2F6CdE1c97A03a9972d0BB | shardeum179gmhnwnw49xwk30dn0pe9aq82vh959mpa2j65"
+echo "  166eAB1aec68881690f11571064444753a519F72 | shardeum1zeh2kxhvdzypdy83z4csv3zyw5a9r8mjqjaumd"
+echo "  7ccBFDE95892d699914970B9fe7EE6B9853284AD | shardeum10n9lm62cjttfny2fwzululhxhxzn9p9d57gnhp"
+echo "  7C1BeCf44d30F9381C066b894Ed5C5b8ac279746 | shardeum10sd7eazdxruns8qxdwy5a4w9hzkz096x94p242"
+echo "  Each account has 10,000,000 ashm tokens for testing"
 echo
 echo -e "${YELLOW}Network is running. Press Ctrl+C to stop all nodes.${NC}"
 
