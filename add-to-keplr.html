@@ -60,7 +60,7 @@
         
         <div class="info">
             <strong>Network Details:</strong><br>
-            • Chain ID: shardeum-testnet<br>
+            • Chain ID: shardeum-local<br>
             • RPC: http://127.0.0.1:26657<br>
             • Token: SHM (ashm)<br>
             • Decimals: 18
@@ -102,7 +102,7 @@
             try {
                 // First add as Cosmos chain for staking support
                 await window.keplr.experimentalSuggestChain({
-                    chainId: "shardeum-testnet",
+                    chainId: "shardeum-local",
                     chainName: "Shardeum Local",
                     rpc: "http://127.0.0.1:26657",
                     rest: "http://127.0.0.1:1317",
@@ -146,29 +146,8 @@
 
                 statusDiv.innerHTML = '<div class="success">✅ Shardeum Local (Cosmos) added to Keplr successfully!</div>';
                 
-                // Then add as Ethereum-compatible chain for EVM transactions
-                await window.keplr.ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [{
-                        chainId: '0x1FB7', // 8119 in hex
-                        chainName: 'Shardeum Local EVM',
-                        nativeCurrency: {
-                            name: 'Shardeum',
-                            symbol: 'SHM',
-                            decimals: 18
-                        },
-                        rpcUrls: ['http://127.0.0.1:8545'],
-                        iconUrls: []
-                    }]
-                });
-
-                statusDiv.innerHTML += '<div class="success">✅ Shardeum Local (EVM) added to Keplr successfully!</div>';
-                
                 // Enable both modes
-                await window.keplr.enable("shardeum-testnet");
-                await window.keplr.ethereum.request({
-                    method: 'eth_requestAccounts'
-                });
+                await window.keplr.enable("shardeum-local");
                 statusDiv.innerHTML += '<div class="success">✅ Both Cosmos staking and EVM transactions enabled!</div>';
                 
             } catch (error) {
