@@ -255,7 +255,6 @@ def update_genesis_with_accounts(genesis_path: str,
                 "@type": "/cosmos.auth.v1beta1.BaseAccount",
                 "address": address,
                 "pub_key": None,
-                "account_number": str(next_account_number),
                 "sequence": str(nonce) if include_nonce else "0"
             }
             genesis['app_state']['auth']['accounts'].append(new_account)
