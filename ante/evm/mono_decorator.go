@@ -118,13 +118,20 @@ func (md MonoDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, ne
 	fee := sdkmath.LegacyNewDecFromBigInt(feeAmt)
 	gasLimit := sdkmath.LegacyNewDecFromBigInt(new(big.Int).SetUint64(gas))
 
-	// TODO: computation for mempool and global fee can be made using only
-	// the price instead of the fee. This would save some computation.
-	//
-	// 2. mempool inclusion fee
+	// 2. dual-layer fee validation (mempool + global fee combined)
 	if ctx.IsCheckTx() && !simulate {
-		// FIX: Mempool dec should be converted
-		if err := CheckMempoolFee(fee, decUtils.MempoolMinGasPrice, gasLimit, decUtils.Rules.IsLondon); err != nil {
+		// Get node-level minimum gas price from app.toml configuration
+		nodeMinGasPrice := GetNodeMinGasPrice(ctx, evmDenom)
+
+		// For dynamic fee transactions, calculate effective fee based on base fee
+		effectiveFee := fee
+		if ethTx.Type() >= ethtypes.DynamicFeeTxType && decUtils.BaseFee != nil {
+			// Use effective fee for EIP-1559 transactions
+			effectiveFee = sdkmath.LegacyNewDecFromBigInt(ethMsg.GetEffectiveFee(decUtils.BaseFee))
+		}
+
+		// Validate against both node-level floor and global fee market requirements
+		if err := CheckDualLayerFee(effectiveFee, nodeMinGasPrice, decUtils.GlobalMinGasPrice, gasLimit, decUtils.Rules.IsLondon); err != nil {
 			return ctx, err
 		}
 	}
@@ -139,9 +146,13 @@ func (md MonoDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, ne
 		fee = sdkmath.LegacyNewDecFromBigInt(feeAmt)
 	}
 
-	// 3. min gas price (global min fee)
-	if err := CheckGlobalFee(fee, decUtils.GlobalMinGasPrice, gasLimit); err != nil {
-		return ctx, err
+	// 3. min gas price (global min fee) - redundant check removed since it's now part of dual-layer validation
+	// Note: This validation is now handled in CheckDualLayerFee for mempool transactions
+	// For non-mempool transactions (e.g., during block execution), we still need the global fee check
+	if !ctx.IsCheckTx() || simulate {
+		if err := CheckGlobalFee(fee, decUtils.GlobalMinGasPrice, gasLimit); err != nil {
+			return ctx, err
+		}
 	}
 
 	// 4. validate msg contents
