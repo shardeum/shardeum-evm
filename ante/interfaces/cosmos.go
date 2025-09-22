@@ -30,3 +30,9 @@ type BankKeeper interface {
 	SendCoins(ctx context.Context, from, to sdk.AccAddress, amt sdk.Coins) error
 	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 }
+
+// ValidatorWhitelistKeeper controls which validators can join consensus through delegation
+type ValidatorWhitelistKeeper interface {
+	IsWhitelistEnabled(ctx sdk.Context) bool
+	CanValidatorReceiveDelegation(ctx sdk.Context, validatorAddr string) bool
+}

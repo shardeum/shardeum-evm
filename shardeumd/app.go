@@ -20,11 +20,12 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	evmante "github.com/shardeum/shardeum-evm/ante"
 	cosmosevmante "github.com/shardeum/shardeum-evm/ante/evm"
+	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 	evmconfig "github.com/shardeum/shardeum-evm/config"
 	evmosencoding "github.com/shardeum/shardeum-evm/encoding"
-	"github.com/shardeum/shardeum-evm/shardeumd/ante"
 	evmmempool "github.com/shardeum/shardeum-evm/mempool"
 	srvflags "github.com/shardeum/shardeum-evm/server/flags"
+	"github.com/shardeum/shardeum-evm/shardeumd/ante"
 	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 	"github.com/shardeum/shardeum-evm/x/erc20"
 	erc20keeper "github.com/shardeum/shardeum-evm/x/erc20/keeper"
@@ -34,15 +35,11 @@ import (
 	feemarketkeeper "github.com/shardeum/shardeum-evm/x/feemarket/keeper"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	ibccallbackskeeper "github.com/shardeum/shardeum-evm/x/ibc/callbacks/keeper"
+	"github.com/shardeum/shardeum-evm/x/validatorwhitelist"
+	validatorwhitelistkeeper "github.com/shardeum/shardeum-evm/x/validatorwhitelist/keeper"
+	validatorwhitelisttypes "github.com/shardeum/shardeum-evm/x/validatorwhitelist/types"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
-	evmdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
-	"github.com/shardeum/shardeum-evm/x/ibc/transfer"
-	transferkeeper "github.com/shardeum/shardeum-evm/x/ibc/transfer/keeper"
-	transferv2 "github.com/shardeum/shardeum-evm/x/ibc/transfer/v2"
-	"github.com/shardeum/shardeum-evm/x/vm"
-	evmkeeper "github.com/shardeum/shardeum-evm/x/vm/keeper"
-	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	"github.com/cosmos/gogoproto/proto"
 	ibccallbacks "github.com/cosmos/ibc-go/v10/modules/apps/callbacks"
 	ibctransfer "github.com/cosmos/ibc-go/v10/modules/apps/transfer"
@@ -54,6 +51,13 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
 	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
+	evmdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
+	"github.com/shardeum/shardeum-evm/x/ibc/transfer"
+	transferkeeper "github.com/shardeum/shardeum-evm/x/ibc/transfer/keeper"
+	transferv2 "github.com/shardeum/shardeum-evm/x/ibc/transfer/v2"
+	"github.com/shardeum/shardeum-evm/x/vm"
+	evmkeeper "github.com/shardeum/shardeum-evm/x/vm/keeper"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -185,9 +189,10 @@ type ShardeumApp struct {
 	CallbackKeeper ibccallbackskeeper.ContractKeeper
 
 	// Cosmos EVM keepers
-	FeeMarketKeeper   feemarketkeeper.Keeper
-	EVMKeeper         *evmkeeper.Keeper
-	Erc20Keeper       erc20keeper.Keeper
+	FeeMarketKeeper         feemarketkeeper.Keeper
+	EVMKeeper               *evmkeeper.Keeper
+	Erc20Keeper             erc20keeper.Keeper
+	ValidatorWhitelistKeeper validatorwhitelistkeeper.Keeper
 	EVMMempool        *evmmempool.ExperimentalEVMMempool
 
 	// the module manager
@@ -271,7 +276,7 @@ func NewShardeumApp(
 		// ibc keys
 		ibcexported.StoreKey, ibctransfertypes.StoreKey,
 		// Cosmos EVM store keys
-		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey,
+		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, validatorwhitelisttypes.StoreKey,
 	)
 
 	tkeys := storetypes.NewTransientStoreKeys(evmtypes.TransientKey, feemarkettypes.TransientKey)
@@ -457,6 +462,11 @@ func NewShardeumApp(
 		tkeys[feemarkettypes.TransientKey],
 	)
 
+	app.ValidatorWhitelistKeeper = validatorwhitelistkeeper.NewKeeper(
+		appCodec,
+		keys[validatorwhitelisttypes.StoreKey],
+	)
+
 	// PreciseBank removed - using 18 decimal ashm token
 
 	// Set up EVM keeper
@@ -596,6 +606,7 @@ func NewShardeumApp(
 		vm.NewAppModule(app.EVMKeeper, app.AccountKeeper, app.AccountKeeper.AddressCodec()),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper),
+		validatorwhitelist.NewAppModule(appCodec, app.ValidatorWhitelistKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager which is in charge of setting up basic,
@@ -633,7 +644,7 @@ func NewShardeumApp(
 		ibcexported.ModuleName, ibctransfertypes.ModuleName,
 
 		// Cosmos EVM BeginBlockers
-		erc20types.ModuleName, feemarkettypes.ModuleName,
+		erc20types.ModuleName, feemarkettypes.ModuleName, validatorwhitelisttypes.ModuleName,
 		evmtypes.ModuleName, // NOTE: EVM BeginBlocker must come after FeeMarket BeginBlocker
 
 		// TODO: remove no-ops? check if all are no-ops before removing
@@ -652,7 +663,7 @@ func NewShardeumApp(
 		authtypes.ModuleName, banktypes.ModuleName,
 
 		// Cosmos EVM EndBlockers
-		evmtypes.ModuleName, erc20types.ModuleName, feemarkettypes.ModuleName,
+		evmtypes.ModuleName, erc20types.ModuleName, feemarkettypes.ModuleName, validatorwhitelisttypes.ModuleName,
 
 		// no-ops
 		ibcexported.ModuleName, ibctransfertypes.ModuleName,
@@ -679,6 +690,7 @@ func NewShardeumApp(
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		erc20types.ModuleName,
+		validatorwhitelisttypes.ModuleName,
 
 		ibctransfertypes.ModuleName,
 		genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,
@@ -806,19 +818,20 @@ func NewShardeumApp(
 
 func (app *ShardeumApp) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64) {
 	options := evmante.HandlerOptions{
-		Cdc:                    app.appCodec,
-		AccountKeeper:          app.AccountKeeper,
-		BankKeeper:             app.BankKeeper,
-		ExtensionOptionChecker: cosmosevmtypes.HasDynamicFeeExtensionOption,
-		EvmKeeper:              app.EVMKeeper,
-		FeegrantKeeper:         app.FeeGrantKeeper,
-		IBCKeeper:              app.IBCKeeper,
-		FeeMarketKeeper:        app.FeeMarketKeeper,
-		SignModeHandler:        txConfig.SignModeHandler(),
-		SigGasConsumer:         evmante.SigVerificationGasConsumer,
-		MaxTxGasWanted:         maxGasWanted,
-		TxFeeChecker:           cosmosevmante.NewDynamicFeeChecker(app.FeeMarketKeeper),
-		PendingTxListener:      app.onPendingTx,
+		Cdc:                      app.appCodec,
+		AccountKeeper:            app.AccountKeeper,
+		BankKeeper:               app.BankKeeper,
+		ExtensionOptionChecker:   cosmosevmtypes.HasDynamicFeeExtensionOption,
+		EvmKeeper:                app.EVMKeeper,
+		FeegrantKeeper:           app.FeeGrantKeeper,
+		IBCKeeper:                app.IBCKeeper,
+		FeeMarketKeeper:          app.FeeMarketKeeper,
+		ValidatorWhitelistKeeper: anteinterfaces.NewOnChainValidatorWhitelistKeeper(app.ValidatorWhitelistKeeper),
+		SignModeHandler:          txConfig.SignModeHandler(),
+		SigGasConsumer:           evmante.SigVerificationGasConsumer,
+		MaxTxGasWanted:           maxGasWanted,
+		TxFeeChecker:             cosmosevmante.NewDynamicFeeChecker(app.FeeMarketKeeper),
+		PendingTxListener:        app.onPendingTx,
 	}
 	if err := options.Validate(); err != nil {
 		panic(err)

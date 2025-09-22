@@ -1,0 +1,13 @@
+syntax = "proto3";
+package shardeum.validatorwhitelist.v1;
+
+import "shardeum/validatorwhitelist/v1/params.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cosmos/evm/x/validatorwhitelist/types";
+
+// GenesisState defines the validator whitelist module's genesis state.
+message GenesisState {
+  // params defines all the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}

@@ -1,11 +1,11 @@
 package ante
 
 import (
+	ibcante "github.com/cosmos/ibc-go/v10/modules/core/ante"
 	baseevmante "github.com/shardeum/shardeum-evm/ante"
 	cosmosante "github.com/shardeum/shardeum-evm/ante/cosmos"
 	evmante "github.com/shardeum/shardeum-evm/ante/evm"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
-	ibcante "github.com/cosmos/ibc-go/v10/modules/core/ante"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -20,6 +20,8 @@ func newCosmosAnteHandler(options baseevmante.HandlerOptions) sdk.AnteHandler {
 			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
 			sdk.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
 		),
+		// Validator whitelist decorator - must be early in the chain
+		cosmosante.NewValidatorWhitelistDecorator(options.ValidatorWhitelistKeeper),
 		ante.NewSetUpContextDecorator(),
 		ante.NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
 		ante.NewValidateBasicDecorator(),

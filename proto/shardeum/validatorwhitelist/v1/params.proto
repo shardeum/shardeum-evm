@@ -1,0 +1,15 @@
+syntax = "proto3";
+package shardeum.validatorwhitelist.v1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cosmos/evm/x/validatorwhitelist/types";
+
+// Params defines the parameters for the validator whitelist module.
+message Params {
+  // enabled indicates whether the whitelist is enabled
+  bool enabled = 1;
+  
+  // allowlist is the list of allowed validator addresses
+  repeated string allowlist = 2;
+}
