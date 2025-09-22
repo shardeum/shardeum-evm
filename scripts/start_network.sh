@@ -34,16 +34,19 @@ usage() {
   echo "Environment variables:"
   echo "  SHARDEUM_NETWORK              Network to use (overrides --network)"
   echo "  SHARDEUM_CHAIN_ID             Chain ID to use (overrides --chain-id)"
+  echo "  SHARDEUM_CONFIG_DIR           Absolute path to directory containing configs/*.json"
   echo "  BINARY                        Path to shardeumd binary"
   echo "  SKIP_BUILD=1                  Skip 'make build' if binary already exists"
   echo ""
   echo "Examples:"
-  echo "  $0 4 --network testnet                            			# Start 4 nodes with testnet network"
-  echo "  $0 --nodes 6 --network devnet --chain-id shardeum-dev-1               # Start 6 nodes using devnet config and custom chain id"
-  echo "  $0 -g ./genesis.json                              			# Start 4 nodes with custom genesis"
-  echo "  $0 6 ./genesis.json                               			# Legacy: 6 nodes + custom genesis"
-  echo "  $0 --create2-factory                              			# Include create2 factory in genesis"
-  echo "  $0 --allow-unprotected-txs                        			# Allow unprotected (non-EIP155) txs"
+  echo "  $0 4 --network testnet"
+  echo "  $0 6 --network devnet --chain-id shardeum-dev-1"
+  echo "  SHARDEUM_NETWORK=mainnet $0 4"
+  echo "  SHARDEUM_CONFIG_DIR=$REPO_ROOT/configs SHARDEUM_NETWORK=testnet $0 4"
+  echo "  $0 -g ./genesis.json                               		# Start 4 nodes with custom genesis"
+  echo "  $0 6 ./genesis.json                                 		# Legacy: 6 nodes + custom genesis"
+  echo "  $0 --create2-factory                                		# Include create2 factory in genesis"
+  echo "  $0 --allow-unprotected-txs                          		# Allow unprotected (non-EIP155) txs"
   exit 1
 }
 
@@ -86,7 +89,7 @@ while [[ $# -gt 0 ]]; do
       ALLOW_UNPROTECTED_TXS="true"; shift ;;
     -h|--help)
       usage ;;
-    -*)
+    -* )
       echo "Unknown option: $1"; usage ;;
     *)
       # Legacy positional: first numeric is NODES, second is GENESIS
@@ -141,6 +144,16 @@ if ! [[ "$NODES" =~ ^[0-9]+$ ]] || [[ "$NODES" -lt 1 ]]; then
   echo -e "${RED}Error: Number of nodes must be a positive integer${NC}"
   exit 1
 fi
+
+# Ensure the binary can resolve configs via SHARDEUM_CONFIG_DIR
+export SHARDEUM_CONFIG_DIR="${SHARDEUM_CONFIG_DIR:-$REPO_ROOT/configs}"
+
+# Cleanup function for graceful shutdown
+cleanup() {
+  echo -e "\n${YELLOW}Shutting down nodes...${NC}"
+  pkill -f "shardeumd.*$CHAINID" || true
+  exit 0
+}
 
 # -----------------------------
 # Announce

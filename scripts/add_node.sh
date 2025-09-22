@@ -26,11 +26,13 @@ usage() {
   echo "Environment variables:"
   echo "  SHARDEUM_NETWORK     Network to use (overrides --network)"
   echo "  SHARDEUM_CHAIN_ID    Chain ID to use (overrides --chain-id)"
+  echo "  SHARDEUM_CONFIG_DIR  Absolute path to directory containing configs/*.json"
   echo "  BINARY               Path to shardeumd binary"
   echo ""
   echo "Examples:"
   echo "  $0 node4 --network testnet"
   echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
+  echo "  SHARDEUM_CONFIG_DIR=$REPO_ROOT/configs SHARDEUM_NETWORK=testnet $0 node6"
   exit 1
 }
 
@@ -62,11 +64,13 @@ while [[ $# -gt 0 ]]; do
       echo "Environment variables:"
       echo "  SHARDEUM_NETWORK     Network to use (overrides --network)"
       echo "  SHARDEUM_CHAIN_ID    Chain ID to use (overrides --chain-id)"
+      echo "  SHARDEUM_CONFIG_DIR  Absolute path to directory containing configs/*.json"
       echo "  BINARY               Path to shardeumd binary"
       echo ""
       echo "Examples:"
       echo "  $0 node4 --network testnet"
       echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
+      echo "  SHARDEUM_CONFIG_DIR=$REPO_ROOT/configs SHARDEUM_NETWORK=testnet $0 node6"
       exit 0
       ;;
     --*)
@@ -119,6 +123,9 @@ fi
 BASE_DIR="$REPO_ROOT/.testnet"
 MIN_GAS="0.000006$BASE_DENOM"
 BINARY="${BINARY:-$REPO_ROOT/build/shardeumd}"
+
+# Ensure the binary can resolve configs via SHARDEUM_CONFIG_DIR
+export SHARDEUM_CONFIG_DIR="${SHARDEUM_CONFIG_DIR:-$REPO_ROOT/configs}"
 
 # Cleanup function for graceful shutdown
 cleanup() {

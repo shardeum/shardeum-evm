@@ -36,24 +36,28 @@ func (suite *ConfigTestSuite) SetupTest() {
 	// Create standard network config files
 	suite.createStandardConfigs()
 
-	// Save original working directory and change to temp dir
-	suite.originalWd, _ = os.Getwd()
-	os.Chdir(tempDir)
+    // Save original working directory and change to temp dir
+    suite.originalWd, _ = os.Getwd()
+    os.Chdir(tempDir)
 
 	// Save original environment variables
 	suite.originalEnv = make(map[string]string)
-	envVars := []string{
+    envVars := []string{
 		"SHARDEUM_NETWORK",
 		"SHARDEUM_CHAIN_ID",
 		"SHARDEUM_EVM_CHAIN_ID",
 		"SHARDEUM_BASE_DENOM",
 		"SHARDEUM_DISPLAY_DENOM",
+        "SHARDEUM_CONFIG_DIR",
 	}
 
 	for _, envVar := range envVars {
 		suite.originalEnv[envVar] = os.Getenv(envVar)
 		os.Unsetenv(envVar)
-	}
+    }
+
+    // Point the binary to our temporary configs directory
+    os.Setenv("SHARDEUM_CONFIG_DIR", suite.configDir)
 }
 
 func (suite *ConfigTestSuite) TearDownTest() {
@@ -112,6 +116,38 @@ func (suite *ConfigTestSuite) createStandardConfigs() {
 				GRPC:      "9090",
 			},
 		},
+        "devnet": {
+            Name:         "devnet",
+            ChainID:      "shardeum-devnet",
+            EVMChainID:   8119,
+            BaseDenom:    "ashm",
+            DisplayDenom: "shm",
+            Decimals:     evmtypes.EighteenDecimals,
+            Bech32Prefix: "shardeum",
+            Ports: NetworkPorts{
+                RPC:       "26657",
+                REST:      "1317",
+                JSONRPC:   "8545",
+                WebSocket: "8546",
+                GRPC:      "9090",
+            },
+        },
+        "mainnet": {
+            Name:         "mainnet",
+            ChainID:      "shardeum-mainnet",
+            EVMChainID:   8119,
+            BaseDenom:    "ashm",
+            DisplayDenom: "shm",
+            Decimals:     evmtypes.EighteenDecimals,
+            Bech32Prefix: "shardeum",
+            Ports: NetworkPorts{
+                RPC:       "26657",
+                REST:      "1317",
+                JSONRPC:   "8545",
+                WebSocket: "8546",
+                GRPC:      "9090",
+            },
+        },
 	}
 
 	for name, config := range networks {

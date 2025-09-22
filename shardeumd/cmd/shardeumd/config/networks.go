@@ -89,23 +89,18 @@ func applyEnvOverrides(config NetworkConfig) NetworkConfig {
 
 // getNetworkConfigPath returns the path to the network configuration file
 func getNetworkConfigPath(network string) string {
-	// Try current working directory first
-	cwd, _ := os.Getwd()
-	configPath := filepath.Join(cwd, "configs", fmt.Sprintf("%s.json", network))
-	if _, err := os.Stat(configPath); err == nil {
-		return configPath
-	}
+    // Enforce explicit configuration directory via environment variable
+    configDir := os.Getenv("SHARDEUM_CONFIG_DIR")
+    if configDir == "" {
+        panic("SHARDEUM_CONFIG_DIR is not set; please set it to the directory containing network JSON configs")
+    }
 
-	// Try relative to binary location
-	execPath, _ := os.Executable()
-	execDir := filepath.Dir(execPath)
-	configPath = filepath.Join(execDir, "configs", fmt.Sprintf("%s.json", network))
-	if _, err := os.Stat(configPath); err == nil {
-		return configPath
-	}
+    configPath := filepath.Join(configDir, fmt.Sprintf("%s.json", network))
+    if _, err := os.Stat(configPath); err == nil {
+        return configPath
+    }
 
-	// Default fallback
-	return filepath.Join("configs", fmt.Sprintf("%s.json", network))
+    panic(fmt.Sprintf("network config '%s.json' not found in SHARDEUM_CONFIG_DIR='%s'", network, configDir))
 }
 
 // loadNetworkConfigFromFile loads network configuration from a JSON file

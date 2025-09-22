@@ -82,10 +82,10 @@ func (suite *IntegrationTestSuite) SetupTest() {
 
 	// Save environment
 	suite.originalEnv = make(map[string]string)
-	envVars := []string{
+    envVars := []string{
 		"SHARDEUM_NETWORK", "SHARDEUM_CHAIN_ID", "SHARDEUM_EVM_CHAIN_ID",
 		"SHARDEUM_BASE_DENOM", "SHARDEUM_DISPLAY_DENOM",
-		"BINARY", "SKIP_BUILD",
+        "BINARY", "SKIP_BUILD", "SHARDEUM_CONFIG_DIR",
 	}
 	for _, envVar := range envVars {
 		suite.originalEnv[envVar] = os.Getenv(envVar)
@@ -247,6 +247,7 @@ func (suite *IntegrationTestSuite) runCommand(name string, args ...string) (stri
 	cmd.Env = append(os.Environ(),
 		"BINARY="+suite.mockBinary,
 		"SKIP_BUILD=1",
+        "SHARDEUM_CONFIG_DIR="+suite.configsDir,
 	)
 	output, err := cmd.CombinedOutput()
 	return string(output), err
