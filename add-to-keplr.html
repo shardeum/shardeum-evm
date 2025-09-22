@@ -34,6 +34,17 @@
         button:hover {
             background-color: #45a049;
         }
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+            width: 200px;
+        }
+        .network-selector {
+            margin: 20px 0;
+        }
         .info {
             background-color: #e7f3ff;
             border-left: 6px solid #2196F3;
@@ -56,17 +67,29 @@
 </head>
 <body>
     <div class="container">
-        <h1>Add Shardeum Local Network to Keplr</h1>
+        <h1>Add Shardeum Network to Keplr</h1>
         
-        <div class="info">
+        <div class="network-selector">
+            <label for="networkSelect"><strong>Select Network:</strong></label><br>
+            <select id="networkSelect" onchange="updateNetworkDetails()">
+                <option value="local">Local</option>
+                <option value="testnet">Testnet</option>
+                <option value="devnet">Devnet</option>
+                <option value="mainnet">Mainnet</option>
+            </select>
+        </div>
+        
+        <div class="info" id="networkDetails">
             <strong>Network Details:</strong><br>
-            • Chain ID: shardeum-testnet<br>
-            • RPC: http://127.0.0.1:26657<br>
-            • Token: SHM (ashm)<br>
-            • Decimals: 18
+            <span id="chainIdDisplay">• Chain ID: shardeum-local</span><br>
+            <span id="rpcDisplay">• RPC: http://127.0.0.1:26657</span><br>
+            <span id="restDisplay">• REST: http://127.0.0.1:1317</span><br>
+            <span id="jsonRpcDisplay">• JSON-RPC: http://127.0.0.1:8545</span><br>
+            <span id="tokenDisplay">• Token: SHM (ashm)</span><br>
+            <span id="decimalsDisplay">• Decimals: 18</span>
         </div>
 
-        <button onclick="addShardeumToKeplr()">Add Shardeum Local to Keplr</button>
+        <button onclick="addShardeumToKeplr()">Add Selected Network to Keplr</button>
         
         <div id="status"></div>
 
@@ -74,8 +97,9 @@
             <h3>Prerequisites:</h3>
             <ul>
                 <li>Keplr browser extension installed</li>
-                <li>Local Shardeum node running with: <code>make start-network</code></li>
-                <li>API server enabled (ports 26657 for RPC, 1317 for API)</li>
+                <li>Shardeum node running for selected network</li>
+                <li>For local/testnet/devnet: Use <code>make start-network NETWORK=&lt;network&gt;</code></li>
+                <li>API server enabled (check ports in network details above)</li>
                 <li>Access this page via http:// (not file://)</li>
             </ul>
         </div>
@@ -91,7 +115,77 @@
     </div>
 
     <script>
+        // Network configurations
+        const networks = {
+            local: {
+                name: "local",
+                chainId: "shardeum-local",
+                evmChainId: 8119,
+                baseDenom: "ashm",
+                displayDenom: "shm",
+                decimals: 18,
+                bech32Prefix: "shardeum",
+                rpcUrl: "http://127.0.0.1:26657",
+                restUrl: "http://127.0.0.1:1317",
+                jsonRpcUrl: "http://127.0.0.1:8545",
+                displayName: "Shardeum Local"
+            },
+            testnet: {
+                name: "testnet",
+                chainId: "shardeum-testnet",
+                evmChainId: 8119,
+                baseDenom: "ashm",
+                displayDenom: "shm",
+                decimals: 18,
+                bech32Prefix: "shardeum",
+                rpcUrl: "http://127.0.0.1:26657",
+                restUrl: "http://127.0.0.1:1317",
+                jsonRpcUrl: "http://127.0.0.1:8545",
+                displayName: "Shardeum Testnet"
+            },
+            devnet: {
+                name: "devnet",
+                chainId: "shardeum-devnet",
+                evmChainId: 8119,
+                baseDenom: "ashm",
+                displayDenom: "shm",
+                decimals: 18,
+                bech32Prefix: "shardeum",
+                rpcUrl: "http://127.0.0.1:26657",
+                restUrl: "http://127.0.0.1:1317",
+                jsonRpcUrl: "http://127.0.0.1:8545",
+                displayName: "Shardeum Devnet"
+            },
+            mainnet: {
+                name: "mainnet",
+                chainId: "shardeum-1",
+                evmChainId: 8119,
+                baseDenom: "ashm",
+                displayDenom: "shm",
+                decimals: 18,
+                bech32Prefix: "shardeum",
+                rpcUrl: "http://127.0.0.1:26657",
+                restUrl: "http://127.0.0.1:1317",
+                jsonRpcUrl: "http://127.0.0.1:8545",
+                displayName: "Shardeum Mainnet"
+            }
+        };
+
+        function updateNetworkDetails() {
+            const selectedNetwork = document.getElementById('networkSelect').value;
+            const network = networks[selectedNetwork];
+            
+            document.getElementById('chainIdDisplay').textContent = `• Chain ID: ${network.chainId}`;
+            document.getElementById('rpcDisplay').textContent = `• RPC: ${network.rpcUrl}`;
+            document.getElementById('restDisplay').textContent = `• REST: ${network.restUrl}`;
+            document.getElementById('jsonRpcDisplay').textContent = `• JSON-RPC: ${network.jsonRpcUrl}`;
+            document.getElementById('tokenDisplay').textContent = `• Token: ${network.displayDenom.toUpperCase()} (${network.baseDenom})`;
+            document.getElementById('decimalsDisplay').textContent = `• Decimals: ${network.decimals}`;
+        }
+
         async function addShardeumToKeplr() {
+            const selectedNetwork = document.getElementById('networkSelect').value;
+            const network = networks[selectedNetwork];
             const statusDiv = document.getElementById('status');
             
             if (!window.keplr) {
@@ -102,34 +196,34 @@
             try {
                 // First add as Cosmos chain for staking support
                 await window.keplr.experimentalSuggestChain({
-                    chainId: "shardeum-testnet",
-                    chainName: "Shardeum Local",
-                    rpc: "http://127.0.0.1:26657",
-                    rest: "http://127.0.0.1:1317",
+                    chainId: network.chainId,
+                    chainName: network.displayName,
+                    rpc: network.rpcUrl,
+                    rest: network.restUrl,
                     bip44: {
                         coinType: 60,
                     },
                     features: ["eth-address-gen", "eth-key-sign"],
                     bech32Config: {
-                        bech32PrefixAccAddr: "shardeum",
-                        bech32PrefixAccPub: "shardeumpub",
-                        bech32PrefixValAddr: "shardeumvaloper",
-                        bech32PrefixValPub: "shardeumvaloperpub",
-                        bech32PrefixConsAddr: "shardeumvalcons",
-                        bech32PrefixConsPub: "shardeumvalconspub",
+                        bech32PrefixAccAddr: network.bech32Prefix,
+                        bech32PrefixAccPub: `${network.bech32Prefix}pub`,
+                        bech32PrefixValAddr: `${network.bech32Prefix}valoper`,
+                        bech32PrefixValPub: `${network.bech32Prefix}valoperpub`,
+                        bech32PrefixConsAddr: `${network.bech32Prefix}valcons`,
+                        bech32PrefixConsPub: `${network.bech32Prefix}valconspub`,
                     },
                     currencies: [
                         {
-                            coinDenom: "SHM",
-                            coinMinimalDenom: "ashm",
-                            coinDecimals: 18,
+                            coinDenom: network.displayDenom.toUpperCase(),
+                            coinMinimalDenom: network.baseDenom,
+                            coinDecimals: network.decimals,
                         },
                     ],
                     feeCurrencies: [
                         {
-                            coinDenom: "SHM",
-                            coinMinimalDenom: "ashm",
-                            coinDecimals: 18,
+                            coinDenom: network.displayDenom.toUpperCase(),
+                            coinMinimalDenom: network.baseDenom,
+                            coinDecimals: network.decimals,
                             gasPriceStep: {
                                 low: 0.01,
                                 average: 0.025,
@@ -138,37 +232,18 @@
                         },
                     ],
                     stakeCurrency: {
-                        coinDenom: "SHM",
-                        coinMinimalDenom: "ashm",
-                        coinDecimals: 18,
+                        coinDenom: network.displayDenom.toUpperCase(),
+                        coinMinimalDenom: network.baseDenom,
+                        coinDecimals: network.decimals,
                     },
                 });
 
-                statusDiv.innerHTML = '<div class="success">✅ Shardeum Local (Cosmos) added to Keplr successfully!</div>';
+                statusDiv.innerHTML = `<div class="success">✅ ${network.displayName} (Cosmos) added to Keplr successfully!</div>`;
                 
-                // Then add as Ethereum-compatible chain for EVM transactions
-                await window.keplr.ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [{
-                        chainId: '0x1FB7', // 8119 in hex
-                        chainName: 'Shardeum Local EVM',
-                        nativeCurrency: {
-                            name: 'Shardeum',
-                            symbol: 'SHM',
-                            decimals: 18
-                        },
-                        rpcUrls: ['http://127.0.0.1:8545'],
-                        iconUrls: []
-                    }]
-                });
-
-                statusDiv.innerHTML += '<div class="success">✅ Shardeum Local (EVM) added to Keplr successfully!</div>';
-                
+              
                 // Enable both modes
-                await window.keplr.enable("shardeum-testnet");
-                await window.keplr.ethereum.request({
-                    method: 'eth_requestAccounts'
-                });
+                await window.keplr.enable(network.chainId);
+     
                 statusDiv.innerHTML += '<div class="success">✅ Both Cosmos staking and EVM transactions enabled!</div>';
                 
             } catch (error) {
@@ -176,6 +251,11 @@
                 statusDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
             }
         }
+
+        // Initialize with default network details
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNetworkDetails();
+        });
     </script>
 </body>
 </html>
