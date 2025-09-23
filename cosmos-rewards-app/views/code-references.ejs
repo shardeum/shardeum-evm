@@ -45,10 +45,10 @@
                     <div class="sidebar-nav">
                         <div class="nav-section">
                             <h6 class="nav-section-title">🔄 Execution Flow</h6>
-                            <a href="#execution-flow" class="nav-link-custom" data-section="execution-flow">
+                            <div class="nav-link-custom nav-disabled" data-section="execution-flow">
                                 <span class="nav-icon">📁</span>
                                 <span class="nav-text">Execution Flow Overview</span>
-                            </a>
+                            </div>
                         </div>
 
                         <div class="nav-section">
@@ -519,20 +519,42 @@ func (k Keeper) BondedRatio(ctx context.Context) (math.LegacyDec, error) {
     <script>
         // Load Prism.js with proper error handling
         function loadPrism() {
+            // Check if Prism is already loaded
+            if (typeof Prism !== 'undefined') {
+                console.log('Prism already loaded, highlighting code...');
+                Prism.highlightAll();
+                return;
+            }
+
             const coreScript = document.createElement('script');
             coreScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js';
             coreScript.onload = function() {
-                const goScript = document.createElement('script');
-                goScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js';
-                goScript.onload = function() {
-                    if (typeof Prism !== 'undefined') {
-                        Prism.highlightAll();
-                    }
-                };
-                goScript.onerror = function() {
-                    console.warn('Failed to load Prism Go component');
-                };
-                document.head.appendChild(goScript);
+                console.log('Prism core loaded successfully');
+                // Wait a bit for Prism to initialize
+                setTimeout(function() {
+                    const goScript = document.createElement('script');
+                    goScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js';
+                    goScript.onload = function() {
+                        console.log('Prism Go component loaded successfully');
+                        // Wait for Prism to be fully initialized
+                        setTimeout(function() {
+                            if (typeof Prism !== 'undefined' && Prism.highlightAll) {
+                                try {
+                                    Prism.highlightAll();
+                                    console.log('Code highlighting completed');
+                                } catch (error) {
+                                    console.warn('Error during code highlighting:', error);
+                                }
+                            } else {
+                                console.warn('Prism not properly initialized');
+                            }
+                        }, 100);
+                    };
+                    goScript.onerror = function() {
+                        console.warn('Failed to load Prism Go component');
+                    };
+                    document.head.appendChild(goScript);
+                }, 100);
             };
             coreScript.onerror = function() {
                 console.warn('Failed to load Prism core');
@@ -542,12 +564,61 @@ func (k Keeper) BondedRatio(ctx context.Context) (math.LegacyDec, error) {
         
         // Load Prism after DOM is ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', loadPrism);
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(loadPrism, 100);
+            });
         } else {
-            loadPrism();
+            setTimeout(loadPrism, 100);
         }
     </script>
+    <!-- Toast Notification -->
+    <div id="codeRefToast" class="toast-notification" style="display: none;">
+        <div class="toast-content">
+            <div class="toast-icon">💡</div>
+            <div class="toast-text">
+                <div class="toast-title">Welcome to Code References!</div>
+                <div class="toast-message">Explore the Cosmos SDK implementation details and execution flow.</div>
+            </div>
+            <button class="toast-close" onclick="closeToast()">×</button>
+        </div>
+    </div>
+
     <script src="/js/main.js"></script>
     <script src="/js/code-references.js"></script>
+    <script>
+        // One-time toast notification for code references page
+        function showCodeRefToast() {
+            // Check if user has already seen this toast
+            if (localStorage.getItem('codeRefToastShown') === 'true') {
+                return;
+            }
+            
+            const toast = document.getElementById('codeRefToast');
+            if (toast) {
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.classList.add('show');
+                }, 100);
+                
+                // Mark as shown
+                localStorage.setItem('codeRefToastShown', 'true');
+            }
+        }
+        
+        function closeToast() {
+            const toast = document.getElementById('codeRefToast');
+            if (toast) {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 300);
+            }
+        }
+        
+        // Show toast when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(showCodeRefToast, 1000); // Show after 1 second
+        });
+    </script>
 </body>
 </html>

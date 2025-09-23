@@ -163,7 +163,7 @@
                                         <span class="label-desc">Speed of inflation adjustment per year</span>
                                     </label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control parameter-input" id="inflationRateChange" value="13" step="0.1" min="0" max="100">
+                                        <input type="number" class="form-control parameter-input" id="inflationRateChange" value="15" step="0.1" min="0" max="100">
                                         <span class="input-group-text">%</span>
                                     </div>
                                 </div>
@@ -207,7 +207,7 @@
                                         <span class="label-desc">Starting inflation rate for the chart</span>
                                     </label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control parameter-input" id="initialInflation" value="13" step="0.1" min="0" max="100">
+                                        <input type="number" class="form-control parameter-input" id="initialInflation" value="10" step="0.1" min="0" max="100">
                                         <span class="input-group-text">%</span>
                                     </div>
                                 </div>
@@ -259,7 +259,7 @@
                                 <div class="parameter-item">
                                     <label class="parameter-label">
                                         <span class="label-text">Validator Commission (%)</span>
-                                        <span class="label-desc">Fee validators charge delegators</span>
+                                        <span class="label-desc">Average fee validators charge delegators (varies per validator)</span>
                                     </label>
                                     <div class="input-group">
                                         <input type="number" class="form-control parameter-input" id="validatorCommission" value="5" step="0.1" min="0" max="100">
@@ -395,17 +395,13 @@
                                 <div class="calculation-formula">Gap = |Goal Bonded - Current Bonded| = |<span id="calc-goal">67</span>% - <span id="calc-current">50</span>%| = <span id="calc-gap">17</span>%</div>
                             </div>
                             <div class="calculation-step">
-                                <strong>Step 2:</strong> Calculate gap ratio<br>
-                                <div class="calculation-formula">Gap Ratio = Gap / Goal Bonded = <span id="calc-gap-2">17</span>% / <span id="calc-goal-2">67</span>% = <span id="calc-gap-ratio">0.254</span></div>
-                            </div>
-                            <div class="calculation-step">
-                                <strong>Step 3:</strong> Calculate per-block change<br>
-                                <div class="calculation-formula">Per-Block Change = (Inflation Rate Change × Gap Ratio) / Blocks Per Year<br>
-                                = (<span id="calc-rate-change">13</span>% × <span id="calc-gap-ratio-2">0.254</span>) / <span id="calc-blocks">6,311,520</span><br>
+                                <strong>Step 2:</strong> Calculate per-block change (Cosmos SDK Formula)<br>
+                                <div class="calculation-formula">Per-Block Change = (Inflation Rate Change × Gap) / Blocks Per Year<br>
+                                = (<span id="calc-rate-change">13</span>% × <span id="calc-gap-2">17</span>%) / <span id="calc-blocks">6,311,520</span><br>
                                 = <span id="calc-per-block">0.00000035%</span> per block</div>
                             </div>
                             <div class="calculation-step">
-                                <strong>Step 4:</strong> Determine direction<br>
+                                <strong>Step 3:</strong> Determine direction<br>
                                 <div class="calculation-formula">Since Current Bonded &lt; Goal Bonded: <strong>Inflation increases</strong> by <span id="calc-direction">0.00000035%</span> per block</div>
                             </div>
                         </div>
@@ -462,9 +458,25 @@
                 <div class="calculation-section" id="annual-provisions">
                     <div class="calculation-header">
                         <h3 class="calculation-title">💰 Annual Provisions</h3>
-                        <button class="btn show-calculations-btn" onclick="toggleCalculations('annual-calc')">
-                            Show Calculations
-                        </button>
+                        <div class="header-controls">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary provision-period-btn active" data-period="annual" onclick="switchProvisionPeriod('annual')">
+                                    📅 Annual
+                                </button>
+                                <button type="button" class="btn btn-outline-primary provision-period-btn" data-period="monthly" onclick="switchProvisionPeriod('monthly')">
+                                    📆 Monthly
+                                </button>
+                                <button type="button" class="btn btn-outline-primary provision-period-btn" data-period="daily" onclick="switchProvisionPeriod('daily')">
+                                    📅 Daily
+                                </button>
+                                <button type="button" class="btn btn-outline-primary provision-period-btn" data-period="hourly" onclick="switchProvisionPeriod('hourly')">
+                                    ⏰ Hourly
+                                </button>
+                            </div>
+                            <button class="btn show-calculations-btn" onclick="toggleCalculations('annual-calc')">
+                                Show Calculations
+                            </button>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -610,6 +622,9 @@
                                 <button type="button" class="btn btn-outline-primary chart-period-btn active" data-period="blocks" onclick="switchChartPeriod('blocks')">
                                     🧱 Blocks
                                 </button>
+                                <button type="button" class="btn btn-outline-primary chart-period-btn" data-period="hours" onclick="switchChartPeriod('hours')">
+                                    ⏰ Hours
+                                </button>
                                 <button type="button" class="btn btn-outline-primary chart-period-btn" data-period="days" onclick="switchChartPeriod('days')">
                                     📅 Days
                                 </button>
@@ -665,6 +680,78 @@
                             <div class="calculation-step">
                                 <strong>Key Insight:</strong> Inflation adjusts continuously every block<br>
                                 <div class="calculation-formula">The curve shows how small per-block changes accumulate over time</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Provisions Chart -->
+                <div class="calculation-section" id="provisions-chart">
+                    <div class="calculation-header">
+                        <h3 class="calculation-title">💰 Total Minted Over Time</h3>
+                        <div class="chart-controls">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary provisions-chart-period-btn active" data-period="blocks" onclick="switchProvisionsChartPeriod('blocks')">
+                                    🧱 Blocks
+                                </button>
+                                <button type="button" class="btn btn-outline-primary provisions-chart-period-btn" data-period="hours" onclick="switchProvisionsChartPeriod('hours')">
+                                    ⏰ Hours
+                                </button>
+                                <button type="button" class="btn btn-outline-primary provisions-chart-period-btn" data-period="days" onclick="switchProvisionsChartPeriod('days')">
+                                    📅 Days
+                                </button>
+                                <button type="button" class="btn btn-outline-primary provisions-chart-period-btn" data-period="months" onclick="switchProvisionsChartPeriod('months')">
+                                    📆 Months
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="provisionsChart"></canvas>
+                    </div>
+
+                    <div class="chart-info-panel">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="chart-stat">
+                                    <div class="stat-label">Starting Total Minted</div>
+                                    <div class="stat-value" id="provisions-start-total">30.0M</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="chart-stat">
+                                    <div class="stat-label">Ending Total Minted</div>
+                                    <div class="stat-value" id="provisions-end-total">30.0M</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="chart-stat">
+                                    <div class="stat-label">Total Change</div>
+                                    <div class="stat-value" id="provisions-total-change">+0.0M</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapse-content" id="provisions-info" style="display: none;">
+                        <div class="calculation-details">
+                            <h5>💰 Understanding the Provisions Chart</h5>
+                            <div class="calculation-step">
+                                <strong>Total Minted:</strong> Shows annual token creation based on current inflation<br>
+                                <div class="calculation-formula">Total Minted = Inflation Rate × Total Supply</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Community Pool:</strong> 2% of total minted goes to community treasury<br>
+                                <div class="calculation-formula">Community Pool = Total Minted × 2%</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Validator Rewards:</strong> 98% of total minted goes to validators and delegators<br>
+                                <div class="calculation-formula">Validator Rewards = Total Minted × 98%</div>
+                            </div>
+                            <div class="calculation-step">
+                                <strong>Economic Impact:</strong> Higher inflation = more tokens minted = higher rewards<br>
+                                <div class="calculation-formula">This incentivizes staking when the network is under-staked</div>
                             </div>
                         </div>
                     </div>
@@ -729,6 +816,14 @@
             document.querySelectorAll('.calculation-section[id]').forEach(section => {
                 observer.observe(section);
             });
+
+            // Initialize provisions chart with default data
+            setTimeout(() => {
+                if (typeof getCurrentParameters === 'function') {
+                    const params = getCurrentParameters();
+                    updateProvisionsChart(params);
+                }
+            }, 500);
         });
     </script>
 </body>

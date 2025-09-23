@@ -53,35 +53,39 @@ function calculateRewards() {
     updateCurrentInflationDisplay(params, currentInflation);
     updateInflationDisplay(currentInflation, perBlockChange);
     updateTimelineDisplay(timeline);
-    updateAnnualProvisionsDisplay(provisions);
+    updateAnnualProvisionsDisplay(provisions, params);
     updateBlockProvisionsDisplay(blockProvisions, params);
     updateAPRDisplay(apr);
     updateCalculationDetails(params, currentInflation, perBlockChange, provisions, apr);
 
-    // Update chart
+    // Update charts
     updateInflationChart(params);
+    updateProvisionsChart(params);
 }
 
 // Calculate current inflation rate using actual Cosmos SDK NextInflationRate logic
 function calculateCurrentInflation(params) {
-    // Start with initial inflation from genesis (not a fixed base)
-    let currentInflation = params.initialInflation;
-
+    // The Cosmos SDK NextInflationRate function calculates the NEXT block's inflation
+    // based on the current bonding ratio, not a cumulative adjustment
+    
     if (params.currentBonded < params.goalBonded) {
         // Under-staked: inflation increases
-        // Formula: current + (inflation_rate_change × (goal_bonded - current_bonded)) / blocks_per_year
+        // Formula: inflation_rate_change × (goal_bonded - current_bonded) / blocks_per_year
         const gap = params.goalBonded - params.currentBonded;
         const perBlockAdjustment = (params.inflationRateChange * gap) / params.blocksPerYear;
-        currentInflation = Math.min(currentInflation + perBlockAdjustment, params.inflationMax);
+        const newInflation = params.initialInflation + perBlockAdjustment;
+        return Math.min(newInflation, params.inflationMax);
     } else if (params.currentBonded > params.goalBonded) {
         // Over-staked: inflation decreases
-        // Formula: current - (inflation_rate_change × (current_bonded - goal_bonded)) / blocks_per_year
+        // Formula: inflation_rate_change × (current_bonded - goal_bonded) / blocks_per_year
         const gap = params.currentBonded - params.goalBonded;
         const perBlockAdjustment = (params.inflationRateChange * gap) / params.blocksPerYear;
-        currentInflation = Math.max(currentInflation - perBlockAdjustment, params.inflationMin);
+        const newInflation = params.initialInflation - perBlockAdjustment;
+        return Math.max(newInflation, params.inflationMin);
+    } else {
+        // At target: no change from initial
+        return params.initialInflation;
     }
-
-    return currentInflation;
 }
 
 // Calculate per-block change using correct Cosmos SDK formula
@@ -90,14 +94,12 @@ function calculatePerBlockChange(params) {
         // Under-staked: inflation increases (positive change)
         // Formula: (inflationRateChange * gap) / blocksPerYear
         const gap = params.goalBonded - params.currentBonded;
-    const perBlockChange = (params.inflationRateChange * gap) / params.blocksPerYear;
-    return perBlockChange;
+        return (params.inflationRateChange * gap) / params.blocksPerYear;
     } else if (params.currentBonded > params.goalBonded) {
         // Over-staked: inflation decreases (negative change)
         // Formula: -(inflationRateChange * gap) / blocksPerYear
         const gap = params.currentBonded - params.goalBonded;
-        const perBlockChange = -(params.inflationRateChange * gap) / params.blocksPerYear;
-        return perBlockChange;
+        return -(params.inflationRateChange * gap) / params.blocksPerYear;
     } else {
         // At target: no change
         return 0;
@@ -106,12 +108,30 @@ function calculatePerBlockChange(params) {
 
 // Calculate timeline projections
 function calculateTimeline(params, currentInflation, perBlockChange) {
+    // Calculate inflation after specific time periods
+    // Note: This assumes bonding ratio stays constant (simplified model)
+    const blocksPerDay = 17280; // ~5 second blocks
+    const blocksPerWeek = 120960; // ~7 days
+    const blocksPerMonth = 525960; // ~30.44 days per month
+    
+    // Helper function to apply directional bounds
+    const applyBounds = (rate) => {
+        if (perBlockChange > 0) {
+            // Under-staked: inflation increases, only apply max bound
+            return Math.min(params.inflationMax, rate);
+        } else if (perBlockChange < 0) {
+            // Over-staked: inflation decreases, only apply min bound
+            return Math.max(params.inflationMin, rate);
+        }
+        return rate; // No change
+    };
+    
     return {
         block1: currentInflation,
-        day1: currentInflation + (perBlockChange * 17280), // ~1 day of blocks
-        week1: currentInflation + (perBlockChange * 120960), // ~1 week
-        month1: currentInflation + (perBlockChange * 525960), // ~1 month
-        year1: currentInflation + (perBlockChange * params.blocksPerYear)
+        day1: applyBounds(currentInflation + (perBlockChange * blocksPerDay)),
+        week1: applyBounds(currentInflation + (perBlockChange * blocksPerWeek)),
+        month1: applyBounds(currentInflation + (perBlockChange * blocksPerMonth)),
+        year1: applyBounds(currentInflation + (perBlockChange * params.blocksPerYear))
     };
 }
 
@@ -143,15 +163,23 @@ function calculateBlockProvisions(provisions, params) {
 // Calculate APR using correct Cosmos SDK logic
 function calculateAPR(params, provisions) {
     const totalStaked = params.totalSupply * params.currentBonded;
+    
+    // Base APR is the total validator rewards divided by total staked
     const baseAPR = provisions.validatorRewards / totalStaked;
+    
+    // Delegator APR is base APR minus validator commission
     const delegatorAPR = baseAPR * (1 - params.validatorCommission);
-
-    // Validators get delegator APR + commission from all their delegators
-    // Assuming they have their own stake, they earn both rates
-    const validatorAPR = baseAPR; // Full rate on their own stake
-
-    // Commission is earned from the total rewards pool, not total staked
-    const commissionEarnings = provisions.validatorRewards * params.validatorCommission;
+    
+    // Validator APR includes:
+    // 1. Full base APR on their own stake
+    // 2. Commission from delegators' rewards
+    // For simplicity, we show the effective APR a validator earns
+    const validatorAPR = baseAPR; // This represents the full rate validators earn
+    
+    // Commission earnings calculation
+    // Validators earn commission on delegator rewards, not total rewards
+    const delegatorRewards = provisions.validatorRewards * (1 - params.validatorCommission);
+    const commissionEarnings = delegatorRewards * params.validatorCommission / (1 - params.validatorCommission);
 
     return {
         baseAPR,
@@ -207,35 +235,33 @@ function updateCurrentInflationDisplay(params, currentInflation) {
         }
     };
     
-    updateElement('current-bonded-calc', (params.currentBonded * 100).toFixed(0));
-    updateElement('goal-bonded-calc', (params.goalBonded * 100).toFixed(0));
-    updateElement('bonding-gap-calc', (gap * 100).toFixed(0));
-    updateElement('rate-change-calc', (params.inflationRateChange * 100).toFixed(0));
-    updateElement('gap-calc', (gap * 100).toFixed(0));
+    updateElement('calc-current', (params.currentBonded * 100).toFixed(0));
+    updateElement('calc-goal', (params.goalBonded * 100).toFixed(0));
+    updateElement('calc-gap', (gap * 100).toFixed(0));
+    updateElement('calc-rate-change', (params.inflationRateChange * 100).toFixed(0));
+    updateElement('calc-gap-2', (gap * 100).toFixed(0));
 
     // Calculate per-block adjustment correctly (reuse existing variable)
     // perBlockAdjustment is already calculated above with correct sign
-    updateElement('adjustment-calc', (perBlockAdjustment * 100).toFixed(6));
+    updateElement('calc-per-block', (perBlockAdjustment * 100).toFixed(8) + '%');
 
     // Add blocks per year to display
-    updateElement('blocks-per-year-calc', params.blocksPerYear.toLocaleString());
-    document.getElementById('final-inflation-calc').textContent = (calculatedRate * 100).toFixed(1);
-    document.getElementById('min-bound').textContent = (params.inflationMin * 100).toFixed(0) + '%';
-    document.getElementById('max-bound').textContent = (params.inflationMax * 100).toFixed(0) + '%';
-    document.getElementById('calculated-rate').textContent = (calculatedRate * 100).toFixed(1) + '%';
-    document.getElementById('bounded-rate').textContent = (boundedRate * 100).toFixed(1) + '%';
+    updateElement('calc-blocks', params.blocksPerYear.toLocaleString());
+    updateElement('calc-direction', (perBlockAdjustment * 100).toFixed(8) + '%');
 
-    // Update formula direction using per-block adjustment
+    // Update formula direction using per-block adjustment with dynamic values
     const formulaElement = document.getElementById('adjustment-formula');
-    if (params.currentBonded < params.goalBonded) {
-        formulaElement.innerHTML = `Since Current Bonded &lt; Goal Bonded: <strong>Add</strong> per-block adjustment<br>
-                                   Next Block Inflation = ${(baseRate * 100).toFixed(3)}% + ${(perBlockAdjustment * 100).toFixed(6)}% = <span id="final-inflation-calc">${(calculatedRate * 100).toFixed(6)}%</span>`;
-    } else if (params.currentBonded > params.goalBonded) {
-        formulaElement.innerHTML = `Since Current Bonded &gt; Goal Bonded: <strong>Subtract</strong> per-block adjustment<br>
-                                   Next Block Inflation = ${(baseRate * 100).toFixed(3)}% - ${(perBlockAdjustment * 100).toFixed(6)}% = <span id="final-inflation-calc">${(calculatedRate * 100).toFixed(6)}%</span>`;
-    } else {
-        formulaElement.innerHTML = `Since Current Bonded = Goal Bonded: <strong>No</strong> adjustment<br>
-                                   Next Block Inflation = ${(baseRate * 100).toFixed(3)}% + 0% = <span id="final-inflation-calc">${(baseRate * 100).toFixed(3)}%</span>`;
+    if (formulaElement) {
+        if (params.currentBonded < params.goalBonded) {
+            formulaElement.innerHTML = `Since Current Bonded (${(params.currentBonded * 100).toFixed(0)}%) &lt; Goal Bonded (${(params.goalBonded * 100).toFixed(0)}%): <strong>Add</strong> per-block adjustment<br>
+                                       Next Block Inflation = ${(baseRate * 100).toFixed(3)}% + ${(perBlockAdjustment * 100).toFixed(8)}% = <span id="final-inflation-calc">${(calculatedRate * 100).toFixed(6)}%</span>`;
+        } else if (params.currentBonded > params.goalBonded) {
+            formulaElement.innerHTML = `Since Current Bonded (${(params.currentBonded * 100).toFixed(0)}%) &gt; Goal Bonded (${(params.goalBonded * 100).toFixed(0)}%): <strong>Subtract</strong> per-block adjustment<br>
+                                       Next Block Inflation = ${(baseRate * 100).toFixed(3)}% - ${(Math.abs(perBlockAdjustment) * 100).toFixed(8)}% = <span id="final-inflation-calc">${(calculatedRate * 100).toFixed(6)}%</span>`;
+        } else {
+            formulaElement.innerHTML = `Since Current Bonded (${(params.currentBonded * 100).toFixed(0)}%) = Goal Bonded (${(params.goalBonded * 100).toFixed(0)}%): <strong>No</strong> adjustment<br>
+                                       Next Block Inflation = ${(baseRate * 100).toFixed(3)}% + 0% = <span id="final-inflation-calc">${(baseRate * 100).toFixed(3)}%</span>`;
+        }
     }
 }
 
@@ -255,11 +281,22 @@ function updateTimelineDisplay(timeline) {
     document.getElementById('block-year').textContent = `Inflation: ${(timeline.year1 * 100).toFixed(2)}% (theoretical max)`;
 }
 
-// Update annual provisions display
-function updateAnnualProvisionsDisplay(provisions) {
-    document.getElementById('totalMinted').textContent = formatLargeNumber(provisions.totalMinted);
-    document.getElementById('communityPool').textContent = formatLargeNumber(provisions.communityPool);
-    document.getElementById('validatorRewards').textContent = formatLargeNumber(provisions.validatorRewards);
+// Update annual provisions display with time period support
+function updateAnnualProvisionsDisplay(provisions, params) {
+    // Calculate time-based provisions
+    const timeBasedProvisions = calculateTimeBasedProvisions(provisions, params, currentProvisionPeriod);
+    
+    // Update labels based on period
+    const labels = getProvisionLabels(currentProvisionPeriod);
+    
+    document.getElementById('totalMinted').textContent = formatLargeNumber(timeBasedProvisions.totalMinted);
+    document.getElementById('communityPool').textContent = formatLargeNumber(timeBasedProvisions.communityPool);
+    document.getElementById('validatorRewards').textContent = formatLargeNumber(timeBasedProvisions.validatorRewards);
+    
+    // Update labels
+    document.querySelector('#totalMinted').nextElementSibling.textContent = labels.totalMinted;
+    document.querySelector('#communityPool').nextElementSibling.textContent = labels.communityPool;
+    document.querySelector('#validatorRewards').nextElementSibling.textContent = labels.validatorRewards;
 }
 
 // Update block provisions display
@@ -320,16 +357,6 @@ function updateCalculationDetails(params, currentInflation, perBlockChange, prov
         }
     });
 
-    // Update calculation elements with safety checks
-    updateElement('calc-goal', (params.goalBonded * 100).toFixed(0));
-    updateElement('calc-current', (params.currentBonded * 100).toFixed(0));
-    updateElement('calc-gap', gap.toFixed(0));
-    updateElement('calc-goal-2', (params.goalBonded * 100).toFixed(0));
-    updateElement('calc-gap-2', gap.toFixed(0));
-    updateElement('calc-gap-ratio', gapRatio.toFixed(3));
-    updateElement('calc-rate-change', (params.inflationRateChange * 100).toFixed(0));
-    updateElement('calc-gap-ratio-2', gapRatio.toFixed(3));
-    updateElement('calc-blocks', params.blocksPerYear.toLocaleString());
     // Update all per-block change displays
     const perBlockChangeValue = (perBlockChange * 100).toFixed(8);
     const perBlockChangeDisplay = perBlockChange >= 0 ? `+${perBlockChangeValue}%` : `${perBlockChangeValue}%`;
@@ -340,10 +367,6 @@ function updateCalculationDetails(params, currentInflation, perBlockChange, prov
         perBlockElement.textContent = perBlockChangeDisplay;
     }
     
-    // Update calculation details
-    document.getElementById('calc-per-block').textContent = perBlockChangeValue;
-    document.getElementById('calc-direction').textContent = perBlockChangeValue;
-    
     // Update the direction text dynamically
     const directionText = params.currentBonded < params.goalBonded ? 
         'Since Current Bonded < Goal Bonded: <strong>Inflation increases</strong>' :
@@ -351,20 +374,20 @@ function updateCalculationDetails(params, currentInflation, perBlockChange, prov
         'Since Current Bonded > Goal Bonded: <strong>Inflation decreases</strong>' :
         'Since Current Bonded = Goal Bonded: <strong>No change</strong>';
     
-    // Update gap ratio calculation text (simplified to match Go code)
-    const gapRatioText = `Gap = |Goal Bonded - Current Bonded| = |${(params.goalBonded * 100).toFixed(0)}% - ${(params.currentBonded * 100).toFixed(0)}%| = ${gap.toFixed(0)}%`;
+    // Update gap calculation text (correct Cosmos SDK formula)
+    const gapText = `Gap = |Goal Bonded - Current Bonded| = |${(params.goalBonded * 100).toFixed(0)}% - ${(params.currentBonded * 100).toFixed(0)}%| = ${gap.toFixed(0)}%`;
     calculationSteps.forEach(step => {
-        if (step.textContent.includes('Calculate gap ratio')) {
+        if (step.textContent.includes('Calculate bonding gap')) {
             const formulaElement = step.querySelector('.calculation-formula');
             if (formulaElement) {
-                formulaElement.innerHTML = gapRatioText;
+                formulaElement.innerHTML = gapText;
             }
         }
     });
 
     // Update per-block change calculation text (matching Go code exactly)
     const gapValue = Math.abs(params.goalBonded - params.currentBonded);
-    const perBlockChangeText = `Per-Block Change = (Inflation Rate Change × Gap) / Blocks Per Year<br>= (${(params.inflationRateChange * 100).toFixed(0)}% × ${(gapValue * 100).toFixed(0)}%) / ${params.blocksPerYear.toLocaleString()}<br>= ${(perBlockChange * 100).toFixed(8)}% per block`;
+    const perBlockChangeText = `Per-Block Change = (Inflation Rate Change × Gap) / Blocks Per Year<br>= (${(params.inflationRateChange * 100).toFixed(0)}% × ${(gapValue * 100).toFixed(0)}%) / ${params.blocksPerYear.toLocaleString()}<br>= ${(Math.abs(perBlockChange) * 100).toFixed(8)}% per block`;
     calculationSteps.forEach(step => {
         if (step.textContent.includes('Calculate per-block change')) {
             const formulaElement = step.querySelector('.calculation-formula');
@@ -374,46 +397,62 @@ function updateCalculationDetails(params, currentInflation, perBlockChange, prov
         }
     });
 
-    // Find and update the direction step
+    // Find and update the direction step with dynamic text
     calculationSteps.forEach(step => {
         if (step.textContent.includes('Determine direction')) {
             const formulaElement = step.querySelector('.calculation-formula');
             if (formulaElement) {
-                formulaElement.innerHTML = `${directionText} by <span id="calc-direction">${(perBlockChange * 100).toFixed(8)}%</span> per block`;
+                const changeSign = perBlockChange >= 0 ? '+' : '';
+                const dynamicDirectionText = params.currentBonded < params.goalBonded ? 
+                    `Since Current Bonded (${(params.currentBonded * 100).toFixed(0)}%) < Goal Bonded (${(params.goalBonded * 100).toFixed(0)}%): <strong>Inflation increases</strong>` :
+                    params.currentBonded > params.goalBonded ?
+                    `Since Current Bonded (${(params.currentBonded * 100).toFixed(0)}%) > Goal Bonded (${(params.goalBonded * 100).toFixed(0)}%): <strong>Inflation decreases</strong>` :
+                    `Since Current Bonded (${(params.currentBonded * 100).toFixed(0)}%) = Goal Bonded (${(params.goalBonded * 100).toFixed(0)}%): <strong>No change</strong>`;
+                
+                formulaElement.innerHTML = `${dynamicDirectionText} by <span id="calc-direction">${changeSign}${(perBlockChange * 100).toFixed(8)}%</span> per block`;
             }
         }
     });
 
-    // Timeline calculation details
-    document.getElementById('timeline-per-block').textContent = (perBlockChange * 100).toFixed(8) + '%';
+    // Timeline calculation details - make dynamic
+    updateElement('timeline-per-block', (perBlockChange * 100).toFixed(8) + '%');
+    
+    // Update timeline calculation formula dynamically
+    const timelineFormulaElement = document.querySelector('#timeline-calc .calculation-formula');
+    if (timelineFormulaElement) {
+        const blocksPerDay = 17280;
+        const day1Change = perBlockChange * blocksPerDay;
+        const day1Inflation = params.initialInflation + day1Change;
+        timelineFormulaElement.innerHTML = `Day 1: ${(params.initialInflation * 100).toFixed(2)}% + (<span id="timeline-per-block">${(perBlockChange * 100).toFixed(8)}%</span> × ${blocksPerDay.toLocaleString()}) = ${(params.initialInflation * 100).toFixed(2)}% + ${(day1Change * 100).toFixed(6)}% = ${(day1Inflation * 100).toFixed(6)}%`;
+    }
 
     // Annual provisions calculation details
-    document.getElementById('annual-inflation').textContent = (currentInflation * 100).toFixed(1) + '%';
-    document.getElementById('annual-supply').textContent = params.totalSupply.toLocaleString();
-    document.getElementById('annual-total').textContent = Math.round(provisions.totalMinted).toLocaleString();
-    document.getElementById('annual-total-2').textContent = Math.round(provisions.totalMinted).toLocaleString();
-    document.getElementById('annual-community').textContent = Math.round(provisions.communityPool).toLocaleString();
-    document.getElementById('annual-total-3').textContent = Math.round(provisions.totalMinted).toLocaleString();
-    document.getElementById('annual-community-2').textContent = Math.round(provisions.communityPool).toLocaleString();
-    document.getElementById('annual-validators').textContent = Math.round(provisions.validatorRewards).toLocaleString();
+    updateElement('annual-inflation', (currentInflation * 100).toFixed(1) + '%');
+    updateElement('annual-supply', params.totalSupply.toLocaleString());
+    updateElement('annual-total', Math.round(provisions.totalMinted).toLocaleString());
+    updateElement('annual-total-2', Math.round(provisions.totalMinted).toLocaleString());
+    updateElement('annual-community', Math.round(provisions.communityPool).toLocaleString());
+    updateElement('annual-total-3', Math.round(provisions.totalMinted).toLocaleString());
+    updateElement('annual-community-2', Math.round(provisions.communityPool).toLocaleString());
+    updateElement('annual-validators', Math.round(provisions.validatorRewards).toLocaleString());
 
     // Block provisions calculation details
-    document.getElementById('block-annual').textContent = Math.round(provisions.validatorRewards).toLocaleString();
-    document.getElementById('block-blocks').textContent = params.blocksPerYear.toLocaleString();
-    document.getElementById('block-result').textContent = Math.round(provisions.validatorRewards / params.blocksPerYear).toLocaleString();
-    document.getElementById('block-blocks-2').textContent = params.blocksPerYear.toLocaleString();
-    document.getElementById('block-time-calc').textContent = (31536000 / params.blocksPerYear).toFixed(2);
+    updateElement('block-annual', Math.round(provisions.validatorRewards).toLocaleString());
+    updateElement('block-blocks', params.blocksPerYear.toLocaleString());
+    updateElement('block-result', Math.round(provisions.validatorRewards / params.blocksPerYear).toLocaleString());
+    updateElement('block-blocks-2', params.blocksPerYear.toLocaleString());
+    updateElement('block-time-calc', (31536000 / params.blocksPerYear).toFixed(2));
 
     // APR calculation details
-    document.getElementById('apr-supply').textContent = params.totalSupply.toLocaleString();
-    document.getElementById('apr-bonded').textContent = (params.currentBonded * 100).toFixed(0) + '%';
-    document.getElementById('apr-staked').textContent = Math.round(apr.totalStaked).toLocaleString();
-    document.getElementById('apr-rewards').textContent = Math.round(provisions.validatorRewards).toLocaleString();
-    document.getElementById('apr-staked-2').textContent = Math.round(apr.totalStaked).toLocaleString();
-    document.getElementById('apr-base').textContent = (apr.baseAPR * 100).toFixed(2) + '%';
-    document.getElementById('apr-base-2').textContent = (apr.baseAPR * 100).toFixed(2) + '%';
-    document.getElementById('apr-commission').textContent = (params.validatorCommission * 100).toFixed(0) + '%';
-    document.getElementById('apr-delegator-calc').textContent = (apr.delegatorAPR * 100).toFixed(2) + '%';
+    updateElement('apr-supply', params.totalSupply.toLocaleString());
+    updateElement('apr-bonded', (params.currentBonded * 100).toFixed(0) + '%');
+    updateElement('apr-staked', Math.round(apr.totalStaked).toLocaleString());
+    updateElement('apr-rewards', Math.round(provisions.validatorRewards).toLocaleString());
+    updateElement('apr-staked-2', Math.round(apr.totalStaked).toLocaleString());
+    updateElement('apr-base', (apr.baseAPR * 100).toFixed(2) + '%');
+    updateElement('apr-base-2', (apr.baseAPR * 100).toFixed(2) + '%');
+    updateElement('apr-commission', (params.validatorCommission * 100).toFixed(0) + '%');
+    updateElement('apr-delegator-calc', (apr.delegatorAPR * 100).toFixed(2) + '%');
 }
 
 // Toggle calculation details
@@ -516,7 +555,7 @@ function createInflationChart() {
                 },
                 title: {
                     display: true,
-                    text: 'Inflation Rate vs Bonding Ratio',
+                    text: 'Inflation Rate Over Time',
                     font: {
                         family: 'Space Grotesk',
                         size: 18,
@@ -547,7 +586,7 @@ function createInflationChart() {
                     },
                     callbacks: {
                         title: function(context) {
-                            return `Bonding Ratio: ${context[0].label}%`;
+                            return `Block: ${context[0].label}`;
                         },
                         label: function(context) {
                             return `Inflation Rate: ${context.parsed.y.toFixed(2)}%`;
@@ -628,8 +667,9 @@ function createInflationChart() {
     }
 }
 
-// Global variable for current chart period
+// Global variables for current periods
 let currentChartPeriod = 'blocks';
+let currentProvisionPeriod = 'annual';
 
 // Update inflation chart with time-based data
 function updateInflationChart(params) {
@@ -646,7 +686,8 @@ function updateInflationChart(params) {
 
     // Update x-axis title based on period
     const xAxisTitle = {
-        blocks: 'Block Number',
+        blocks: 'Block Number (×1000)',
+        hours: 'Hours',
         days: 'Days',
         months: 'Months'
     };
@@ -685,15 +726,46 @@ function generateTimeBasedData(params, startInflation, perBlockChange, period) {
 
     switch (period) {
         case 'blocks':
-            // Show first 1000 blocks
-            for (let block = 0; block <= 1000; block += 10) {
+            // Show first 100,000 blocks to see meaningful change
+            for (let block = 0; block <= 100000; block += 1000) {
                 labels.push(block);
                 rates.push(inflation * 100);
 
-                // Calculate inflation for next 10 blocks
-                for (let i = 0; i < 10; i++) {
+                // Calculate inflation for next 1000 blocks
+                for (let i = 0; i < 1000; i++) {
                     inflation += perBlockChange;
-                    inflation = Math.max(params.inflationMin, Math.min(params.inflationMax, inflation));
+                }
+                // Apply bounds check after the full period, not per block
+                // Only apply the relevant bound based on direction
+                if (perBlockChange > 0) {
+                    // Under-staked: inflation increases, only apply max bound
+                    inflation = Math.min(params.inflationMax, inflation);
+                } else if (perBlockChange < 0) {
+                    // Over-staked: inflation decreases, only apply min bound
+                    inflation = Math.max(params.inflationMin, inflation);
+                }
+            }
+            break;
+
+        case 'hours':
+            // Show 24 hours
+            const blocksPerHour = 720; // ~5 second blocks
+            for (let hour = 0; hour <= 24; hour++) {
+                labels.push(hour);
+                rates.push(inflation * 100);
+
+                // Calculate inflation after one hour
+                for (let i = 0; i < blocksPerHour; i++) {
+                    inflation += perBlockChange;
+                }
+                // Apply bounds check after the full period
+                // Only apply the relevant bound based on direction
+                if (perBlockChange > 0) {
+                    // Under-staked: inflation increases, only apply max bound
+                    inflation = Math.min(params.inflationMax, inflation);
+                } else if (perBlockChange < 0) {
+                    // Over-staked: inflation decreases, only apply min bound
+                    inflation = Math.max(params.inflationMin, inflation);
                 }
             }
             break;
@@ -708,7 +780,15 @@ function generateTimeBasedData(params, startInflation, perBlockChange, period) {
                 // Calculate inflation after one day
                 for (let i = 0; i < blocksPerDay; i++) {
                     inflation += perBlockChange;
-                    inflation = Math.max(params.inflationMin, Math.min(params.inflationMax, inflation));
+                }
+                // Apply bounds check after the full period
+                // Only apply the relevant bound based on direction
+                if (perBlockChange > 0) {
+                    // Under-staked: inflation increases, only apply max bound
+                    inflation = Math.min(params.inflationMax, inflation);
+                } else if (perBlockChange < 0) {
+                    // Over-staked: inflation decreases, only apply min bound
+                    inflation = Math.max(params.inflationMin, inflation);
                 }
             }
             break;
@@ -723,7 +803,15 @@ function generateTimeBasedData(params, startInflation, perBlockChange, period) {
                 // Calculate inflation after one month
                 for (let i = 0; i < blocksPerMonth; i++) {
                     inflation += perBlockChange;
-                    inflation = Math.max(params.inflationMin, Math.min(params.inflationMax, inflation));
+                }
+                // Apply bounds check after the full period
+                // Only apply the relevant bound based on direction
+                if (perBlockChange > 0) {
+                    // Under-staked: inflation increases, only apply max bound
+                    inflation = Math.min(params.inflationMax, inflation);
+                } else if (perBlockChange < 0) {
+                    // Over-staked: inflation decreases, only apply min bound
+                    inflation = Math.max(params.inflationMin, inflation);
                 }
             }
             break;
@@ -748,6 +836,23 @@ function switchChartPeriod(period) {
 
 // Make functions globally available
 window.switchChartPeriod = switchChartPeriod;
+
+// Switch provision period
+function switchProvisionPeriod(period) {
+    currentProvisionPeriod = period;
+
+    // Update button states
+    document.querySelectorAll('.provision-period-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-period="${period}"]`).classList.add('active');
+
+    // Recalculate and update provisions
+    calculateRewards();
+}
+
+// Make functions globally available
+window.switchProvisionPeriod = switchProvisionPeriod;
 
 // Update chart statistics panel
 function updateChartStats(rates) {
@@ -774,5 +879,461 @@ function formatLargeNumber(num) {
     }
 }
 
+// Calculate time-based provisions
+function calculateTimeBasedProvisions(provisions, params, period) {
+    const blocksPerYear = params.blocksPerYear;
+    let multiplier;
+    
+    switch (period) {
+        case 'annual':
+            multiplier = 1;
+            break;
+        case 'monthly':
+            multiplier = 1 / 12;
+            break;
+        case 'daily':
+            multiplier = 1 / 365;
+            break;
+        case 'hourly':
+            multiplier = 1 / (365 * 24);
+            break;
+        default:
+            multiplier = 1;
+    }
+    
+    return {
+        totalMinted: provisions.totalMinted * multiplier,
+        communityPool: provisions.communityPool * multiplier,
+        validatorRewards: provisions.validatorRewards * multiplier
+    };
+}
+
+// Get provision labels based on period
+function getProvisionLabels(period) {
+    switch (period) {
+        case 'annual':
+            return {
+                totalMinted: 'Total Minted Annually',
+                communityPool: 'Community Pool (2%)',
+                validatorRewards: 'Validator Rewards'
+            };
+        case 'monthly':
+            return {
+                totalMinted: 'Total Minted Monthly',
+                communityPool: 'Community Pool Monthly',
+                validatorRewards: 'Validator Rewards Monthly'
+            };
+        case 'daily':
+            return {
+                totalMinted: 'Total Minted Daily',
+                communityPool: 'Community Pool Daily',
+                validatorRewards: 'Validator Rewards Daily'
+            };
+        case 'hourly':
+            return {
+                totalMinted: 'Total Minted Hourly',
+                communityPool: 'Community Pool Hourly',
+                validatorRewards: 'Validator Rewards Hourly'
+            };
+        default:
+            return {
+                totalMinted: 'Total Minted Annually',
+                communityPool: 'Community Pool (2%)',
+                validatorRewards: 'Validator Rewards'
+            };
+    }
+}
+
+// Provisions Chart functionality
+let provisionsChart = null;
+let currentProvisionsChartPeriod = 'blocks';
+
+// Generate provisions data for different time periods
+function generateProvisionsData(params, startInflation, perBlockChange, period) {
+    const labels = [];
+    const totalMintedData = [];
+    const communityPoolData = [];
+    const validatorRewardsData = [];
+    
+    let inflation = startInflation;
+    const communityTax = 0.02; // 2%
+
+    switch (period) {
+        case 'blocks':
+            for (let block = 0; block <= 100000; block += 1000) {
+                labels.push(block);
+                
+                // Calculate provisions at current inflation
+                const totalMinted = inflation * params.totalSupply;
+                const communityPool = totalMinted * communityTax;
+                const validatorRewards = totalMinted - communityPool;
+                
+                totalMintedData.push(totalMinted / 1000000); // Convert to millions
+                communityPoolData.push(communityPool / 1000000);
+                validatorRewardsData.push(validatorRewards / 1000000);
+
+                // Calculate inflation for next 1000 blocks
+                for (let i = 0; i < 1000; i++) {
+                    inflation += perBlockChange;
+                }
+                // Apply directional bounds check
+                if (perBlockChange > 0) {
+                    inflation = Math.min(params.inflationMax, inflation);
+                } else if (perBlockChange < 0) {
+                    inflation = Math.max(params.inflationMin, inflation);
+                }
+            }
+            break;
+
+        case 'hours':
+            const blocksPerHour = 720;
+            for (let hour = 0; hour <= 24; hour++) {
+                labels.push(hour);
+                
+                const totalMinted = inflation * params.totalSupply;
+                const communityPool = totalMinted * communityTax;
+                const validatorRewards = totalMinted - communityPool;
+                
+                totalMintedData.push(totalMinted / 1000000);
+                communityPoolData.push(communityPool / 1000000);
+                validatorRewardsData.push(validatorRewards / 1000000);
+
+                for (let i = 0; i < blocksPerHour; i++) {
+                    inflation += perBlockChange;
+                }
+                if (perBlockChange > 0) {
+                    inflation = Math.min(params.inflationMax, inflation);
+                } else if (perBlockChange < 0) {
+                    inflation = Math.max(params.inflationMin, inflation);
+                }
+            }
+            break;
+
+        case 'days':
+            const blocksPerDay = 17280;
+            for (let day = 0; day <= 30; day++) {
+                labels.push(day);
+                
+                const totalMinted = inflation * params.totalSupply;
+                const communityPool = totalMinted * communityTax;
+                const validatorRewards = totalMinted - communityPool;
+                
+                totalMintedData.push(totalMinted / 1000000);
+                communityPoolData.push(communityPool / 1000000);
+                validatorRewardsData.push(validatorRewards / 1000000);
+
+                for (let i = 0; i < blocksPerDay; i++) {
+                    inflation += perBlockChange;
+                }
+                if (perBlockChange > 0) {
+                    inflation = Math.min(params.inflationMax, inflation);
+                } else if (perBlockChange < 0) {
+                    inflation = Math.max(params.inflationMin, inflation);
+                }
+            }
+            break;
+
+        case 'months':
+            const blocksPerMonth = 525960;
+            for (let month = 0; month <= 12; month++) {
+                labels.push(month);
+                
+                const totalMinted = inflation * params.totalSupply;
+                const communityPool = totalMinted * communityTax;
+                const validatorRewards = totalMinted - communityPool;
+                
+                totalMintedData.push(totalMinted / 1000000);
+                communityPoolData.push(communityPool / 1000000);
+                validatorRewardsData.push(validatorRewards / 1000000);
+
+                for (let i = 0; i < blocksPerMonth; i++) {
+                    inflation += perBlockChange;
+                }
+                if (perBlockChange > 0) {
+                    inflation = Math.min(params.inflationMax, inflation);
+                } else if (perBlockChange < 0) {
+                    inflation = Math.max(params.inflationMin, inflation);
+                }
+            }
+            break;
+    }
+
+    return { labels, totalMintedData, communityPoolData, validatorRewardsData };
+}
+
+// Create provisions chart
+function createProvisionsChart() {
+    const ctx = document.getElementById('provisionsChart');
+    if (!ctx) return;
+
+    provisionsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Total Minted (M)',
+                    data: [],
+                    borderColor: '#3042FB',
+                    backgroundColor: 'rgba(48, 66, 251, 0.15)',
+                    borderWidth: 4,
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Validator Rewards (M)',
+                    data: [],
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Community Pool (M)',
+                    data: [],
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Token Provisions Over Time',
+                    font: {
+                        family: 'Inter',
+                        size: 18,
+                        weight: '600'
+                    },
+                    color: '#1F2937'
+                },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        font: {
+                            family: 'Inter',
+                            size: 12
+                        },
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                    titleColor: '#1F2937',
+                    bodyColor: '#374151',
+                    borderColor: '#E5E7EB',
+                    borderWidth: 2,
+                    cornerRadius: 12,
+                    displayColors: true,
+                    titleFont: {
+                        family: 'Inter',
+                        size: 14,
+                        weight: '600'
+                    },
+                    bodyFont: {
+                        family: 'Inter',
+                        size: 13
+                    },
+                    callbacks: {
+                        title: function(context) {
+                            const period = currentProvisionsChartPeriod;
+                            const labels = {
+                                'blocks': 'Block',
+                                'hours': 'Hour',
+                                'days': 'Day',
+                                'months': 'Month'
+                            };
+                            return `${labels[period]} ${context[0].label}`;
+                        },
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            const label = context.dataset.label;
+                            return `${label}: ${value.toFixed(2)}M tokens`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Block Number (×1000)',
+                        font: {
+                            family: 'Inter',
+                            size: 14,
+                            weight: '600'
+                        },
+                        color: '#6B7280'
+                    },
+                    grid: {
+                        color: 'rgba(107, 114, 128, 0.1)'
+                    },
+                    ticks: {
+                        font: {
+                            family: 'Inter',
+                            size: 12
+                        },
+                        color: '#6B7280'
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Total Minted & Validator Rewards (M)',
+                        font: {
+                            family: 'Inter',
+                            size: 14,
+                            weight: '600'
+                        },
+                        color: '#6B7280'
+                    },
+                    grid: {
+                        color: 'rgba(107, 114, 128, 0.1)'
+                    },
+                    ticks: {
+                        font: {
+                            family: 'Inter',
+                            size: 12
+                        },
+                        color: '#6B7280',
+                        callback: function(value) {
+                            return value.toFixed(1) + 'M';
+                        }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Community Pool (M)',
+                        font: {
+                            family: 'Inter',
+                            size: 14,
+                            weight: '600'
+                        },
+                        color: '#10B981'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    ticks: {
+                        font: {
+                            family: 'Inter',
+                            size: 12
+                        },
+                        color: '#10B981',
+                        callback: function(value) {
+                            return value.toFixed(2) + 'M';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Update provisions chart
+function updateProvisionsChart(params) {
+    if (!provisionsChart) {
+        createProvisionsChart();
+        // Continue to update with data after creation
+    }
+
+    const currentInflation = calculateCurrentInflation(params);
+    const perBlockChange = calculatePerBlockChange(params);
+    
+    const data = generateProvisionsData(params, currentInflation, perBlockChange, currentProvisionsChartPeriod);
+    
+    // Update chart data
+    provisionsChart.data.labels = data.labels;
+    provisionsChart.data.datasets[0].data = data.totalMintedData;      // Total Minted
+    provisionsChart.data.datasets[1].data = data.validatorRewardsData;  // Validator Rewards
+    provisionsChart.data.datasets[2].data = data.communityPoolData;     // Community Pool
+    
+    // Update x-axis title based on period
+    const xAxisTitle = {
+        'blocks': 'Block Number (×1000)',
+        'hours': 'Hours',
+        'days': 'Days',
+        'months': 'Months'
+    };
+    
+    provisionsChart.options.scales.x.title.text = xAxisTitle[currentProvisionsChartPeriod];
+    
+    // Update chart with animation
+    provisionsChart.update('active');
+    
+    // Update summary stats
+    const startTotal = data.totalMintedData[0];
+    const endTotal = data.totalMintedData[data.totalMintedData.length - 1];
+    const totalChange = endTotal - startTotal;
+    
+    document.getElementById('provisions-start-total').textContent = startTotal.toFixed(1) + 'M';
+    document.getElementById('provisions-end-total').textContent = endTotal.toFixed(1) + 'M';
+    document.getElementById('provisions-total-change').textContent = 
+        (totalChange >= 0 ? '+' : '') + totalChange.toFixed(1) + 'M';
+}
+
+// Switch provisions chart period
+function switchProvisionsChartPeriod(period) {
+    currentProvisionsChartPeriod = period;
+    
+    // Update button states
+    document.querySelectorAll('.provisions-chart-period-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-period') === period) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Update chart
+    const params = getCurrentParameters();
+    updateProvisionsChart(params);
+}
+
+// Get current parameters from form inputs
+function getCurrentParameters() {
+    return {
+        inflationRateChange: parseFloat(document.getElementById('inflationRateChange').value) / 100,
+        inflationMax: parseFloat(document.getElementById('inflationMax').value) / 100,
+        inflationMin: parseFloat(document.getElementById('inflationMin').value) / 100,
+        goalBonded: parseFloat(document.getElementById('goalBonded').value) / 100,
+        initialInflation: parseFloat(document.getElementById('initialInflation').value) / 100,
+        blocksPerYear: parseInt(document.getElementById('blocksPerYear').value),
+        currentBonded: parseFloat(document.getElementById('currentBonded').value) / 100,
+        totalSupply: parseInt(document.getElementById('totalSupply').value),
+        validatorCommission: parseFloat(document.getElementById('validatorCommission').value) / 100
+    };
+}
+
 // Make all functions globally available
 window.calculateRewards = calculateRewards;
+window.switchProvisionsChartPeriod = switchProvisionsChartPeriod;
+window.getCurrentParameters = getCurrentParameters;

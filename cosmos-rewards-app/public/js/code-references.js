@@ -150,25 +150,13 @@ class CodeReferencesManager {
 
         if (!code) return;
 
-        // Check if Prism has already processed this code block
-        if (code.classList.contains('language-go') || code.classList.contains('language-clike')) {
-            // If Prism has processed it, work with the processed content
-            const lines = code.innerHTML.split('\n');
-            const numberedLines = lines.map((line, index) => {
-                const lineNumber = index + 1;
-                return `<span class="line-number" data-line="${lineNumber}">${lineNumber}</span><span class="line-content">${line}</span>`;
-            }).join('\n');
-            code.innerHTML = `<div class="line-numbers-wrapper">${numberedLines}</div>`;
-        } else {
-            // If not processed by Prism, work with plain text
-            const lines = code.textContent.split('\n');
-            const numberedLines = lines.map((line, index) => {
-                const lineNumber = index + 1;
-                return `<span class="line-number" data-line="${lineNumber}">${lineNumber}</span><span class="line-content">${line}</span>`;
-            }).join('\n');
-            code.innerHTML = `<div class="line-numbers-wrapper">${numberedLines}</div>`;
-        }
-        
+        const lines = code.innerHTML.split('\n');
+        const numberedLines = lines.map((line, index) => {
+            const lineNumber = index + 1;
+            return `<span class="line-number" data-line="${lineNumber}">${lineNumber}</span><span class="line-content">${line}</span>`;
+        }).join('\n');
+
+        code.innerHTML = `<div class="line-numbers-wrapper">${numberedLines}</div>`;
         codeBlock.classList.add('has-line-numbers');
     }
 
