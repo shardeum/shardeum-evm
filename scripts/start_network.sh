@@ -148,13 +148,6 @@ fi
 # Ensure the binary can resolve configs via SHARDEUM_CONFIG_DIR
 export SHARDEUM_CONFIG_DIR="${SHARDEUM_CONFIG_DIR:-$REPO_ROOT/configs}"
 
-# Cleanup function for graceful shutdown
-cleanup() {
-  echo -e "\n${YELLOW}Shutting down nodes...${NC}"
-  pkill -f "shardeumd.*$CHAINID" || true
-  exit 0
-}
-
 # -----------------------------
 # Announce
 # -----------------------------
@@ -241,10 +234,8 @@ cp "$GENESIS_TO_USE" "$NODE0_DIR/config/genesis.json"
 echo -e "${YELLOW}Creating validator key for primary node${NC}"
 "$BINARY" keys add "validator" --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1 || true
 
-# Add dev accounts to keyring only (no balances in genesis)
-echo -e "${YELLOW}Adding dev accounts to keyring${NC}"
-
 if [ "$ADD_DEV_ACCOUNTS" = "true" ]; then
+  # Add dev accounts to keyring only (no balances in genesis)
   echo -e "${YELLOW}Adding dev accounts to keyring${NC}"
   echo "copper push brief egg scan entry inform record adjust fossil boss egg comic alien upon aspect dry avoid interest fury window hint race symptom" | "$BINARY" keys add "dev0" --keyring-backend test --home "$NODE0_DIR" --recover --algo eth_secp256k1 > /dev/null 2>&1 || true
   echo "maximum display century economy unlock van census kite error heart snow filter midnight usage egg venture cash kick motor survey drastic edge muffin visual" | "$BINARY" keys add "dev1" --keyring-backend test --home "$NODE0_DIR" --recover --algo eth_secp256k1 > /dev/null 2>&1 || true
@@ -443,13 +434,7 @@ echo "Logs: $BASE_DIR/node*/node.log"
 echo
 echo "Add more nodes: ./scripts/add_node.sh <node_id>"
 echo
-echo -e "${GREEN}Preset accounts funded for testing:${NC}"
-echo "  1f1545Eb7EE5C3C1c4784ee9ddE5D26A9f76F77C | shardeum1ru25t6m7uhpur3rcfm5amewjd20hdamul9rj9u"
-echo "  F151bBcDD3754A675a2F6CdE1c97A03a9972d0BB | shardeum179gmhnwnw49xwk30dn0pe9aq82vh959mpa2j65"
-echo "  166eAB1aec68881690f11571064444753a519F72 | shardeum1zeh2kxhvdzypdy83z4csv3zyw5a9r8mjqjaumd"
-echo "  7ccBFDE95892d699914970B9fe7EE6B9853284AD | shardeum10n9lm62cjttfny2fwzululhxhxzn9p9d57gnhp"
-echo "  7C1BeCf44d30F9381C066b894Ed5C5b8ac279746 | shardeum10sd7eazdxruns8qxdwy5a4w9hzkz096x94p242"
-echo "  Each account has 10,000,000 ashm tokens for testing"
+echo -e "${GREEN}Preset accounts from genesis file funded for testing!${NC}"
 echo
 echo -e "${YELLOW}Network is running. Press Ctrl+C to stop all nodes.${NC}"
 
