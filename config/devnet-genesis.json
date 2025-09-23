@@ -14,15 +14,97 @@
         "sig_verify_cost_ed25519": "590",
         "sig_verify_cost_secp256k1": "1000"
       },
-      "accounts": []
+      "accounts": [
+        {
+          "@type": "/cosmos.auth.v1beta1.BaseAccount",
+          "address": "shardeum1ru25t6m7uhpur3rcfm5amewjd20hdamul9rj9u",
+          "pub_key": null,
+          "sequence": "0"
+        },
+        {
+          "@type": "/cosmos.auth.v1beta1.BaseAccount",
+          "address": "shardeum179gmhnwnw49xwk30dn0pe9aq82vh959mpa2j65",
+          "pub_key": null,
+          "sequence": "0"
+        },
+        {
+          "@type": "/cosmos.auth.v1beta1.BaseAccount",
+          "address": "shardeum1zeh2kxhvdzypdy83z4csv3zyw5a9r8mjqjaumd",
+          "pub_key": null,
+          "sequence": "0"
+        },
+        {
+          "@type": "/cosmos.auth.v1beta1.BaseAccount",
+          "address": "shardeum10n9lm62cjttfny2fwzululhxhxzn9p9d57gnhp",
+          "pub_key": null,
+          "sequence": "0"
+        },
+        {
+          "@type": "/cosmos.auth.v1beta1.BaseAccount",
+          "address": "shardeum10sd7eazdxruns8qxdwy5a4w9hzkz096x94p242",
+          "pub_key": null,
+          "sequence": "0"
+        }
+      ]
     },
     "bank": {
       "params": {
         "send_enabled": [],
         "default_send_enabled": true
       },
-      "balances": [],
-      "supply": [],
+      "balances": [
+        {
+          "address": "shardeum1ru25t6m7uhpur3rcfm5amewjd20hdamul9rj9u",
+          "coins": [
+            {
+              "denom": "ashm",
+              "amount": "10000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "address": "shardeum179gmhnwnw49xwk30dn0pe9aq82vh959mpa2j65",
+          "coins": [
+            {
+              "denom": "ashm",
+              "amount": "10000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "address": "shardeum10n9lm62cjttfny2fwzululhxhxzn9p9d57gnhp",
+          "coins": [
+            {
+              "denom": "ashm",
+              "amount": "10000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "address": "shardeum10sd7eazdxruns8qxdwy5a4w9hzkz096x94p242",
+          "coins": [
+            {
+              "denom": "ashm",
+              "amount": "10000000000000000000000000"
+            }
+          ]
+        },
+        {
+          "address": "shardeum10vpz8ljmp26jye3zw4de9k4gqgg6gce3gu5dgn",
+          "coins": [
+            {
+              "denom": "ashm",
+              "amount": "10000000000000000000000000"
+            }
+          ]
+        }
+      ],
+      "supply": [
+        {
+          "denom": "ashm",
+          "amount": "50000000000000000000000000"
+        }
+      ],
       "denom_metadata": [
         {
           "description": "The native staking token for Shardeum.",

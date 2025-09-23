@@ -89,23 +89,34 @@ func applyEnvOverrides(config NetworkConfig) NetworkConfig {
 
 // getNetworkConfigPath returns the path to the network configuration file
 func getNetworkConfigPath(network string) string {
-	// Try current working directory first
-	cwd, _ := os.Getwd()
-	configPath := filepath.Join(cwd, "configs", fmt.Sprintf("%s.json", network))
-	if _, err := os.Stat(configPath); err == nil {
-		return configPath
+    	// 1) Explicit env dir
+	if configDir := os.Getenv("SHARDEUM_CONFIG_DIR"); configDir != "" {
+		p := filepath.Join(configDir, fmt.Sprintf("%s.json", network))
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+		// Env set but file missing: fail with guidance
+		panic(fmt.Sprintf("network config '%s.json' not found in SHARDEUM_CONFIG_DIR='%s'", network, configDir))
 	}
 
-	// Try relative to binary location
-	execPath, _ := os.Executable()
-	execDir := filepath.Dir(execPath)
-	configPath = filepath.Join(execDir, "configs", fmt.Sprintf("%s.json", network))
-	if _, err := os.Stat(configPath); err == nil {
-		return configPath
+	// 2) Next to the executable
+	if execPath, err := os.Executable(); err == nil {
+		execDir := filepath.Dir(execPath)
+		p := filepath.Join(execDir, "configs", fmt.Sprintf("%s.json", network))
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
 	}
 
-	// Default fallback
-	return filepath.Join("configs", fmt.Sprintf("%s.json", network))
+	// 3) Current working directory
+	if cwd, err := os.Getwd(); err == nil {
+		p := filepath.Join(cwd, "configs", fmt.Sprintf("%s.json", network))
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+
+    return filepath.Join("configs", fmt.Sprintf("%s.json", network))
 }
 
 // loadNetworkConfigFromFile loads network configuration from a JSON file

@@ -34,16 +34,19 @@ usage() {
   echo "Environment variables:"
   echo "  SHARDEUM_NETWORK              Network to use (overrides --network)"
   echo "  SHARDEUM_CHAIN_ID             Chain ID to use (overrides --chain-id)"
+  echo "  SHARDEUM_CONFIG_DIR           Absolute path to directory containing configs/*.json"
   echo "  BINARY                        Path to shardeumd binary"
   echo "  SKIP_BUILD=1                  Skip 'make build' if binary already exists"
   echo ""
   echo "Examples:"
-  echo "  $0 4 --network testnet                            			# Start 4 nodes with testnet network"
-  echo "  $0 --nodes 6 --network devnet --chain-id shardeum-dev-1               # Start 6 nodes using devnet config and custom chain id"
-  echo "  $0 -g ./genesis.json                              			# Start 4 nodes with custom genesis"
-  echo "  $0 6 ./genesis.json                               			# Legacy: 6 nodes + custom genesis"
-  echo "  $0 --create2-factory                              			# Include create2 factory in genesis"
-  echo "  $0 --allow-unprotected-txs                        			# Allow unprotected (non-EIP155) txs"
+  echo "  $0 4 --network testnet"
+  echo "  $0 6 --network devnet --chain-id shardeum-dev-1"
+  echo "  SHARDEUM_NETWORK=mainnet $0 4"
+  echo "  SHARDEUM_CONFIG_DIR=$REPO_ROOT/configs SHARDEUM_NETWORK=testnet $0 4"
+  echo "  $0 -g ./genesis.json                               		# Start 4 nodes with custom genesis"
+  echo "  $0 6 ./genesis.json                                 		# Legacy: 6 nodes + custom genesis"
+  echo "  $0 --create2-factory                                		# Include create2 factory in genesis"
+  echo "  $0 --allow-unprotected-txs                          		# Allow unprotected (non-EIP155) txs"
   exit 1
 }
 
@@ -86,7 +89,7 @@ while [[ $# -gt 0 ]]; do
       ALLOW_UNPROTECTED_TXS="true"; shift ;;
     -h|--help)
       usage ;;
-    -*)
+    -* )
       echo "Unknown option: $1"; usage ;;
     *)
       # Legacy positional: first numeric is NODES, second is GENESIS
@@ -141,6 +144,9 @@ if ! [[ "$NODES" =~ ^[0-9]+$ ]] || [[ "$NODES" -lt 1 ]]; then
   echo -e "${RED}Error: Number of nodes must be a positive integer${NC}"
   exit 1
 fi
+
+# Ensure the binary can resolve configs via SHARDEUM_CONFIG_DIR
+export SHARDEUM_CONFIG_DIR="${SHARDEUM_CONFIG_DIR:-$REPO_ROOT/configs}"
 
 # -----------------------------
 # Announce
@@ -229,6 +235,7 @@ echo -e "${YELLOW}Creating validator key for primary node${NC}"
 "$BINARY" keys add "validator" --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1 || true
 
 if [ "$ADD_DEV_ACCOUNTS" = "true" ]; then
+  # Add dev accounts to keyring only (no balances in genesis)
   echo -e "${YELLOW}Adding dev accounts to keyring${NC}"
   echo "copper push brief egg scan entry inform record adjust fossil boss egg comic alien upon aspect dry avoid interest fury window hint race symptom" | "$BINARY" keys add "dev0" --keyring-backend test --home "$NODE0_DIR" --recover --algo eth_secp256k1 > /dev/null 2>&1 || true
   echo "maximum display century economy unlock van census kite error heart snow filter midnight usage egg venture cash kick motor survey drastic edge muffin visual" | "$BINARY" keys add "dev1" --keyring-backend test --home "$NODE0_DIR" --recover --algo eth_secp256k1 > /dev/null 2>&1 || true
@@ -242,14 +249,6 @@ fi
 echo -e "${YELLOW}Adding validator account to genesis${NC}"
 "$BINARY" genesis add-genesis-account "validator" 100000000000000000000000000${BASE_DENOM} \
   --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
-
-if [ "$ADD_DEV_ACCOUNTS" = "true" ]; then
-  echo -e "${YELLOW}Adding dev accounts to genesis${NC}"
-  "$BINARY" genesis add-genesis-account "dev0" 10000000000000000000000000${BASE_DENOM} --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
-  "$BINARY" genesis add-genesis-account "dev1" 10000000000000000000000000${BASE_DENOM} --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
-  "$BINARY" genesis add-genesis-account "dev2" 10000000000000000000000000${BASE_DENOM} --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
-  "$BINARY" genesis add-genesis-account "dev3" 10000000000000000000000000${BASE_DENOM} --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
-fi
 
 # -----------------------------
 # Optional: Deploy create2 factory & unprotected txs
@@ -434,15 +433,8 @@ echo "Stop: pkill -f 'shardeumd.*$CHAINID' or Ctrl+C"
 echo "Logs: $BASE_DIR/node*/node.log"
 echo
 echo "Add more nodes: ./scripts/add_node.sh <node_id>"
-if [ "$ADD_DEV_ACCOUNTS" = "true" ]; then
-  echo
-  echo -e "${GREEN}Dev accounts available for testing:${NC}"
-  echo "  dev0: 0xC6Fe5D33615a1C52c08018c47E8Bc53646A0E101 | shardeum1cml96vmptgw99syqrrz8az79xer2pcgpayxvjl"
-  echo "  dev1: 0x963EBDf2e1f8DB8707D05FC75bfeFFBa1B5BaC17 | shardeum1jcltmuhplrdcwp7stlr4hlhlhgd4htqhtvey7v"
-  echo "  dev2: 0x40a0cb1C63e026A81B55EE1308586E21eec1eFa9 | shardeum1gzsvk8rruqn2sx64acfsskrwy8hvrmaf686rht"
-  echo "  dev3: 0x498B5AeC5D439b733dC2F58AB489783A23FB26dA | shardeum1fx944mzagwdhx0wz7k9tfztc8g3lkfk6ej0d5n"
-  echo "  Each account has 10,000,000 ${BASE_DENOM} tokens for testing"
-fi
+echo
+echo -e "${GREEN}Preset accounts from genesis file funded for testing!${NC}"
 echo
 echo -e "${YELLOW}Network is running. Press Ctrl+C to stop all nodes.${NC}"
 

@@ -34,7 +34,7 @@ func (suite *NetworkConfigTestSuite) SetupTest() {
 	// Create standard network config files for testing
 	suite.createStandardNetworkConfigs()
 
-	// Save original environment variables
+    // Save original environment variables
 	suite.originalEnv = make(map[string]string)
 	envVars := []string{
 		"SHARDEUM_NETWORK",
@@ -46,15 +46,19 @@ func (suite *NetworkConfigTestSuite) SetupTest() {
 		"SHARDEUM_REST_PORT",
 		"SHARDEUM_JSON_RPC_PORT",
 		"SHARDEUM_WEBSOCKET_PORT",
-		"SHARDEUM_GRPC_PORT",
+        "SHARDEUM_GRPC_PORT",
+        "SHARDEUM_CONFIG_DIR",
 	}
 
-	for _, envVar := range envVars {
+    for _, envVar := range envVars {
 		suite.originalEnv[envVar] = os.Getenv(envVar)
 		os.Unsetenv(envVar)
 	}
 
-	// Change working directory to temp dir for tests
+    // Ensure binary resolves configs from our test configs directory
+    os.Setenv("SHARDEUM_CONFIG_DIR", suite.configDir)
+
+    // Change working directory to temp dir for tests
 	originalWd, _ := os.Getwd()
 	os.Chdir(tempDir)
 	suite.T().Cleanup(func() {
