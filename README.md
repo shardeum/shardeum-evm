@@ -42,28 +42,33 @@ make start-network NODES=6 NETWORK=devnet   # Start 6 nodes on devnet
 
 #### Adding Nodes to Running Network
 
-You can dynamically add more nodes to an existing network:
+You can dynamically add more nodes to an existing network with different node types:
 
 ```bash
-# Using Makefile (recommended)
-make add-node NODE_ID=node4 [SEED_RPC=http://localhost:26657] [NETWORK=local]
+# Using Makefile
+make add-node NODE_ID=node4 [NODE_TYPE=validator] [SEED_RPC=http://localhost:26657] [NETWORK=local]
 
 # Or directly using the script
-./scripts/add_node.sh <node_id> [--seed-rpc seed_endpoint] [--network network_name]
+./scripts/add_node.sh <node_id> [--node-type type] [--seed-rpc seed_endpoint] [--network network_name]
 ```
+
+##### Node Types
+
+- **validator**: Sets up validator infrastructure (default) - can be promoted to active validator
+- **full-node**: Sets up a non-validator full node that syncs the blockchain
 
 Examples:
 ```bash
 # Using Makefile
-make add-node NODE_ID=node4                           # Add node4 to local network (default)
-make add-node NODE_ID=node5 NETWORK=testnet           # Add node5 to testnet
-make add-node NODE_ID=node6 SEED_RPC=http://localhost:26658 NETWORK=devnet  # Add node6 to devnet with specific seed
+make add-node NODE_ID=node4                                    # Add validator infrastructure to local network
+make add-node NODE_ID=node5 NODE_TYPE=full-node NETWORK=testnet # Add full-node to testnet
+make add-node NODE_ID=node6 SEED_RPC=http://localhost:26658    # Add validator infrastructure with specific seed
 
 # Using script directly
-./scripts/add_node.sh node4                           # Add node4 to local network (default)
-./scripts/add_node.sh node5 --network testnet         # Add node5 to testnet
-./scripts/add_node.sh node6 --seed-rpc http://localhost:26658 --network devnet  # Add node6 to devnet with specific seed
-./scripts/add_node.sh 6                               # Add node6 (ID automatically prefixed) to local network
+./scripts/add_node.sh node4                                    # Add validator infrastructure to local network
+./scripts/add_node.sh node5 --node-type full-node --network testnet  # Add full-node to testnet
+./scripts/add_node.sh node6 --node-type validator --seed-rpc http://localhost:26658  # Add validator infrastructure with specific seed
+./scripts/add_node.sh 6                                        # Add node6 validator infrastructure to local network
 ```
 
 The script will:
@@ -72,6 +77,48 @@ The script will:
 - Configure seed-based peer discovery
 - Assign available ports automatically
 - Start the node and connect to the network
+
+##### Creating Active Validators
+
+After setting up validator infrastructure, you need to create and fund a validator account, then register it:
+
+**Step 1: Create Validator Account**
+```bash
+# Create validator key (save the mnemonic!)
+./build/shardeumd keys add validator-node5 --keyring-backend test --home .testnet/node5
+```
+
+**Step 2: Fund the Validator Account**
+
+Option A - Using CLI with existing funded account:
+```bash
+./build/shardeumd tx bank send dev0 [validator_address] 3000000000000000000ashm \
+  --keyring-backend test --chain-id shardeum-local --node http://localhost:26657 \
+  --from dev0 --yes
+```
+
+Option B - Using Keplr Wallet:
+1. Add the Shardeum network to Keplr (see Keplr Integration section)
+2. Send SHM tokens to the validator address via Keplr interface
+
+**Step 3: Create the Validator**
+```bash
+# Using Makefile
+make create-validator NODE_ID=node5 VALIDATOR_KEY=my-validator AMOUNT=2000000000000000000
+
+# Using script directly
+./scripts/create_validator.sh node5 --validator-key my-validator --amount 2000000000000000000
+```
+
+**Validator Requirements:**
+- Minimum stake: 1 SHM (1000000000000000000ashm)
+- Recommended: 3+ SHM for fees and operations
+- Account must be funded before validator creation
+
+**Check Validator Status:**
+```bash
+./build/shardeumd query staking validators --node tcp://localhost:26657
+```
 
 #### Stopping Nodes
 

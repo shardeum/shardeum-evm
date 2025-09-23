@@ -383,9 +383,12 @@ start-network: build
 	@SKIP_BUILD=1 BINARY=./build/shardeumd ./scripts/start_network.sh $(or $(NODES),4) --network $(or $(NETWORK),local)
 
 add-node: build
-	@SKIP_BUILD=1 BINARY=./build/shardeumd ./scripts/add_node.sh $(NODE_ID) --network $(or $(NETWORK),local) $(if $(SEED_RPC),--seed-rpc $(SEED_RPC))
+	@SKIP_BUILD=1 BINARY=./build/shardeumd ./scripts/add_node.sh $(NODE_ID) --network $(or $(NETWORK),local) $(if $(SEED_RPC),--seed-rpc $(SEED_RPC)) $(if $(NODE_TYPE),--node-type $(NODE_TYPE))
 
-.PHONY: start-network add-node
+create-validator: build
+	@SKIP_BUILD=1 BINARY=./build/shardeumd ./scripts/create_validator.sh $(NODE_ID) $(if $(VALIDATOR_KEY),--validator-key $(VALIDATOR_KEY)) $(if $(AMOUNT),--amount $(AMOUNT)) $(if $(MONIKER),--moniker "$(MONIKER)")
+
+.PHONY: start-network add-node create-validator
 
 test-system: build-v04 build
 	mkdir -p ./tests/systemtests/binaries/

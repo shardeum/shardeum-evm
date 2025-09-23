@@ -9,8 +9,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Parse command line arguments
 NODE_ID=""
 SEED_NODE_RPC=""
-NETWORK=""
+NETWORK="local"
 CUSTOM_CHAIN_ID=""
+NODE_TYPE="validator"
 
 # Usage function
 usage() {
@@ -21,6 +22,7 @@ usage() {
   echo "  --seed-rpc <url>     RPC endpoint of seed node (default: http://localhost:26657)"
   echo "  --network <name>     Network to use (mainnet, testnet, devnet, local)"
   echo "  --chain-id <id>      Override chain ID"
+  echo "  --node-type <type>   Node type: validator or full-node (default: validator)"
   echo "  --help               Show this help message"
   echo ""
   echo "Environment variables:"
@@ -32,6 +34,7 @@ usage() {
   echo "Examples:"
   echo "  $0 node4 --network testnet"
   echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
+  echo "  $0 node6 --node-type full-node --network testnet"
   echo "  SHARDEUM_CONFIG_DIR=$REPO_ROOT/configs SHARDEUM_NETWORK=testnet $0 node6"
   exit 1
 }
@@ -51,6 +54,10 @@ while [[ $# -gt 0 ]]; do
       CUSTOM_CHAIN_ID="$2"
       shift 2
       ;;
+    --node-type)
+      NODE_TYPE="$2"
+      shift 2
+      ;;
     --help)
       echo "Usage: $0 <node_id> [options]"
       echo "  node_id: Unique identifier for the new node (e.g., node4, node5)"
@@ -59,6 +66,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --seed-rpc <url>     RPC endpoint of seed node (default: http://localhost:26657)"
       echo "  --network <name>     Network to use (mainnet, testnet, devnet, local)"
       echo "  --chain-id <id>      Override chain ID"
+      echo "  --node-type <type>   Node type: validator or full-node (default: validator)"
       echo "  --help               Show this help message"
       echo ""
       echo "Environment variables:"
@@ -70,6 +78,7 @@ while [[ $# -gt 0 ]]; do
       echo "Examples:"
       echo "  $0 node4 --network testnet"
       echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
+      echo "  $0 node6 --node-type full-node --network testnet"
       echo "  SHARDEUM_CONFIG_DIR=$REPO_ROOT/configs SHARDEUM_NETWORK=testnet $0 node6"
       exit 0
       ;;
@@ -94,6 +103,13 @@ if [[ -z "$NODE_ID" ]]; then
   echo "Error: node_id is required"
   usage
 fi
+
+# Validate node type
+if [[ "$NODE_TYPE" != "validator" && "$NODE_TYPE" != "full-node" ]]; then
+  echo "Error: node-type must be either 'validator' or 'full-node'"
+  usage
+fi
+
 
 # Set defaults
 SEED_NODE_RPC="${SEED_NODE_RPC:-http://localhost:26657}"
@@ -166,6 +182,7 @@ fi
 
 echo -e "${GREEN}Adding new node '$NODE_ID' using seed-based discovery${NC}"
 echo -e "${YELLOW}Using seed node: $SEED_NODE_RPC${NC}"
+echo -e "${YELLOW}Node type: $NODE_TYPE${NC}"
 
 # Verify binary exists (skip build if called from makefile)
 if [ ! -f "$BINARY" ]; then
@@ -318,26 +335,39 @@ EOF
 
 # Start the new node
 echo -e "${YELLOW}Starting new node $NODE_ID...${NC}"
-"$BINARY" start \
-  --home "$NODE_DIR" \
-  --chain-id "$CHAINID" \
-  --rpc.laddr "tcp://127.0.0.1:$RPC_PORT" \
-  --p2p.laddr "tcp://0.0.0.0:$P2P_PORT" \
-  --grpc.address "localhost:$GRPC_PORT" \
-  --json-rpc.enable \
-  --json-rpc.address "127.0.0.1:$JSON_PORT" \
-  --json-rpc.ws-address "127.0.0.1:$WS_PORT" \
-  --minimum-gas-prices="$MIN_GAS" \
-  --json-rpc.api eth,txpool,personal,net,debug,web3 \
-  --pruning nothing \
-  > "$NODE_DIR/node.log" 2>&1 &
+
+# Build start command based on node type
+START_CMD=(
+  "$BINARY" start
+  --home "$NODE_DIR"
+  --chain-id "$CHAINID"
+  --rpc.laddr "tcp://127.0.0.1:$RPC_PORT"
+  --p2p.laddr "tcp://0.0.0.0:$P2P_PORT"
+  --grpc.address "localhost:$GRPC_PORT"
+  --json-rpc.enable
+  --json-rpc.address "127.0.0.1:$JSON_PORT"
+  --json-rpc.ws-address "127.0.0.1:$WS_PORT"
+  --minimum-gas-prices="$MIN_GAS"
+  --json-rpc.api eth,txpool,personal,net,debug,web3
+  --pruning nothing
+)
+
+# Add non-validator flag for full-node
+if [[ "$NODE_TYPE" == "full-node" ]]; then
+  START_CMD+=(--non-validator)
+fi
+
+# Execute the start command
+"${START_CMD[@]}" > "$NODE_DIR/node.log" 2>&1 &
 
 NODE_PID=$!
 echo $NODE_PID > "$NODE_DIR/node.pid"
 
+
 echo
 echo -e "${GREEN}✅ Node $NODE_ID started with seed-based discovery${NC}"
 echo -e "${YELLOW}Chain ID: $CHAINID${NC}"
+echo -e "${YELLOW}Node Type: $NODE_TYPE${NC}"
 echo
 echo "New node endpoints:"
 echo "  RPC: http://localhost:$RPC_PORT"
@@ -347,6 +377,14 @@ echo
 echo "Seed node: $SEED_ADDRESS"
 echo "The node will discover peers automatically via PEX protocol"
 echo
+
+if [[ "$NODE_TYPE" == "validator" ]]; then
+echo -e "${YELLOW}📝 To create a validator:${NC}"
+echo "1. Create and fund a validator account"
+echo "2. Run: ./scripts/create_validator.sh $NODE_ID"
+echo
+fi
+
 echo "Stop this node: kill $NODE_PID or Ctrl+C"
 echo "Logs: $NODE_DIR/node.log"
 echo
