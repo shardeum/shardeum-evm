@@ -396,21 +396,30 @@ for i in $(seq 0 $((NODES-1))); do
   JSON_PORT=$((8545 + i * 2))
   WS_PORT=$((8546 + i * 2))
 
-  echo -e "  Starting node$i on ports RPC:$RPC_PORT API:$API_PORT JSON-RPC:$JSON_PORT WebSocket:$WS_PORT"
+  # Build start command based on node type (node0 is validator, others are full nodes)
+  START_CMD=(
+    "$BINARY" start
+    --home "$NODE_DIR"
+    --chain-id "$CHAINID"
+    --rpc.laddr "tcp://127.0.0.1:$RPC_PORT"
+    --p2p.laddr "tcp://0.0.0.0:$P2P_PORT"
+    --grpc.address "localhost:$GRPC_PORT"
+    --minimum-gas-prices="$MIN_GAS"
+    --pruning nothing
+  )
 
-  "$BINARY" start \
-    --home "$NODE_DIR" \
-    --chain-id "$CHAINID" \
-    --rpc.laddr "tcp://127.0.0.1:$RPC_PORT" \
-    --p2p.laddr "tcp://0.0.0.0:$P2P_PORT" \
-    --grpc.address "localhost:$GRPC_PORT" \
-    --json-rpc.enable \
-    --json-rpc.address "127.0.0.1:$JSON_PORT" \
-    --json-rpc.ws-address "127.0.0.1:$WS_PORT" \
-    --minimum-gas-prices="$MIN_GAS" \
-    --json-rpc.api eth,txpool,personal,net,debug,web3 \
-    --pruning nothing \
-    > "$NODE_DIR/node.log" 2>&1 &
+  if [ $i -eq 0 ]; then
+    echo -e "  Starting node$i (validator) on ports RPC:$RPC_PORT API:$API_PORT"
+  else
+    # Other nodes are full nodes - enable JSON-RPC
+    echo -e "  Starting node$i (full-node) on ports RPC:$RPC_PORT API:$API_PORT JSON-RPC:$JSON_PORT WebSocket:$WS_PORT"
+    START_CMD+=(--json-rpc.enable)
+    START_CMD+=(--json-rpc.address "127.0.0.1:$JSON_PORT")
+    START_CMD+=(--json-rpc.ws-address "127.0.0.1:$WS_PORT")
+    START_CMD+=(--json-rpc.api eth,txpool,personal,net,debug,web3)
+  fi
+
+  "${START_CMD[@]}" > "$NODE_DIR/node.log" 2>&1 &
 
   echo $! > "$NODE_DIR/node.pid"
   sleep 3
@@ -426,7 +435,14 @@ for i in $(seq 0 $((NODES-1))); do
   API_PORT=$((1317 + i))
   JSON_PORT=$((8545 + i * 2))
   WS_PORT=$((8546 + i * 2))
-  echo "  Node$i: RPC=http://localhost:$RPC_PORT API=http://localhost:$API_PORT JSON-RPC=http://localhost:$JSON_PORT WebSocket=ws://localhost:$WS_PORT"
+  
+  if [ $i -eq 0 ]; then
+    # Node0 is validator - no JSON-RPC
+    echo "  Node$i (validator): RPC=http://localhost:$RPC_PORT API=http://localhost:$API_PORT"
+  else
+    # Other nodes are full nodes - show JSON-RPC
+    echo "  Node$i (full-node): RPC=http://localhost:$RPC_PORT API=http://localhost:$API_PORT JSON-RPC=http://localhost:$JSON_PORT WebSocket=ws://localhost:$WS_PORT"
+  fi
 done
 echo
 echo "Stop: pkill -f 'shardeumd.*$CHAINID' or Ctrl+C"

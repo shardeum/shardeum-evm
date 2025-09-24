@@ -344,17 +344,17 @@ START_CMD=(
   --rpc.laddr "tcp://127.0.0.1:$RPC_PORT"
   --p2p.laddr "tcp://0.0.0.0:$P2P_PORT"
   --grpc.address "localhost:$GRPC_PORT"
-  --json-rpc.enable
-  --json-rpc.address "127.0.0.1:$JSON_PORT"
-  --json-rpc.ws-address "127.0.0.1:$WS_PORT"
   --minimum-gas-prices="$MIN_GAS"
-  --json-rpc.api eth,txpool,personal,net,debug,web3
   --pruning nothing
 )
 
-# Add non-validator flag for full-node
+# Configure RPC and validator settings based on node type
 if [[ "$NODE_TYPE" == "full-node" ]]; then
   START_CMD+=(--non-validator)
+  START_CMD+=(--json-rpc.enable)
+  START_CMD+=(--json-rpc.address "127.0.0.1:$JSON_PORT")
+  START_CMD+=(--json-rpc.ws-address "127.0.0.1:$WS_PORT")
+  START_CMD+=(--json-rpc.api eth,txpool,personal,net,debug,web3)
 fi
 
 # Execute the start command
@@ -371,8 +371,12 @@ echo -e "${YELLOW}Node Type: $NODE_TYPE${NC}"
 echo
 echo "New node endpoints:"
 echo "  RPC: http://localhost:$RPC_PORT"
-echo "  JSON-RPC: http://localhost:$JSON_PORT"
-echo "  WebSocket: ws://localhost:$WS_PORT"
+if [[ "$NODE_TYPE" == "full-node" ]]; then
+  echo "  JSON-RPC: http://localhost:$JSON_PORT"
+  echo "  WebSocket: ws://localhost:$WS_PORT"
+else
+  echo "  (JSON-RPC disabled for validator security)"
+fi
 echo
 echo "Seed node: $SEED_ADDRESS"
 echo "The node will discover peers automatically via PEX protocol"
