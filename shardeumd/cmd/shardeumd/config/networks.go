@@ -164,6 +164,53 @@ func parseUint64(s string) (uint64, error) {
 	return result, nil
 }
 
+// GetGenesisPath returns the full path to the genesis file for the given network
+func GetGenesisPath(network string) (string, error) {
+	config, err := GetNetworkConfig(network)
+	if err != nil {
+		return "", fmt.Errorf("failed to get network config for genesis path: %w", err)
+	}
+
+	if config.GenesisFile == "" {
+		return "", fmt.Errorf("no genesis file specified in network config for '%s'", network)
+	}
+
+	// Use the same search logic as getNetworkConfigPath but for genesis files
+	// 1) Explicit env dir
+	if configDir := os.Getenv("SHARDEUM_CONFIG_DIR"); configDir != "" {
+		genesisPath := filepath.Join(configDir, "environments", config.GenesisFile)
+		if _, err := os.Stat(genesisPath); err == nil {
+			return genesisPath, nil
+		}
+		return "", fmt.Errorf("genesis file '%s' not found in SHARDEUM_CONFIG_DIR='%s'", config.GenesisFile, configDir)
+	}
+
+	// 2) Next to the executable
+	if execPath, err := os.Executable(); err == nil {
+		execDir := filepath.Dir(execPath)
+		genesisPath := filepath.Join(execDir, "environments", config.GenesisFile)
+		if _, err := os.Stat(genesisPath); err == nil {
+			return genesisPath, nil
+		}
+	}
+
+	// 3) Current working directory
+	if cwd, err := os.Getwd(); err == nil {
+		genesisPath := filepath.Join(cwd, "environments", config.GenesisFile)
+		if _, err := os.Stat(genesisPath); err == nil {
+			return genesisPath, nil
+		}
+	}
+
+	// 4) Default fallback
+	genesisPath := filepath.Join("config", "environments", config.GenesisFile)
+	if _, err := os.Stat(genesisPath); err == nil {
+		return genesisPath, nil
+	}
+
+	return "", fmt.Errorf("genesis file '%s' for network '%s' not found in any search path", config.GenesisFile, network)
+}
+
 // UpdateChainsCoinInfo updates the global ChainsCoinInfo map with network configurations
 func UpdateChainsCoinInfo() {
 	builtinNetworks := getBuiltinNetworks()
