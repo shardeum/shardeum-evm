@@ -386,7 +386,7 @@ add-node: build
 	@SKIP_BUILD=1 BINARY=./build/shardeumd ./scripts/add_node.sh $(NODE_ID) --network $(or $(NETWORK),local) $(if $(SEED_RPC),--seed-rpc $(SEED_RPC)) $(if $(NODE_TYPE),--node-type $(NODE_TYPE))
 
 create-validator: build
-	@SKIP_BUILD=1 BINARY=./build/shardeumd ./scripts/create_validator.sh $(NODE_ID) $(if $(VALIDATOR_KEY),--validator-key $(VALIDATOR_KEY)) $(if $(AMOUNT),--amount $(AMOUNT)) $(if $(MONIKER),--moniker "$(MONIKER)")
+	@SKIP_BUILD=1 BINARY=./build/shardeumd ./scripts/create_validator.sh $(NODE_ID) --network $(or $(NETWORK),local) $(if $(VALIDATOR_KEY),--validator-key $(VALIDATOR_KEY)) $(if $(AMOUNT),--amount $(AMOUNT)) $(if $(MONIKER),--moniker "$(MONIKER)")
 
 .PHONY: start-network add-node create-validator
 

@@ -15,6 +15,7 @@ COMMISSION_RATE="0.10"
 COMMISSION_MAX_RATE="0.20"
 COMMISSION_MAX_CHANGE_RATE="0.01"
 MIN_SELF_DELEGATION="1"
+NETWORK="local"
 
 # Colors
 GREEN='\033[0;32m'
@@ -32,12 +33,17 @@ usage() {
   echo "  --amount <amount>        Validator stake amount (default: 1000000000000000000)"
   echo "  --moniker <name>         Validator moniker (default: <node_id>-validator)"
   echo "  --commission-rate <rate> Commission rate (default: 0.10)"
+  echo "  --network <name>         Network to use (mainnet, testnet, devnet, local) (default: local)"
   echo "  --help                   Show this help message"
+  echo ""
+  echo "Environment variables:"
+  echo "  SHARDEUM_NETWORK         Network to use (overrides --network)"
   echo ""
   echo "Examples:"
   echo "  $0 node5"
+  echo "  $0 node5 --network testnet"
   echo "  $0 node5 --validator-key my-validator --amount 2000000000000000000"
-  echo "  $0 node5 --moniker 'My Validator' --commission-rate 0.05"
+  echo "  $0 node5 --moniker 'My Validator' --commission-rate 0.05 --network devnet"
   exit 1
 }
 
@@ -58,6 +64,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --commission-rate)
       COMMISSION_RATE="$2"
+      shift 2
+      ;;
+    --network)
+      NETWORK="$2"
       shift 2
       ;;
     --help)
@@ -88,9 +98,10 @@ fi
 # Set defaults
 VALIDATOR_KEY="${VALIDATOR_KEY:-validator-$NODE_ID}"
 MONIKER="${MONIKER:-$NODE_ID-validator}"
+NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-local}}"
 
 # Paths
-BASE_DIR="$REPO_ROOT/.testnet"
+BASE_DIR="$REPO_ROOT/.$NETWORK"
 NODE_DIR="$BASE_DIR/$NODE_ID"
 BINARY="$REPO_ROOT/build/shardeumd"
 
