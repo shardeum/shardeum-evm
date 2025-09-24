@@ -3,8 +3,7 @@
 set -e
 
 # Resolve repo root regardless of where the script is invoked from
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CURRENT_DIR="$(pwd)"
 
 # Parse command line arguments
 NODE_ID=""
@@ -35,7 +34,7 @@ usage() {
   echo "  $0 node4 --network testnet"
   echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
   echo "  $0 node6 --node-type full-node --network testnet"
-  echo "  SHARDEUM_CONFIG_DIR=$REPO_ROOT/configs SHARDEUM_NETWORK=testnet $0 node6"
+  echo "  SHARDEUM_CONFIG_DIR=/path/to/configs SHARDEUM_NETWORK=testnet $0 node6"
   exit 1
 }
 
@@ -79,7 +78,7 @@ while [[ $# -gt 0 ]]; do
       echo "  $0 node4 --network testnet"
       echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
       echo "  $0 node6 --node-type full-node --network testnet"
-      echo "  SHARDEUM_CONFIG_DIR=$REPO_ROOT/configs SHARDEUM_NETWORK=testnet $0 node6"
+      echo "  SHARDEUM_CONFIG_DIR=path/to/configs SHARDEUM_NETWORK=testnet $0 node6"
       exit 0
       ;;
     --*)
@@ -97,6 +96,12 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# config dir is compulsory - can't start network without it
+if [[ -z "$SHARDEUM_CONFIG_DIR" ]]; then
+  echo "Error: SHARDEUM_CONFIG_DIR is required"
+  usage
+fi
 
 # Validate required arguments
 if [[ -z "$NODE_ID" ]]; then
@@ -116,11 +121,11 @@ SEED_NODE_RPC="${SEED_NODE_RPC:-http://localhost:26657}"
 NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-testnet}}"
 
 # Load network configuration
-CONFIG_FILE="$REPO_ROOT/configs/$NETWORK.json"
+CONFIG_FILE="$SHARDEUM_CONFIG_DIR/$NETWORK.json"
 if [ ! -f "$CONFIG_FILE" ]; then
   echo -e "${RED}Error: Network configuration file not found: $CONFIG_FILE${NC}"
   echo "Available networks:"
-  ls -1 "$REPO_ROOT/configs"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
+  ls -1 "$SHARDEUM_CONFIG_DIR"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
   exit 1
 fi
 
@@ -136,12 +141,15 @@ elif [[ -n "$SHARDEUM_CHAIN_ID" ]]; then
   CHAINID="$SHARDEUM_CHAIN_ID"
 fi
 
-BASE_DIR="$REPO_ROOT/.testnet"
+BINARY="${BINARY:-shardeumd}"
+BASE_DIR="$/.$NETWORK"
+if [[ "$NETWORK" == "local" ]]; then
+  BASE_DIR="$CURRENT_DIR/.$NETWORK"
+fi
 MIN_GAS="0.000006$BASE_DENOM"
-BINARY="${BINARY:-$REPO_ROOT/build/shardeumd}"
 
 # Ensure the binary can resolve configs via SHARDEUM_CONFIG_DIR
-export SHARDEUM_CONFIG_DIR="${SHARDEUM_CONFIG_DIR:-$REPO_ROOT/configs}"
+export SHARDEUM_CONFIG_DIR="$SHARDEUM_CONFIG_DIR"
 
 # Cleanup function for graceful shutdown
 cleanup() {
@@ -186,15 +194,9 @@ echo -e "${YELLOW}Node type: $NODE_TYPE${NC}"
 
 # Verify binary exists (skip build if called from makefile)
 if [ ! -f "$BINARY" ]; then
-  if [ "$SKIP_BUILD" != "1" ]; then
-    echo -e "${YELLOW}Binary not found, building shardeumd...${NC}"
-    (cd "$REPO_ROOT" && make build)
-  fi
-  if [ ! -f "$BINARY" ]; then
-    echo -e "${RED}Error: Failed to build binary at $BINARY${NC}"
-    echo -e "${YELLOW}Tip:${NC} Run: 'make build' from $REPO_ROOT or set BINARY=/absolute/path/to/shardeumd"
-    exit 1
-  fi
+  echo -e "${RED}Error: Failed to find binary at $BINARY${NC}"
+  echo -e "${YELLOW}Tip:${NC} Make sure shardeumd binary is set in PATH or set BINARY=/absolute/path/to/shardeumd"
+  exit 1
 fi
 
 # Verify we can connect to seed node
@@ -344,17 +346,17 @@ START_CMD=(
   --rpc.laddr "tcp://127.0.0.1:$RPC_PORT"
   --p2p.laddr "tcp://0.0.0.0:$P2P_PORT"
   --grpc.address "localhost:$GRPC_PORT"
-  --json-rpc.enable
-  --json-rpc.address "127.0.0.1:$JSON_PORT"
-  --json-rpc.ws-address "127.0.0.1:$WS_PORT"
   --minimum-gas-prices="$MIN_GAS"
-  --json-rpc.api eth,txpool,personal,net,debug,web3
   --pruning nothing
 )
 
 # Add non-validator flag for full-node
 if [[ "$NODE_TYPE" == "full-node" ]]; then
   START_CMD+=(--non-validator)
+  START_CMD+=(--json-rpc.enable)
+  START_CMD+=(--json-rpc.address "127.0.0.1:$JSON_PORT")
+  START_CMD+=(--json-rpc.ws-address "127.0.0.1:$WS_PORT")
+  START_CMD+=(--json-rpc.api eth,txpool,personal,net,debug,web3)
 fi
 
 # Execute the start command
