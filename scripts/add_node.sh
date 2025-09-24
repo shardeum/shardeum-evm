@@ -352,7 +352,8 @@ START_CMD=(
 
 # Configure RPC and validator settings based on node type
 if [[ "$NODE_TYPE" == "full-node" ]]; then
-  START_CMD+=(--non-validator)
+#  This flag was working for some, but not all so testing without it for now
+#  START_CMD+=(--non-validator)
   START_CMD+=(--json-rpc.enable)
   START_CMD+=(--json-rpc.address "127.0.0.1:$JSON_PORT")
   START_CMD+=(--json-rpc.ws-address "127.0.0.1:$WS_PORT")
