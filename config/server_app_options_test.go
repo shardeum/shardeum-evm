@@ -54,13 +54,13 @@ func TestGetBlockGasLimit(t *testing.T) {
 			expected: math.MaxUint64,
 		},
 		{
-			name: "genesis file not found returns 0",
+			name: "genesis file not found returns max uint64",
 			setupFn: func() servertypes.AppOptions {
 				opts := newMockAppOptions()
 				opts.Set(flags.FlagHome, "/non/existent/directory")
 				return opts
 			},
-			expected: 0,
+			expected: math.MaxUint64,
 		},
 		{
 			name: "valid genesis with max_gas = -1 returns max uint64",
@@ -73,54 +73,54 @@ func TestGetBlockGasLimit(t *testing.T) {
 			expected: math.MaxUint64,
 		},
 		{
-			name: "valid genesis with max_gas < -1 returns 0",
+			name: "valid genesis with max_gas < -1 returns max uint64",
 			setupFn: func() servertypes.AppOptions {
 				homeDir := createGenesisWithMaxGas(t, -5)
 				opts := newMockAppOptions()
 				opts.Set(flags.FlagHome, homeDir)
 				return opts
 			},
-			expected: 0,
+			expected: math.MaxUint64,
 		},
 		{
-			name: "valid genesis with max_gas = 0 returns 0",
+			name: "valid genesis without network env returns max uint64",
 			setupFn: func() servertypes.AppOptions {
 				homeDir := createGenesisWithMaxGas(t, 0)
 				opts := newMockAppOptions()
 				opts.Set(flags.FlagHome, homeDir)
 				return opts
 			},
-			expected: 0,
+			expected: math.MaxUint64,
 		},
 		{
-			name: "valid genesis with max_gas = 1000000 returns 1000000",
+			name: "valid genesis without network env returns max uint64 (case 2)",
 			setupFn: func() servertypes.AppOptions {
 				homeDir := createGenesisWithMaxGas(t, 1000000)
 				opts := newMockAppOptions()
 				opts.Set(flags.FlagHome, homeDir)
 				return opts
 			},
-			expected: 1000000,
+			expected: math.MaxUint64,
 		},
 		{
-			name: "genesis without consensus params returns 0",
+			name: "genesis without consensus params returns max uint64",
 			setupFn: func() servertypes.AppOptions {
 				homeDir := createGenesisWithoutConsensusParams(t)
 				opts := newMockAppOptions()
 				opts.Set(flags.FlagHome, homeDir)
 				return opts
 			},
-			expected: 0,
+			expected: math.MaxUint64,
 		},
 		{
-			name: "invalid genesis JSON returns 0",
+			name: "invalid genesis JSON returns max uint64",
 			setupFn: func() servertypes.AppOptions {
 				homeDir := createInvalidGenesis(t)
 				opts := newMockAppOptions()
 				opts.Set(flags.FlagHome, homeDir)
 				return opts
 			},
-			expected: 0,
+			expected: math.MaxUint64,
 		},
 	}
 

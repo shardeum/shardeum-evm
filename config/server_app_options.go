@@ -1,7 +1,10 @@
 package config
 
 import (
+	"encoding/json"
+	"fmt"
 	"math"
+	"os"
 	"path/filepath"
 
 	"github.com/holiman/uint256"
@@ -18,30 +21,92 @@ import (
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 )
 
+// NetworkConfig represents the minimal network configuration needed for genesis resolution
+type NetworkConfig struct {
+	GenesisFile string `json:"genesis_file,omitempty"`
+}
+
+// getNetworkGenesisPath resolves the genesis file path for a given network
+func getNetworkGenesisPath(network string) (string, error) {
+	// Try to load network config to get genesis file name
+	var networkConfigPath string
+	
+	// 1) Check SHARDEUM_CONFIG_DIR first
+	if configDir := os.Getenv("SHARDEUM_CONFIG_DIR"); configDir != "" {
+		networkConfigPath = filepath.Join(configDir, "environments", fmt.Sprintf("%s.json", network))
+	} else {
+		// 2) Use default path
+		networkConfigPath = filepath.Join("config", "environments", fmt.Sprintf("%s.json", network))
+	}
+
+	// Load network config to get genesis file name
+	data, err := os.ReadFile(networkConfigPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read network config: %w", err)
+	}
+
+	var config NetworkConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		return "", fmt.Errorf("failed to parse network config: %w", err)
+	}
+
+	if config.GenesisFile == "" {
+		return "", fmt.Errorf("no genesis file specified in network config")
+	}
+
+	// Resolve genesis file path using same logic as network config
+	var genesisPath string
+	if configDir := os.Getenv("SHARDEUM_CONFIG_DIR"); configDir != "" {
+		genesisPath = filepath.Join(configDir, "environments", config.GenesisFile)
+	} else {
+		genesisPath = filepath.Join("config", "environments", config.GenesisFile)
+	}
+
+	if _, err := os.Stat(genesisPath); err != nil {
+		return "", fmt.Errorf("genesis file not found: %s", genesisPath)
+	}
+
+	return genesisPath, nil
+}
+
 // GetBlockGasLimit reads the genesis json file using AppGenesisFromFile
 // to extract the consensus block gas limit before InitChain is called.
 func GetBlockGasLimit(appOpts servertypes.AppOptions, logger log.Logger) uint64 {
 	homeDir := cast.ToString(appOpts.Get(flags.FlagHome))
 	if homeDir == "" {
-		logger.Error("home directory not found in app options, using zero block gas limit")
+		logger.Warn("home directory not found in app options, falling back to max uint64 block gas limit")
 		return math.MaxUint64
 	}
-	genesisPath := filepath.Join(homeDir, "config", "genesis.json")
+
+	// Try to get network-specific genesis path
+	var genesisPath string
+	if network := os.Getenv("SHARDEUM_NETWORK"); network != "" {
+		if path, err := getNetworkGenesisPath(network); err == nil {
+			genesisPath = path
+			logger.Debug("using network-specific genesis file", "network", network, "path", genesisPath)
+		} else {
+			logger.Warn("failed to get network-specific genesis path, falling back to max uint64 block gas limit", "network", network, "error", err)
+			return math.MaxUint64
+		}
+	} else {
+		logger.Warn("SHARDEUM_NETWORK not set, falling back to max uint64 block gas limit")
+		return math.MaxUint64
+	}
 
 	appGenesis, err := genutiltypes.AppGenesisFromFile(genesisPath)
 	if err != nil {
-		logger.Error("failed to load genesis using SDK AppGenesisFromFile, using zero block gas limit", "path", genesisPath, "error", err)
-		return 0
+		logger.Warn("failed to load genesis file, falling back to max uint64 block gas limit", "path", genesisPath, "error", err)
+		return math.MaxUint64
 	}
 	genDoc, err := appGenesis.ToGenesisDoc()
 	if err != nil {
-		logger.Error("failed to convert AppGenesis to GenesisDoc, using zero block gas limit", "path", genesisPath, "error", err)
-		return 0
+		logger.Warn("failed to convert AppGenesis to GenesisDoc, falling back to max uint64 block gas limit", "path", genesisPath, "error", err)
+		return math.MaxUint64
 	}
 
 	if genDoc.ConsensusParams == nil {
-		logger.Error("consensus parameters not found in genesis (nil), using zero block gas limit")
-		return 0
+		logger.Warn("consensus parameters not found in genesis (nil), falling back to max uint64 block gas limit")
+		return math.MaxUint64
 	}
 
 	maxGas := genDoc.ConsensusParams.Block.MaxGas
@@ -50,8 +115,8 @@ func GetBlockGasLimit(appOpts servertypes.AppOptions, logger log.Logger) uint64 
 		return math.MaxUint64
 	}
 	if maxGas < -1 {
-		logger.Error("invalid max_gas value in genesis, using zero block gas limit")
-		return 0
+		logger.Warn("invalid max_gas value in genesis, falling back to max uint64 block gas limit", "max_gas", maxGas)
+		return math.MaxUint64
 	}
 	blockGasLimit := uint64(maxGas) // #nosec G115 -- maxGas >= 0 checked above
 

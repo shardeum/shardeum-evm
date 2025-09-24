@@ -308,12 +308,11 @@ make start-network NETWORK=mynetwork
 
 ### Genesis Files
 
-Each network can have its own genesis file in the `config/` directory:
+Each network has its own genesis file in the `config/environments/` directory:
 
-- `config/mainnet-genesis.json` - Mainnet genesis
-- `config/testnet-genesis.json` - Testnet genesis  
-- `config/devnet-genesis.json` - Devnet genesis
-- `config/local-genesis.json` - Local genesis
-- `config/genesis.json` - Default fallback
+- `config/environments/mainnet-genesis.json` - Mainnet genesis
+- `config/environments/testnet-genesis.json` - Testnet genesis  
+- `config/environments/devnet-genesis.json` - Devnet genesis
+- `config/environments/local-genesis.json` - Local genesis
 
-The system automatically uses the network-specific genesis file if it exists, otherwise falls back to the default.
+The system requires network-specific genesis files for each environment.
