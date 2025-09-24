@@ -14,6 +14,7 @@ NC='\033[0m'
 # -----------------------------
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CURRENT_DIR="$(pwd)"
 
 # -----------------------------
 # Usage
@@ -34,7 +35,7 @@ usage() {
   echo "Environment variables:"
   echo "  SHARDEUM_NETWORK              Network to use (overrides --network)"
   echo "  SHARDEUM_CHAIN_ID             Chain ID to use (overrides --chain-id)"
-  echo "  SHARDEUM_CONFIG_DIR           Absolute path to directory containing configs/*.json"
+  echo "  SHARDEUM_CONFIG_DIR           Absolute path to directory containing config/environments/*.json"
   echo "  BINARY                        Path to shardeumd binary"
   echo "  SKIP_BUILD=1                  Skip 'make build' if binary already exists"
   echo ""
@@ -42,7 +43,7 @@ usage() {
   echo "  $0 4 --network testnet"
   echo "  $0 6 --network devnet --chain-id shardeum-dev-1"
   echo "  SHARDEUM_NETWORK=mainnet $0 4"
-  echo "  SHARDEUM_CONFIG_DIR=$REPO_ROOT/configs SHARDEUM_NETWORK=testnet $0 4"
+  echo "  SHARDEUM_CONFIG_DIR=/path/to/config SHARDEUM_NETWORK=testnet $0 4"
   echo "  $0 -g ./genesis.json                               		# Start 4 nodes with custom genesis"
   echo "  $0 6 ./genesis.json                                 		# Legacy: 6 nodes + custom genesis"
   echo "  $0 --create2-factory                                		# Include create2 factory in genesis"
@@ -104,6 +105,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# config dir is compulsory - can't start network without it
+if [[ -z "$SHARDEUM_CONFIG_DIR" ]]; then
+  echo "Error: SHARDEUM_CONFIG_DIR is required"
+  usage
+fi
+
 # Defaults
 NODES="${NODES:-4}"
 NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-testnet}}"
@@ -111,11 +118,11 @@ NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-testnet}}"
 # -----------------------------
 # Load network configuration
 # -----------------------------
-CONFIG_FILE="$REPO_ROOT/configs/$NETWORK.json"
+CONFIG_FILE="$SHARDEUM_CONFIG_DIR/environments/$NETWORK.json"
 if [ ! -f "$CONFIG_FILE" ]; then
   echo -e "${RED}Error: Network configuration file not found: $CONFIG_FILE${NC}"
   echo "Available networks:"
-  ls -1 "$REPO_ROOT/configs"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
+  ls -1 "$SHARDEUM_CONFIG_DIR/environments"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
   exit 1
 fi
 
@@ -133,9 +140,12 @@ elif [[ -n "$SHARDEUM_CHAIN_ID" ]]; then
 fi
 
 # Paths & Binary
-BASE_DIR="$REPO_ROOT/.testnet"
+BINARY="${BINARY:-shardeumd}"
+BASE_DIR="$/.$NETWORK"
+if [[ "$NETWORK" == "local" ]]; then
+  BASE_DIR="$CURRENT_DIR/.$NETWORK"
+fi
 MIN_GAS="0.000006$BASE_DENOM"
-BINARY="${BINARY:-$REPO_ROOT/build/shardeumd}"
 
 # -----------------------------
 # Validate nodes number
@@ -146,7 +156,7 @@ if ! [[ "$NODES" =~ ^[0-9]+$ ]] || [[ "$NODES" -lt 1 ]]; then
 fi
 
 # Ensure the binary can resolve configs via SHARDEUM_CONFIG_DIR
-export SHARDEUM_CONFIG_DIR="${SHARDEUM_CONFIG_DIR:-$REPO_ROOT/configs}"
+export SHARDEUM_CONFIG_DIR="$SHARDEUM_CONFIG_DIR"
 
 # -----------------------------
 # Announce
@@ -171,18 +181,20 @@ pkill -f "shardeumd.*$CHAINID" || true
 # Build binary (unless skipped)
 # -----------------------------
 if [ "$SKIP_BUILD" != "1" ]; then
-  echo -e "${YELLOW}Building shardeumd binary${NC}"
-  (cd "$REPO_ROOT" && make build)
+  if [[ "$NETWORK" == "local" ]]; then
+    echo -e "${YELLOW}Building shardeumd binary${NC}"
+    (cd "$REPO_ROOT" && make install)
+    BINARY="$(command -v shardeumd)"
+  else 
+    echo -e "${RED}Tip:${NC} Make sure shardeumd binary is set in PATH or set BINARY=/absolute/path/to/shardeumd"
+  exit 1
+  fi
 fi
 
 # Verify binary
 if [ ! -f "$BINARY" ]; then
-  echo -e "${YELLOW}Binary not found at $BINARY, attempting to build...${NC}"
-  (cd "$REPO_ROOT" && make build)
-fi
-if [ ! -f "$BINARY" ]; then
   echo -e "${RED}Error: Binary not found at $BINARY after build${NC}"
-  echo "Make sure 'make build' completed successfully or set BINARY=/absolute/path/to/shardeumd"
+  echo "Make sure 'make install' completed successfully or set BINARY=/absolute/path/to/shardeumd"
   exit 1
 fi
 
@@ -197,7 +209,7 @@ if [ -n "$GENESIS_FILE" ]; then
   GENESIS_TO_USE="$GENESIS_FILE"
   echo -e "${YELLOW}Using custom genesis file: $GENESIS_FILE${NC}"
 else
-  GENESIS_PATH="$REPO_ROOT/config/$CFG_GENESIS_FILE"
+  GENESIS_PATH="$SHARDEUM_CONFIG_DIR/environments/$CFG_GENESIS_FILE"
   if [ ! -f "$GENESIS_PATH" ]; then
     GENESIS_PATH="$REPO_ROOT/config/genesis.json"
   fi
@@ -396,21 +408,30 @@ for i in $(seq 0 $((NODES-1))); do
   JSON_PORT=$((8545 + i * 2))
   WS_PORT=$((8546 + i * 2))
 
-  echo -e "  Starting node$i on ports RPC:$RPC_PORT API:$API_PORT JSON-RPC:$JSON_PORT WebSocket:$WS_PORT"
+  # Build start command based on node type (node0 is validator, others are full nodes)
+  START_CMD=(
+    "$BINARY" start
+    --home "$NODE_DIR"
+    --chain-id "$CHAINID"
+    --rpc.laddr "tcp://127.0.0.1:$RPC_PORT"
+    --p2p.laddr "tcp://0.0.0.0:$P2P_PORT"
+    --grpc.address "localhost:$GRPC_PORT"
+    --minimum-gas-prices="$MIN_GAS"
+    --pruning nothing
+  )
 
-  "$BINARY" start \
-    --home "$NODE_DIR" \
-    --chain-id "$CHAINID" \
-    --rpc.laddr "tcp://127.0.0.1:$RPC_PORT" \
-    --p2p.laddr "tcp://0.0.0.0:$P2P_PORT" \
-    --grpc.address "localhost:$GRPC_PORT" \
-    --json-rpc.enable \
-    --json-rpc.address "127.0.0.1:$JSON_PORT" \
-    --json-rpc.ws-address "127.0.0.1:$WS_PORT" \
-    --minimum-gas-prices="$MIN_GAS" \
-    --json-rpc.api eth,txpool,personal,net,debug,web3 \
-    --pruning nothing \
-    > "$NODE_DIR/node.log" 2>&1 &
+  if [ $i -eq 0 ]; then
+    echo -e "  Starting node$i (validator) on ports RPC:$RPC_PORT API:$API_PORT"
+  else
+    # Other nodes are full nodes - enable JSON-RPC
+    echo -e "  Starting node$i (full-node) on ports RPC:$RPC_PORT API:$API_PORT JSON-RPC:$JSON_PORT WebSocket:$WS_PORT"
+    START_CMD+=(--json-rpc.enable)
+    START_CMD+=(--json-rpc.address "127.0.0.1:$JSON_PORT")
+    START_CMD+=(--json-rpc.ws-address "127.0.0.1:$WS_PORT")
+    START_CMD+=(--json-rpc.api eth,txpool,personal,net,debug,web3)
+  fi
+
+  "${START_CMD[@]}" > "$NODE_DIR/node.log" 2>&1 &
 
   echo $! > "$NODE_DIR/node.pid"
   sleep 3
@@ -426,7 +447,14 @@ for i in $(seq 0 $((NODES-1))); do
   API_PORT=$((1317 + i))
   JSON_PORT=$((8545 + i * 2))
   WS_PORT=$((8546 + i * 2))
-  echo "  Node$i: RPC=http://localhost:$RPC_PORT API=http://localhost:$API_PORT JSON-RPC=http://localhost:$JSON_PORT WebSocket=ws://localhost:$WS_PORT"
+  
+  if [ $i -eq 0 ]; then
+    # Node0 is validator - no JSON-RPC
+    echo "  Node$i (validator): RPC=http://localhost:$RPC_PORT API=http://localhost:$API_PORT"
+  else
+    # Other nodes are full nodes - show JSON-RPC
+    echo "  Node$i (full-node): RPC=http://localhost:$RPC_PORT API=http://localhost:$API_PORT JSON-RPC=http://localhost:$JSON_PORT WebSocket=ws://localhost:$WS_PORT"
+  fi
 done
 echo
 echo "Stop: pkill -f 'shardeumd.*$CHAINID' or Ctrl+C"

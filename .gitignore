@@ -38,6 +38,9 @@ tests/systemtests/binaries
 tests/systemtests/testnet
 .testnets
 .testnet
+.local
+.devnet
+.mainnet
 .multi-nodes
 
 # Network logs
