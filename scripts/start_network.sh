@@ -14,6 +14,7 @@ NC='\033[0m'
 # -----------------------------
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CURRENT_DIR="$(pwd)"
 
 # -----------------------------
 # Usage
@@ -34,7 +35,7 @@ usage() {
   echo "Environment variables:"
   echo "  SHARDEUM_NETWORK              Network to use (overrides --network)"
   echo "  SHARDEUM_CHAIN_ID             Chain ID to use (overrides --chain-id)"
-  echo "  SHARDEUM_CONFIG_DIR           Absolute path to directory containing configs/*.json"
+  echo "  SHARDEUM_CONFIG_DIR           Absolute path to directory containing config/environments/*.json"
   echo "  BINARY                        Path to shardeumd binary"
   echo "  SKIP_BUILD=1                  Skip 'make build' if binary already exists"
   echo ""
@@ -42,7 +43,7 @@ usage() {
   echo "  $0 4 --network testnet"
   echo "  $0 6 --network devnet --chain-id shardeum-dev-1"
   echo "  SHARDEUM_NETWORK=mainnet $0 4"
-  echo "  SHARDEUM_CONFIG_DIR=/path/to/configs SHARDEUM_NETWORK=testnet $0 4"
+  echo "  SHARDEUM_CONFIG_DIR=/path/to/config SHARDEUM_NETWORK=testnet $0 4"
   echo "  $0 -g ./genesis.json                               		# Start 4 nodes with custom genesis"
   echo "  $0 6 ./genesis.json                                 		# Legacy: 6 nodes + custom genesis"
   echo "  $0 --create2-factory                                		# Include create2 factory in genesis"
@@ -117,11 +118,11 @@ NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-testnet}}"
 # -----------------------------
 # Load network configuration
 # -----------------------------
-CONFIG_FILE="$SHARDEUM_CONFIG_DIR/$NETWORK.json"
+CONFIG_FILE="$SHARDEUM_CONFIG_DIR/environments/$NETWORK.json"
 if [ ! -f "$CONFIG_FILE" ]; then
   echo -e "${RED}Error: Network configuration file not found: $CONFIG_FILE${NC}"
   echo "Available networks:"
-  ls -1 "$SHARDEUM_CONFIG_DIR"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
+  ls -1 "$SHARDEUM_CONFIG_DIR/environments"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
   exit 1
 fi
 
@@ -183,6 +184,7 @@ if [ "$SKIP_BUILD" != "1" ]; then
   if [[ "$NETWORK" == "local" ]]; then
     echo -e "${YELLOW}Building shardeumd binary${NC}"
     (cd "$REPO_ROOT" && make install)
+    BINARY="$(command -v shardeumd)"
   else 
     echo -e "${RED}Tip:${NC} Make sure shardeumd binary is set in PATH or set BINARY=/absolute/path/to/shardeumd"
   exit 1
@@ -207,7 +209,7 @@ if [ -n "$GENESIS_FILE" ]; then
   GENESIS_TO_USE="$GENESIS_FILE"
   echo -e "${YELLOW}Using custom genesis file: $GENESIS_FILE${NC}"
 else
-  GENESIS_PATH="$SHARDEUM_CONFIG_DIR/$CFG_GENESIS_FILE"
+  GENESIS_PATH="$SHARDEUM_CONFIG_DIR/environments/$CFG_GENESIS_FILE"
   if [ ! -f "$GENESIS_PATH" ]; then
     GENESIS_PATH="$REPO_ROOT/config/genesis.json"
   fi

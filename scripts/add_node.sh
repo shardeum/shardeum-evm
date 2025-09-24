@@ -27,14 +27,14 @@ usage() {
   echo "Environment variables:"
   echo "  SHARDEUM_NETWORK     Network to use (overrides --network)"
   echo "  SHARDEUM_CHAIN_ID    Chain ID to use (overrides --chain-id)"
-  echo "  SHARDEUM_CONFIG_DIR  Absolute path to directory containing configs/*.json"
+  echo "  SHARDEUM_CONFIG_DIR  Absolute path to directory containing config/environments/*.json"
   echo "  BINARY               Path to shardeumd binary"
   echo ""
   echo "Examples:"
   echo "  $0 node4 --network testnet"
   echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
   echo "  $0 node6 --node-type full-node --network testnet"
-  echo "  SHARDEUM_CONFIG_DIR=/path/to/configs SHARDEUM_NETWORK=testnet $0 node6"
+  echo "  SHARDEUM_CONFIG_DIR=/path/to/config SHARDEUM_NETWORK=testnet $0 node6"
   exit 1
 }
 
@@ -78,7 +78,7 @@ while [[ $# -gt 0 ]]; do
       echo "  $0 node4 --network testnet"
       echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
       echo "  $0 node6 --node-type full-node --network testnet"
-      echo "  SHARDEUM_CONFIG_DIR=path/to/configs SHARDEUM_NETWORK=testnet $0 node6"
+      echo "  SHARDEUM_CONFIG_DIR=path/to/config SHARDEUM_NETWORK=testnet $0 node6"
       exit 0
       ;;
     --*)
@@ -121,11 +121,11 @@ SEED_NODE_RPC="${SEED_NODE_RPC:-http://localhost:26657}"
 NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-testnet}}"
 
 # Load network configuration
-CONFIG_FILE="$SHARDEUM_CONFIG_DIR/$NETWORK.json"
+CONFIG_FILE="$SHARDEUM_CONFIG_DIR/environments/$NETWORK.json"
 if [ ! -f "$CONFIG_FILE" ]; then
   echo -e "${RED}Error: Network configuration file not found: $CONFIG_FILE${NC}"
   echo "Available networks:"
-  ls -1 "$SHARDEUM_CONFIG_DIR"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
+  ls -1 "$SHARDEUM_CONFIG_DIR/environments"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
   exit 1
 fi
 
@@ -141,7 +141,7 @@ elif [[ -n "$SHARDEUM_CHAIN_ID" ]]; then
   CHAINID="$SHARDEUM_CHAIN_ID"
 fi
 
-BINARY="${BINARY:-shardeumd}"
+BINARY="${BINARY:-$(command -v shardeumd)}"
 BASE_DIR="$/.$NETWORK"
 if [[ "$NETWORK" == "local" ]]; then
   BASE_DIR="$CURRENT_DIR/.$NETWORK"
