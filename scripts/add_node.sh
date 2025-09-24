@@ -3,8 +3,7 @@
 set -e
 
 # Resolve repo root regardless of where the script is invoked from
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CURRENT_DIR="$(pwd)"
 
 # Parse command line arguments
 NODE_ID=""
@@ -28,14 +27,14 @@ usage() {
   echo "Environment variables:"
   echo "  SHARDEUM_NETWORK     Network to use (overrides --network)"
   echo "  SHARDEUM_CHAIN_ID    Chain ID to use (overrides --chain-id)"
-  echo "  SHARDEUM_CONFIG_DIR  Absolute path to directory containing configs/*.json"
+  echo "  SHARDEUM_CONFIG_DIR  Absolute path to directory containing config/environments/*.json"
   echo "  BINARY               Path to shardeumd binary"
   echo ""
   echo "Examples:"
   echo "  $0 node4 --network testnet"
   echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
   echo "  $0 node6 --node-type full-node --network testnet"
-  echo "  SHARDEUM_CONFIG_DIR=$REPO_ROOT/configs SHARDEUM_NETWORK=testnet $0 node6"
+  echo "  SHARDEUM_CONFIG_DIR=/path/to/config SHARDEUM_NETWORK=testnet $0 node6"
   exit 1
 }
 
@@ -79,7 +78,7 @@ while [[ $# -gt 0 ]]; do
       echo "  $0 node4 --network testnet"
       echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
       echo "  $0 node6 --node-type full-node --network testnet"
-      echo "  SHARDEUM_CONFIG_DIR=$REPO_ROOT/configs SHARDEUM_NETWORK=testnet $0 node6"
+      echo "  SHARDEUM_CONFIG_DIR=path/to/config SHARDEUM_NETWORK=testnet $0 node6"
       exit 0
       ;;
     --*)
@@ -97,6 +96,12 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# config dir is compulsory - can't start network without it
+if [[ -z "$SHARDEUM_CONFIG_DIR" ]]; then
+  echo "Error: SHARDEUM_CONFIG_DIR is required"
+  usage
+fi
 
 # Validate required arguments
 if [[ -z "$NODE_ID" ]]; then
@@ -116,11 +121,11 @@ SEED_NODE_RPC="${SEED_NODE_RPC:-http://localhost:26657}"
 NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-testnet}}"
 
 # Load network configuration
-CONFIG_FILE="$REPO_ROOT/configs/$NETWORK.json"
+CONFIG_FILE="$SHARDEUM_CONFIG_DIR/environments/$NETWORK.json"
 if [ ! -f "$CONFIG_FILE" ]; then
   echo -e "${RED}Error: Network configuration file not found: $CONFIG_FILE${NC}"
   echo "Available networks:"
-  ls -1 "$REPO_ROOT/configs"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
+  ls -1 "$SHARDEUM_CONFIG_DIR/environments"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
   exit 1
 fi
 
@@ -136,12 +141,15 @@ elif [[ -n "$SHARDEUM_CHAIN_ID" ]]; then
   CHAINID="$SHARDEUM_CHAIN_ID"
 fi
 
-BASE_DIR="$REPO_ROOT/.testnet"
+BINARY="${BINARY:-$(command -v shardeumd)}"
+BASE_DIR="$/.$NETWORK"
+if [[ "$NETWORK" == "local" ]]; then
+  BASE_DIR="$CURRENT_DIR/.$NETWORK"
+fi
 MIN_GAS="0.000006$BASE_DENOM"
-BINARY="${BINARY:-$REPO_ROOT/build/shardeumd}"
 
 # Ensure the binary can resolve configs via SHARDEUM_CONFIG_DIR
-export SHARDEUM_CONFIG_DIR="${SHARDEUM_CONFIG_DIR:-$REPO_ROOT/configs}"
+export SHARDEUM_CONFIG_DIR="$SHARDEUM_CONFIG_DIR"
 
 # Cleanup function for graceful shutdown
 cleanup() {
@@ -186,15 +194,9 @@ echo -e "${YELLOW}Node type: $NODE_TYPE${NC}"
 
 # Verify binary exists (skip build if called from makefile)
 if [ ! -f "$BINARY" ]; then
-  if [ "$SKIP_BUILD" != "1" ]; then
-    echo -e "${YELLOW}Binary not found, building shardeumd...${NC}"
-    (cd "$REPO_ROOT" && make build)
-  fi
-  if [ ! -f "$BINARY" ]; then
-    echo -e "${RED}Error: Failed to build binary at $BINARY${NC}"
-    echo -e "${YELLOW}Tip:${NC} Run: 'make build' from $REPO_ROOT or set BINARY=/absolute/path/to/shardeumd"
-    exit 1
-  fi
+  echo -e "${RED}Error: Failed to find binary at $BINARY${NC}"
+  echo -e "${YELLOW}Tip:${NC} Make sure shardeumd binary is set in PATH or set BINARY=/absolute/path/to/shardeumd"
+  exit 1
 fi
 
 # Verify we can connect to seed node
