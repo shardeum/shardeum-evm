@@ -16,10 +16,10 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	cosmosevmcmd "github.com/shardeum/shardeum-evm/client"
 	cosmosevmkeyring "github.com/shardeum/shardeum-evm/crypto/keyring"
-	"github.com/shardeum/shardeum-evm/shardeumd"
-	evmdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 	cosmosevmserver "github.com/shardeum/shardeum-evm/server"
 	srvflags "github.com/shardeum/shardeum-evm/server/flags"
+	"github.com/shardeum/shardeum-evm/shardeumd"
+	shardeumdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/store"
@@ -63,7 +63,7 @@ func NewRootCmd() *cobra.Command {
 		nil,
 		true,
 		simtestutil.EmptyAppOptions{},
-		evmdconfig.ShardeumChainID(),
+		shardeumdconfig.ShardeumChainID(),
 		noOpEvmAppOptions,
 	)
 
@@ -81,7 +81,7 @@ func NewRootCmd() *cobra.Command {
 		WithInput(os.Stdin).
 		WithAccountRetriever(authtypes.AccountRetriever{}).
 		WithBroadcastMode(flags.FlagBroadcastMode).
-		WithHomeDir(evmdconfig.MustGetDefaultNodeHome()).
+		WithHomeDir(shardeumdconfig.MustGetDefaultNodeHome()).
 		WithViper(""). // In simapp, we don't use any prefix for env variables.
 		// Cosmos EVM specific setup
 		WithKeyringOptions(cosmosevmkeyring.Option()).
@@ -130,7 +130,7 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
-			customAppTemplate, customAppConfig := evmdconfig.InitAppConfig(evmdconfig.ShardeumChainDenom(), evmdconfig.ShardeumChainID())
+			customAppTemplate, customAppConfig := shardeumdconfig.InitAppConfig(shardeumdconfig.ShardeumChainDenom(), shardeumdconfig.ShardeumChainID())
 			customTMConfig := initCometConfig()
 
 			return sdkserver.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customTMConfig)
@@ -148,7 +148,7 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	if initClientCtx.ChainID != "" {
-		if err := evmdconfig.EvmAppOptions(evmdconfig.ShardeumChainID()); err != nil {
+		if err := shardeumdconfig.EvmAppOptions(shardeumdconfig.ShardeumChainID()); err != nil {
 			panic(err)
 		}
 	}
@@ -172,7 +172,7 @@ func initRootCmd(rootCmd *cobra.Command, evmApp *shardeumd.ShardeumApp) {
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
-	defaultNodeHome := evmdconfig.MustGetDefaultNodeHome()
+	defaultNodeHome := shardeumdconfig.MustGetDefaultNodeHome()
 	sdkAppCreator := func(l log.Logger, d dbm.DB, w io.Writer, ao servertypes.AppOptions) servertypes.Application {
 		return newApp(l, d, w, ao)
 	}
@@ -319,8 +319,8 @@ func newApp(
 	return shardeumd.NewShardeumApp(
 		logger, db, traceStore, true,
 		appOpts,
-		evmdconfig.ShardeumChainID(),
-		evmdconfig.EvmAppOptions,
+		shardeumdconfig.ShardeumChainID(),
+		shardeumdconfig.EvmAppOptions,
 		baseappOptions...,
 	)
 }
@@ -361,13 +361,13 @@ func appExport(
 	}
 
 	if height != -1 {
-		shardeumApp = shardeumd.NewShardeumApp(logger, db, traceStore, false, appOpts, evmdconfig.ShardeumChainID(), evmdconfig.EvmAppOptions, baseapp.SetChainID(chainID))
+		shardeumApp = shardeumd.NewShardeumApp(logger, db, traceStore, false, appOpts, shardeumdconfig.ShardeumChainID(), shardeumdconfig.EvmAppOptions, baseapp.SetChainID(chainID))
 
 		if err := shardeumApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		shardeumApp = shardeumd.NewShardeumApp(logger, db, traceStore, true, appOpts, evmdconfig.ShardeumChainID(), evmdconfig.EvmAppOptions, baseapp.SetChainID(chainID))
+		shardeumApp = shardeumd.NewShardeumApp(logger, db, traceStore, true, appOpts, shardeumdconfig.ShardeumChainID(), shardeumdconfig.EvmAppOptions, baseapp.SetChainID(chainID))
 	}
 
 	return shardeumApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)
@@ -382,7 +382,7 @@ func getChainIDFromOpts(appOpts servertypes.AppOptions) (chainID string, err err
 	if chainID == "" {
 		// If not available load from home
 		homeDir := cast.ToString(appOpts.Get(flags.FlagHome))
-		chainID, err = evmdconfig.GetChainIDFromHome(homeDir)
+		chainID, err = shardeumdconfig.GetChainIDFromHome(homeDir)
 		if err != nil {
 			return "", err
 		}
