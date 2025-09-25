@@ -1308,6 +1308,283 @@ export const useWalletStore = defineStore('wallet', () => {
     }
   }
 
+  // Manual claim rewards function following same ping.pub approach
+  async function claimRewardsManually(
+    validatorAddress?: string
+  ): Promise<any> {
+    if (!isConnected.value || !window.keplr) {
+      throw new Error('Wallet not connected')
+    }
+
+    try {
+      const { currentNetwork } = networkStore
+      const signerAddress = address.value
+
+      // Get account info from chain using REST API (exactly like ping.pub)
+      const accountResponse = await fetch(`${getApiBaseUrl()}/cosmos/auth/v1beta1/accounts/${signerAddress}`)
+      if (!accountResponse.ok) {
+        throw new Error('Account not found on chain')
+      }
+      
+      const accountData = await accountResponse.json()
+      
+      // Use ping.pub's findField approach to extract account_number and sequence
+      const findField = (obj: any, name: string): any => {
+        if (!obj) return undefined
+        const list = Object.keys(obj).filter(x => x && !x.startsWith("@"))
+        if (list.includes(name)) {
+          return obj[name]
+        }
+        for (let i = 0; i < list.length; i++) {
+          const field = obj[list[i]]
+          if (typeof field === 'string') continue
+          if (Array.isArray(field)) continue
+          const sub = findField(field, name)
+          if (sub) return sub
+        }
+        return undefined
+      }
+
+      const accountNumber = Number(findField(accountData, "account_number"))
+      const sequence = Number(findField(accountData, "sequence"))
+
+      if (accountNumber === undefined || sequence === undefined) {
+        throw new Error('Could not extract account number or sequence from account data')
+      }
+
+      console.log('Account info for manual claim rewards:', { accountNumber, sequence })
+
+      // Create the transaction object based on whether claiming from specific validator or all
+      let messages: any[]
+      
+      if (validatorAddress) {
+        // Claim from specific validator
+        messages = [{
+          typeUrl: '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward',
+          value: {
+            delegatorAddress: signerAddress,
+            validatorAddress: validatorAddress
+          }
+        }]
+      } else {
+        // Claim from all validators - first get delegations
+        const delegationsResponse = await fetch(`${getApiBaseUrl()}/cosmos/staking/v1beta1/delegations/${signerAddress}`)
+        if (!delegationsResponse.ok) {
+          throw new Error('Failed to fetch delegations')
+        }
+        
+        const delegationsData = await delegationsResponse.json()
+        const delegations = delegationsData.delegation_responses || []
+        
+        if (delegations.length === 0) {
+          throw new Error('No delegations found')
+        }
+        
+        messages = delegations.map((delegation: any) => ({
+          typeUrl: '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward',
+          value: {
+            delegatorAddress: signerAddress,
+            validatorAddress: delegation.delegation.validator_address
+          }
+        }))
+      }
+
+      const transaction = {
+        chainId: currentNetwork.chainId,
+        signerAddress: signerAddress,
+        messages: messages,
+        fee: {
+          gas: (200000 * messages.length).toString(),
+          amount: [
+            { amount: (5000 * messages.length).toString(), denom: currentNetwork.baseDenom }
+          ]
+        },
+        memo: "",
+        signerData: {
+          accountNumber: accountNumber,
+          sequence: sequence,
+          chainId: currentNetwork.chainId
+        }
+      }
+
+      console.log('Created claim rewards transaction object:', transaction)
+
+      // Create a Keplr wallet instance like ping.pub does
+      const offlineSigner: OfflineDirectSigner = window.getOfflineSigner(currentNetwork.chainId)
+
+      // Use ping.pub's signing approach - construct the signDoc manually but let Keplr handle it
+      const registry = new Registry(defaultRegistryTypes)
+
+      // Import the MsgWithdrawDelegatorReward type
+      const { MsgWithdrawDelegatorReward } = await import('cosmjs-types/cosmos/distribution/v1beta1/tx')
+
+      // Wrap messages in Any type for encoding
+      const msgAnys = messages.map(msg => Any.fromPartial({
+        typeUrl: '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward',
+        value: MsgWithdrawDelegatorReward.encode(MsgWithdrawDelegatorReward.fromPartial(msg.value)).finish()
+      }))
+
+      // Create transaction body
+      const txBodyEncodeObject: TxBodyEncodeObject = {
+        typeUrl: "/cosmos.tx.v1beta1.TxBody",
+        value: {
+          messages: msgAnys,
+          memo: transaction.memo,
+        },
+      }
+
+      const txBodyBytes = registry.encode(txBodyEncodeObject)
+
+      // Get signer accounts for pubkey
+      const accounts = await offlineSigner.getAccounts()
+      if (accounts.length === 0) {
+        throw new Error('No accounts found')
+      }
+
+      // Create public key with correct type for this chain
+      const pubkey = Any.fromPartial({
+        typeUrl: getKeyType(currentNetwork.chainId),
+        value: PubKey.encode({
+          key: accounts[0].pubkey,
+        }).finish()
+      })
+
+      const gasLimit = Number(transaction.fee.gas)
+      const authInfoBytes = makeAuthInfoBytes(
+        [{ pubkey, sequence: transaction.signerData.sequence }],
+        transaction.fee.amount,
+        gasLimit
+      )
+
+      const signDoc = makeSignDoc(
+        txBodyBytes, 
+        authInfoBytes, 
+        transaction.chainId, 
+        transaction.signerData.accountNumber
+      )
+
+      console.log('About to sign claim rewards with Keplr:', {
+        signerAddress: transaction.signerAddress,
+        chainId: transaction.chainId,
+        accountNumber: transaction.signerData.accountNumber,
+        sequence: transaction.signerData.sequence,
+        keyType: getKeyType(currentNetwork.chainId),
+        messageCount: messages.length
+      })
+
+      // Try amino signing first (more compatible with Ethermint chains)
+      let signature: any, signed: any;
+      
+      try {
+        // Try amino signing first
+        const aminoTypes = new AminoTypes(createDefaultAminoConverters())
+        const aminoSigner = window.getOfflineSignerOnlyAmino(currentNetwork.chainId) as OfflineAminoSigner
+        
+        const aminoMsgs = transaction.messages.map((msg) => aminoTypes.toAmino(msg))
+        const signDocAmino = makeSignDocAmino(
+          aminoMsgs, 
+          transaction.fee, 
+          transaction.chainId, 
+          transaction.memo, 
+          transaction.signerData.accountNumber, 
+          transaction.signerData.sequence
+        )
+        
+        console.log('Trying amino signing for claim rewards...')
+        const aminoResult = await aminoSigner.signAmino(signerAddress, signDocAmino)
+        
+        // Convert amino result to direct signing format
+        const signedTxBody = {
+          messages: aminoResult.signed.msgs.map((msg) => aminoTypes.fromAmino(msg)),
+          memo: aminoResult.signed.memo,
+        }
+        
+        const signedTxBodyEncodeObject: TxBodyEncodeObject = {
+          typeUrl: "/cosmos.tx.v1beta1.TxBody",
+          value: signedTxBody,
+        }
+        
+        const signedTxBodyBytes = registry.encode(signedTxBodyEncodeObject)
+        const signedGasLimit = Number(aminoResult.signed.fee.gas)
+        const signedSequence = Number(aminoResult.signed.sequence)
+        
+        const signedAuthInfoBytes = makeAuthInfoBytes(
+          [{ pubkey, sequence: signedSequence }],
+          aminoResult.signed.fee.amount,
+          signedGasLimit,
+          aminoResult.signed.fee.granter,
+          aminoResult.signed.fee.payer,
+          SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
+        )
+        
+        signed = {
+          bodyBytes: signedTxBodyBytes,
+          authInfoBytes: signedAuthInfoBytes,
+        }
+        signature = aminoResult.signature
+        
+        console.log('Amino signing successful for claim rewards')
+        
+      } catch (aminoError) {
+        console.log('Amino signing failed, trying direct signing for claim rewards:', aminoError)
+        
+        // Fallback to direct signing
+        const result = await offlineSigner.signDirect(signerAddress, signDoc)
+        signature = result.signature
+        signed = result.signed
+        
+        console.log('Direct signing successful for claim rewards')
+      }
+
+      // Create final transaction
+      const txRaw = TxRaw.fromPartial({
+        bodyBytes: signed.bodyBytes,
+        authInfoBytes: signed.authInfoBytes,
+        signatures: [fromBase64(signature.signature)],
+      })
+
+      // Broadcast using ping.pub's approach - via REST API
+      const txBytes = TxRaw.encode(txRaw).finish()
+      const txBase64 = btoa(String.fromCharCode(...txBytes))
+      
+      const broadcastRequest = {
+        tx_bytes: txBase64,
+        mode: 'BROADCAST_MODE_SYNC'
+      }
+
+      const broadcastResponse = await fetch(`${getApiBaseUrl()}/cosmos/tx/v1beta1/txs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(broadcastRequest)
+      })
+
+      if (!broadcastResponse.ok) {
+        throw new Error('Failed to broadcast claim rewards transaction')
+      }
+
+      const result = await broadcastResponse.json()
+
+      console.log('Manual claim rewards result:', result)
+      
+      // Check for broadcast errors
+      if (result.code && result.code !== 0) {
+        throw new Error(result.message || 'Broadcast error')
+      }
+
+      if (result.tx_response && result.tx_response.code !== 0) {
+        throw new Error(result.tx_response.raw_log || 'Claim rewards transaction failed')
+      }
+
+      return result.tx_response || result
+
+    } catch (error) {
+      console.error('Manual claim rewards failed:', error)
+      throw error
+    }
+  }
+
   function disconnect() {
     isConnected.value = false
     address.value = ''
@@ -1336,6 +1613,7 @@ export const useWalletStore = defineStore('wallet', () => {
     getSigningClient,
     delegateTokensManually,
     undelegateTokensManually,
+    claimRewardsManually,
     voteOnProposalManually,
     submitProposalManually,
     disconnect,

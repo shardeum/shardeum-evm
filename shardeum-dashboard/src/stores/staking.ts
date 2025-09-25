@@ -103,14 +103,11 @@ export const useStakingStore = defineStore('staking', () => {
   }
   
   async function claimRewards(validatorAddress?: string) {
-    const signingClient = await walletStore.getSigningClient()
-    if (!signingClient || !walletStore.address) {
+    if (!walletStore.address) {
       throw new Error('Wallet not connected')
     }
     
-    // This would implement the actual claim rewards transaction
-    console.log('Claim rewards:', { validatorAddress })
-    // TODO: Implement claim rewards transaction
+    return await walletStore.claimRewardsManually(validatorAddress)
   }
   
   return {
