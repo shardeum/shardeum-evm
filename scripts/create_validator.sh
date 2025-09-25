@@ -101,9 +101,13 @@ MONIKER="${MONIKER:-$NODE_ID-validator}"
 NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-local}}"
 
 # Paths
-BASE_DIR="$REPO_ROOT/.$NETWORK"
+BASE_DIR="$REPO_ROOT/$/.$NETWORK"
 NODE_DIR="$BASE_DIR/$NODE_ID"
 BINARY="$REPO_ROOT/build/shardeumd"
+# done use $ dir for local tests
+if [[ "$NETWORK" == "local" ]]; then
+  BASE_DIR="$CURRENT_DIR/.$NETWORK"
+fi
 
 # Validate node exists
 if [[ ! -d "$NODE_DIR" ]]; then

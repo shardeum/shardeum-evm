@@ -185,9 +185,11 @@ if [ "$SKIP_BUILD" != "1" ]; then
     echo -e "${YELLOW}Building shardeumd binary${NC}"
     (cd "$REPO_ROOT" && make install)
     BINARY="$(command -v shardeumd)"
-  else 
-    echo -e "${RED}Tip:${NC} Make sure shardeumd binary is set in PATH or set BINARY=/absolute/path/to/shardeumd"
-  exit 1
+  else
+    echo "will use " $BINARY
+    # BINARY is verified below so no need to fail a non-local test 
+    #echo -e "${RED}Tip:${NC} Make sure shardeumd binary is set in PATH or set BINARY=/absolute/path/to/shardeumd"
+    #exit 1
   fi
 fi
 
