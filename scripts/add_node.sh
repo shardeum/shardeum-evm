@@ -335,6 +335,17 @@ node = "tcp://localhost:$RPC_PORT"
 broadcast-mode = "sync"
 EOF
 
+# Enable RPC CORS
+echo -e "${YELLOW}Enabling RPC CORS${NC}"
+CONFIG_FILE="$NODE_DIR/config/config.toml"
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  sed -i '' 's/cors_allowed_origins = \[\]/cors_allowed_origins = ["*"]/' "$CONFIG_FILE"
+else
+  sed -i 's/cors_allowed_origins = \[\]/cors_allowed_origins = ["*"]/' "$CONFIG_FILE"
+fi
+echo "RPC CORS enabled for $NODE_ID"
+
 # Start the new node
 echo -e "${YELLOW}Starting new node $NODE_ID...${NC}"
 
@@ -348,6 +359,9 @@ START_CMD=(
   --grpc.address "localhost:$GRPC_PORT"
   --minimum-gas-prices="$MIN_GAS"
   --pruning nothing
+  --api.enable
+  --api.enabled-unsafe-cors
+  --rpc.unsafe
 )
 
 # Configure RPC and validator settings based on node type
