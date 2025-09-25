@@ -339,21 +339,6 @@ broadcast-mode = "sync"
 EOF
 done
 
-# -----------------------------
-# Enable RPC CORS
-# -----------------------------
-echo -e "${YELLOW}Enabling RPC CORS${NC}"
-for i in $(seq 0 $((NODES-1))); do
-  NODE_DIR="$BASE_DIR/node$i"
-  CONFIG_FILE="$NODE_DIR/config/config.toml"
-  
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' 's/cors_allowed_origins = \[\]/cors_allowed_origins = ["*"]/' "$CONFIG_FILE"
-  else
-    sed -i 's/cors_allowed_origins = \[\]/cors_allowed_origins = ["*"]/' "$CONFIG_FILE"
-  fi
-  echo "Node $i RPC CORS enabled"
-done
 
 # -----------------------------
 # API servers
@@ -434,7 +419,6 @@ for i in $(seq 0 $((NODES-1))); do
     --minimum-gas-prices="$MIN_GAS"
     --pruning nothing
     --api.enable
-    --api.enabled-unsafe-cors
     --rpc.unsafe
   )
 

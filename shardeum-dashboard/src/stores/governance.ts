@@ -1,106 +1,230 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useWalletStore } from './wallet'
-import { apiService, type Proposal } from '@/services/api'
+import { useNetworkStore } from './network'
+import { apiService } from '@/services/api'
+import type { 
+  GovernanceProposal, 
+  ProposalVote, 
+  ProposalDeposit, 
+  GovernanceParams,
+  VoteOptionString
+} from '@/types/governance'
+import { calculateVotePercentages, voteOptionStringToEnum } from '@/types/governance'
 
 export const useGovernanceStore = defineStore('governance', () => {
   const walletStore = useWalletStore()
+  const networkStore = useNetworkStore()
   
-  const proposals = ref<Proposal[]>([])
-  const isLoading = ref(false)
+  const proposals = ref<GovernanceProposal[]>([])
+  const selectedProposal = ref<GovernanceProposal | null>(null)
+  const proposalVotes = ref<Map<string, ProposalVote[]>>(new Map())
+  const proposalDeposits = ref<Map<string, ProposalDeposit[]>>(new Map())
+  const governanceParams = ref<GovernanceParams | null>(null)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
   
   const activeProposals = computed(() => {
     return proposals.value.filter(p => 
-      p.status === 'PROPOSAL_STATUS_VOTING_PERIOD' || 
-      p.status === 'PROPOSAL_STATUS_DEPOSIT_PERIOD'
+      p.status === 1 || p.status === 2 // DEPOSIT_PERIOD or VOTING_PERIOD
     )
   })
   
-  const passedProposals = computed(() => {
-    return proposals.value.filter(p => p.status === 'PROPOSAL_STATUS_PASSED')
-  })
-  
-  const rejectedProposals = computed(() => {
+  const completedProposals = computed(() => {
     return proposals.value.filter(p => 
-      p.status === 'PROPOSAL_STATUS_REJECTED' ||
-      p.status === 'PROPOSAL_STATUS_FAILED'
+      p.status === 3 || p.status === 4 || p.status === 5 // PASSED, REJECTED, FAILED
     )
   })
   
   async function loadProposals() {
+    loading.value = true
+    error.value = null
+    
     try {
-      isLoading.value = true
-      proposals.value = await apiService.getProposals()
-    } catch (error) {
-      console.error('Failed to load proposals:', error)
+      const data = await apiService.getProposals()
+      proposals.value = data.sort((a, b) => 
+        parseInt(b.proposalId) - parseInt(a.proposalId)
+      )
+    } catch (err) {
+      error.value = 'Failed to load proposals'
+      console.error('Failed to load proposals:', err)
     } finally {
-      isLoading.value = false
+      loading.value = false
     }
   }
-  
-  async function getProposal(proposalId: string): Promise<Proposal | null> {
+
+  async function loadProposal(proposalId: string) {
+    loading.value = true
+    error.value = null
+    
     try {
-      return await apiService.getProposal(proposalId)
-    } catch (error) {
-      console.error('Failed to get proposal:', error)
-      return null
+      const proposal = await apiService.getProposal(proposalId)
+      if (proposal) {
+        selectedProposal.value = proposal
+        
+        // Also load votes and deposits for this proposal
+        await Promise.all([
+          loadProposalVotes(proposalId),
+          loadProposalDeposits(proposalId)
+        ])
+      }
+    } catch (err) {
+      error.value = 'Failed to load proposal'
+      console.error('Failed to load proposal:', err)
+    } finally {
+      loading.value = false
     }
   }
-  
-  async function getProposalVotes(proposalId: string): Promise<any[]> {
+
+  async function loadProposalVotes(proposalId: string) {
     try {
-      return await apiService.getProposalVotes(proposalId)
-    } catch (error) {
-      console.error('Failed to get proposal votes:', error)
-      return []
+      const votes = await apiService.getProposalVotes(proposalId)
+      proposalVotes.value.set(proposalId, votes)
+    } catch (err) {
+      console.error('Failed to load proposal votes:', err)
+    }
+  }
+
+  async function loadProposalDeposits(proposalId: string) {
+    try {
+      const deposits = await apiService.getProposalDeposits(proposalId)
+      proposalDeposits.value.set(proposalId, deposits)
+    } catch (err) {
+      console.error('Failed to load proposal deposits:', err)
+    }
+  }
+
+  async function loadGovernanceParams() {
+    try {
+      const params = await apiService.getGovernanceParams()
+      governanceParams.value = params
+    } catch (err) {
+      console.error('Failed to load governance params:', err)
     }
   }
   
-  // Transaction functions would require the signing client
-  async function voteOnProposal(proposalId: string, vote: 'VOTE_OPTION_YES' | 'VOTE_OPTION_NO' | 'VOTE_OPTION_ABSTAIN' | 'VOTE_OPTION_NO_WITH_VETO') {
-    const signingClient = await walletStore.getSigningClient()
-    if (!signingClient || !walletStore.address) {
+  function getProposalVotes(proposalId: string): ProposalVote[] {
+    return proposalVotes.value.get(proposalId) || []
+  }
+
+  function getProposalDeposits(proposalId: string): ProposalDeposit[] {
+    return proposalDeposits.value.get(proposalId) || []
+  }
+
+  function getVotePercentages(proposal: GovernanceProposal) {
+    return calculateVotePercentages(proposal.finalTallyResult)
+  }
+
+  function isVotingActive(proposal: GovernanceProposal): boolean {
+    return proposal.status === 2 && // VOTING_PERIOD
+           proposal.votingEndTime && 
+           new Date(proposal.votingEndTime) > new Date()
+  }
+
+  function isDepositPeriod(proposal: GovernanceProposal): boolean {
+    return proposal.status === 1 && // DEPOSIT_PERIOD
+           proposal.depositEndTime && 
+           new Date(proposal.depositEndTime) > new Date()
+  }
+
+  function formatProposalType(typeUrl: string): string {
+    switch (typeUrl) {
+      case '/cosmos.gov.v1beta1.TextProposal':
+        return 'Text Proposal'
+      case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposal':
+        return 'Community Spend'
+      case '/cosmos.params.v1beta1.ParameterChangeProposal':
+        return 'Parameter Change'
+      case '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal':
+        return 'Software Upgrade'
+      case '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal':
+        return 'Cancel Upgrade'
+      default:
+        return 'Unknown'
+    }
+  }
+
+  // Transaction functions using ping.pub approach
+  async function voteOnProposal(proposalId: string, option: VoteOptionString) {
+    if (!walletStore.isConnected) {
       throw new Error('Wallet not connected')
     }
     
-    // This would implement the actual vote transaction
-    console.log('Vote on proposal:', { proposalId, vote })
-    // TODO: Implement vote transaction
+    const voteOptionValue = voteOptionStringToEnum(option)
+    return await walletStore.voteOnProposalManually(proposalId, voteOptionValue)
   }
-  
-  async function depositToProposal(proposalId: string, amount: string) {
-    const signingClient = await walletStore.getSigningClient()
-    if (!signingClient || !walletStore.address) {
+
+  async function submitProposal(
+    proposalType: 'text' | 'community-spend' | 'param-change' | 'software-upgrade' | 'cancel-upgrade',
+    title: string,
+    description: string,
+    initialDeposit: string,
+    // For community spend
+    recipient?: string,
+    spendAmount?: string,
+    // For parameter change
+    paramSubspace?: string,
+    paramKey?: string,
+    paramValue?: string,
+    // For software upgrade
+    upgradeName?: string,
+    upgradeHeight?: number,
+    upgradeInfo?: string,
+    // For cancel upgrade
+    cancelUpgradeName?: string
+  ) {
+    if (!walletStore.isConnected) {
       throw new Error('Wallet not connected')
     }
     
-    // This would implement the actual deposit transaction
-    console.log('Deposit to proposal:', { proposalId, amount })
-    // TODO: Implement deposit transaction
-  }
-  
-  async function submitProposal(content: any, initialDeposit: string) {
-    const signingClient = await walletStore.getSigningClient()
-    if (!signingClient || !walletStore.address) {
-      throw new Error('Wallet not connected')
-    }
+    const { currentNetwork } = networkStore
     
-    // This would implement the actual proposal submission
-    console.log('Submit proposal:', { content, initialDeposit })
-    // TODO: Implement proposal submission
+    return await walletStore.submitProposalManually(
+      proposalType,
+      title,
+      description,
+      initialDeposit,
+      currentNetwork.baseDenom,
+      recipient,
+      spendAmount,
+      paramSubspace,
+      paramKey,
+      paramValue,
+      upgradeName,
+      upgradeHeight,
+      upgradeInfo,
+      cancelUpgradeName
+    )
   }
+
+  function clearSelectedProposal() {
+    selectedProposal.value = null
+  }
+
+  // Initialize on store creation
+  loadGovernanceParams()
   
   return {
     proposals,
+    selectedProposal,
+    governanceParams,
+    loading,
+    error,
     activeProposals,
-    passedProposals,
-    rejectedProposals,
-    isLoading,
+    completedProposals,
     loadProposals,
-    getProposal,
+    loadProposal,
+    loadProposalVotes,
+    loadProposalDeposits,
+    loadGovernanceParams,
     getProposalVotes,
+    getProposalDeposits,
+    getVotePercentages,
+    isVotingActive,
+    isDepositPeriod,
+    formatProposalType,
     voteOnProposal,
-    depositToProposal,
-    submitProposal
+    submitProposal,
+    clearSelectedProposal
   }
 })

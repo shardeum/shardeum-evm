@@ -12,6 +12,13 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    proxy: {
+      '/cosmos': {
+        target: 'http://127.0.0.1:1317',
+        changeOrigin: true,
+        secure: false,
+      }
+    },
   },
   build: {
     outDir: 'dist',

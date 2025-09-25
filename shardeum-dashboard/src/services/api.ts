@@ -1,4 +1,5 @@
 import { useNetworkStore } from '@/stores/network'
+import type { GovernanceProposal, ProposalVote, ProposalDeposit, GovernanceParams } from '@/types/governance'
 
 export interface ChainInfo {
   chainId: string
@@ -47,25 +48,13 @@ export interface Validator {
   }
 }
 
-export interface Proposal {
-  proposalId: string
-  content: any
-  status: string
-  finalTallyResult: {
-    yes: string
-    abstain: string
-    no: string
-    noWithVeto: string
-  }
-  submitTime: string
-  depositEndTime: string
-  totalDeposit: Balance[]
-  votingStartTime: string
-  votingEndTime: string
-}
-
 class ApiService {
   private getBaseUrl(): string {
+    // In development, use the Vite proxy (relative URLs)
+    if (import.meta.env.DEV) {
+      return ''
+    }
+    // In production, use the full endpoint URL
     const networkStore = useNetworkStore()
     return networkStore.currentNetwork.apiEndpoint
   }
@@ -206,33 +195,147 @@ class ApiService {
     }
   }
 
-  async getProposals(): Promise<Proposal[]> {
+  async getProposals(): Promise<GovernanceProposal[]> {
     try {
       const response = await this.fetchApi('/cosmos/gov/v1beta1/proposals?pagination.limit=50')
-      return response.proposals || []
+      const proposals = response.proposals || []
+      
+      return proposals.map((p: any) => ({
+        proposalId: p.proposal_id || p.id,
+        content: {
+          typeUrl: p.content?.['@type'] || '',
+          title: p.content?.title || '',
+          description: p.content?.description || '',
+          recipient: p.content?.recipient,
+          amount: p.content?.amount,
+          changes: p.content?.changes
+        },
+        status: this.parseProposalStatus(p.status),
+        finalTallyResult: {
+          yes: p.final_tally_result?.yes || '0',
+          abstain: p.final_tally_result?.abstain || '0',
+          no: p.final_tally_result?.no || '0',
+          noWithVeto: p.final_tally_result?.no_with_veto || '0'
+        },
+        submitTime: p.submit_time,
+        depositEndTime: p.deposit_end_time,
+        totalDeposit: p.total_deposit || [],
+        votingStartTime: p.voting_start_time,
+        votingEndTime: p.voting_end_time
+      }))
     } catch (error) {
       console.error('Failed to get proposals:', error)
       return []
     }
   }
 
-  async getProposal(proposalId: string): Promise<Proposal | null> {
+  async getProposal(proposalId: string): Promise<GovernanceProposal | null> {
     try {
       const response = await this.fetchApi(`/cosmos/gov/v1beta1/proposals/${proposalId}`)
-      return response.proposal || null
+      const p = response.proposal
+      
+      if (!p) return null
+      
+      return {
+        proposalId: p.proposal_id || p.id,
+        content: {
+          typeUrl: p.content?.['@type'] || '',
+          title: p.content?.title || '',
+          description: p.content?.description || '',
+          recipient: p.content?.recipient,
+          amount: p.content?.amount,
+          changes: p.content?.changes
+        },
+        status: this.parseProposalStatus(p.status),
+        finalTallyResult: {
+          yes: p.final_tally_result?.yes || '0',
+          abstain: p.final_tally_result?.abstain || '0',
+          no: p.final_tally_result?.no || '0',
+          noWithVeto: p.final_tally_result?.no_with_veto || '0'
+        },
+        submitTime: p.submit_time,
+        depositEndTime: p.deposit_end_time,
+        totalDeposit: p.total_deposit || [],
+        votingStartTime: p.voting_start_time,
+        votingEndTime: p.voting_end_time
+      }
     } catch (error) {
       console.error('Failed to get proposal:', error)
       return null
     }
   }
 
-  async getProposalVotes(proposalId: string): Promise<any[]> {
+  async getProposalVotes(proposalId: string): Promise<ProposalVote[]> {
     try {
-      const response = await this.fetchApi(`/cosmos/gov/v1beta1/proposals/${proposalId}/votes`)
-      return response.votes || []
+      const response = await this.fetchApi(`/cosmos/gov/v1beta1/proposals/${proposalId}/votes?pagination.limit=100`)
+      const votes = response.votes || []
+      
+      return votes.map((v: any) => ({
+        proposalId: v.proposal_id,
+        voter: v.voter,
+        option: v.option,
+        options: v.options || []
+      }))
     } catch (error) {
       console.error('Failed to get proposal votes:', error)
       return []
+    }
+  }
+
+  async getProposalDeposits(proposalId: string): Promise<ProposalDeposit[]> {
+    try {
+      const response = await this.fetchApi(`/cosmos/gov/v1beta1/proposals/${proposalId}/deposits?pagination.limit=100`)
+      const deposits = response.deposits || []
+      
+      return deposits.map((d: any) => ({
+        proposalId: d.proposal_id,
+        depositor: d.depositor,
+        amount: d.amount || []
+      }))
+    } catch (error) {
+      console.error('Failed to get proposal deposits:', error)
+      return []
+    }
+  }
+
+  async getGovernanceParams(): Promise<GovernanceParams | null> {
+    try {
+      // Get deposit params
+      const depositResponse = await this.fetchApi('/cosmos/gov/v1beta1/params/deposit')
+      // Get voting params  
+      const votingResponse = await this.fetchApi('/cosmos/gov/v1beta1/params/voting')
+      // Get tally params
+      const tallyResponse = await this.fetchApi('/cosmos/gov/v1beta1/params/tallying')
+      
+      return {
+        minDeposit: depositResponse.deposit_params?.min_deposit || [],
+        maxDepositPeriod: depositResponse.deposit_params?.max_deposit_period || '0',
+        votingPeriod: votingResponse.voting_params?.voting_period || '0',
+        quorum: tallyResponse.tally_params?.quorum || '0',
+        threshold: tallyResponse.tally_params?.threshold || '0',
+        vetoThreshold: tallyResponse.tally_params?.veto_threshold || '0'
+      }
+    } catch (error) {
+      console.error('Failed to get governance params:', error)
+      return null
+    }
+  }
+
+  private parseProposalStatus(status: string): number {
+    // Convert string status to enum number
+    switch (status) {
+      case 'PROPOSAL_STATUS_DEPOSIT_PERIOD':
+        return 1
+      case 'PROPOSAL_STATUS_VOTING_PERIOD':
+        return 2
+      case 'PROPOSAL_STATUS_PASSED':
+        return 3
+      case 'PROPOSAL_STATUS_REJECTED':
+        return 4
+      case 'PROPOSAL_STATUS_FAILED':
+        return 5
+      default:
+        return 0
     }
   }
 

@@ -7,15 +7,15 @@
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center space-x-3">
             <h3 class="text-xl font-medium text-gray-900">
-              Proposal #{{ proposal.id }}
+              Proposal #{{ proposal.proposalId }}
             </h3>
             <span
               class="inline-flex px-3 py-1 text-sm font-semibold rounded-full"
               :class="{
-                'bg-yellow-100 text-yellow-800': proposal.status === 'PROPOSAL_STATUS_VOTING_PERIOD',
-                'bg-green-100 text-green-800': proposal.status === 'PROPOSAL_STATUS_PASSED',
-                'bg-red-100 text-red-800': proposal.status === 'PROPOSAL_STATUS_REJECTED',
-                'bg-gray-100 text-gray-800': proposal.status === 'PROPOSAL_STATUS_DEPOSIT_PERIOD'
+                'bg-yellow-100 text-yellow-800': proposal.status === 2,
+                'bg-green-100 text-green-800': proposal.status === 3,
+                'bg-red-100 text-red-800': proposal.status === 4,
+                'bg-gray-100 text-gray-800': proposal.status === 1
               }"
             >
               {{ getStatusText(proposal.status) }}
@@ -31,9 +31,9 @@
           <div class="lg:col-span-2 space-y-6">
             <!-- Title and Description -->
             <div>
-              <h4 class="text-lg font-medium text-gray-900 mb-3">{{ proposal.title }}</h4>
+              <h4 class="text-lg font-medium text-gray-900 mb-3">{{ proposal.content.title }}</h4>
               <div class="prose max-w-none text-gray-700">
-                <p class="whitespace-pre-wrap">{{ proposal.description }}</p>
+                <p class="whitespace-pre-wrap">{{ proposal.content.description }}</p>
               </div>
             </div>
 
@@ -72,50 +72,50 @@
           <!-- Sidebar -->
           <div class="space-y-6">
             <!-- Voting Results -->
-            <div v-if="proposal.status === 'PROPOSAL_STATUS_VOTING_PERIOD'" class="card p-4">
+            <div v-if="proposal.status === 2" class="card p-4">
               <h5 class="text-base font-medium text-gray-900 mb-4">Current Results</h5>
               <div class="space-y-3">
                 <div class="flex justify-between items-center">
                   <span class="text-sm text-green-600 font-medium">Yes</span>
-                  <span class="text-sm font-medium">{{ proposal.yesVotes || '0%' }}</span>
+                  <span class="text-sm font-medium">{{ getVotePercentages(proposal).yes }}%</span>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     class="bg-green-500 h-2 rounded-full" 
-                    :style="`width: ${proposal.yesVotes || '0%'}`"
+                    :style="`width: ${getVotePercentages(proposal).yes}%`"
                   ></div>
                 </div>
                 
                 <div class="flex justify-between items-center">
                   <span class="text-sm text-red-600 font-medium">No</span>
-                  <span class="text-sm font-medium">{{ proposal.noVotes || '0%' }}</span>
+                  <span class="text-sm font-medium">{{ getVotePercentages(proposal).no }}%</span>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     class="bg-red-500 h-2 rounded-full" 
-                    :style="`width: ${proposal.noVotes || '0%'}`"
+                    :style="`width: ${getVotePercentages(proposal).no}%`"
                   ></div>
                 </div>
                 
                 <div class="flex justify-between items-center">
                   <span class="text-sm text-yellow-600 font-medium">Abstain</span>
-                  <span class="text-sm font-medium">{{ proposal.abstainVotes || '0%' }}</span>
+                  <span class="text-sm font-medium">{{ getVotePercentages(proposal).abstain }}%</span>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     class="bg-yellow-500 h-2 rounded-full" 
-                    :style="`width: ${proposal.abstainVotes || '0%'}`"
+                    :style="`width: ${getVotePercentages(proposal).abstain}%`"
                   ></div>
                 </div>
 
                 <div class="flex justify-between items-center">
                   <span class="text-sm text-purple-600 font-medium">No with Veto</span>
-                  <span class="text-sm font-medium">{{ proposal.noWithVetoVotes || '0%' }}</span>
+                  <span class="text-sm font-medium">{{ getVotePercentages(proposal).noWithVeto }}%</span>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     class="bg-purple-500 h-2 rounded-full" 
-                    :style="`width: ${proposal.noWithVetoVotes || '0%'}`"
+                    :style="`width: ${getVotePercentages(proposal).noWithVeto}%`"
                   ></div>
                 </div>
               </div>
@@ -191,23 +191,12 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline'
 import { useWalletStore } from '@/stores/wallet'
-
-interface Proposal {
-  id: string
-  title: string
-  description: string
-  status: string
-  submitTime: string
-  votingStartTime?: string
-  votingEndTime?: string
-  yesVotes?: string
-  noVotes?: string
-  abstainVotes?: string
-  noWithVetoVotes?: string
-}
+import { useGovernanceStore } from '@/stores/governance'
+import type { GovernanceProposal, VoteOptionString } from '@/types/governance'
+import { getProposalStatusText, calculateVotePercentages } from '@/types/governance'
 
 const props = defineProps<{
-  proposal: Proposal
+  proposal: GovernanceProposal
 }>()
 
 const emit = defineEmits<{
@@ -216,23 +205,25 @@ const emit = defineEmits<{
 }>()
 
 const walletStore = useWalletStore()
+const governanceStore = useGovernanceStore()
 const voting = ref(false)
 
 const isVotingActive = computed(() => {
-  return props.proposal.status === 'PROPOSAL_STATUS_VOTING_PERIOD' && 
-         props.proposal.votingEndTime && 
-         new Date(props.proposal.votingEndTime) > new Date()
+  return governanceStore.isVotingActive(props.proposal)
 })
 
-async function vote(option: 'yes' | 'no' | 'abstain' | 'no_with_veto') {
-  if (!walletStore.client) return
+const getVotePercentages = computed(() => {
+  return governanceStore.getVotePercentages(props.proposal)
+})
+
+async function vote(option: VoteOptionString) {
+  if (!walletStore.isConnected) return
   
   voting.value = true
   try {
-    // This is a simplified version - in reality, you'd use the governance module's vote method
-    await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate transaction
+    await governanceStore.voteOnProposal(props.proposal.proposalId, option)
     
-    alert(`Vote "${option}" submitted successfully! (This is a demo - actual implementation would submit to the governance module)`)
+    alert(`Vote "${option}" submitted successfully!`)
     emit('voted')
     
   } catch (error) {
@@ -243,21 +234,8 @@ async function vote(option: 'yes' | 'no' | 'abstain' | 'no_with_veto') {
   }
 }
 
-function getStatusText(status: string): string {
-  switch (status) {
-    case 'PROPOSAL_STATUS_DEPOSIT_PERIOD':
-      return 'Deposit Period'
-    case 'PROPOSAL_STATUS_VOTING_PERIOD':
-      return 'Voting'
-    case 'PROPOSAL_STATUS_PASSED':
-      return 'Passed'
-    case 'PROPOSAL_STATUS_REJECTED':
-      return 'Rejected'
-    case 'PROPOSAL_STATUS_FAILED':
-      return 'Failed'
-    default:
-      return 'Unknown'
-  }
+function getStatusText(status: number): string {
+  return getProposalStatusText(status)
 }
 
 function formatDate(dateString: string): string {
