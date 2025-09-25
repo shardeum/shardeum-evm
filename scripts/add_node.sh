@@ -2,7 +2,6 @@
 
 set -e
 
-# Resolve repo root regardless of where the script is invoked from
 CURRENT_DIR="$(pwd)"
 
 # Parse command line arguments
@@ -142,7 +141,7 @@ elif [[ -n "$SHARDEUM_CHAIN_ID" ]]; then
 fi
 
 BINARY="${BINARY:-$(command -v shardeumd)}"
-BASE_DIR="$/.$NETWORK"
+BASE_DIR="${HOME:-$CURRENT_DIR}/.$NETWORK"
 if [[ "$NETWORK" == "local" ]]; then
   BASE_DIR="$CURRENT_DIR/.$NETWORK"
 fi
@@ -150,6 +149,7 @@ MIN_GAS="0.000006$BASE_DENOM"
 
 # Ensure the binary can resolve configs via SHARDEUM_CONFIG_DIR
 export SHARDEUM_CONFIG_DIR="$SHARDEUM_CONFIG_DIR"
+export SHARDEUM_NETWORK="$NETWORK"
 
 # Cleanup function for graceful shutdown
 cleanup() {
@@ -195,7 +195,7 @@ echo -e "${YELLOW}Node type: $NODE_TYPE${NC}"
 # Verify binary exists (skip build if called from makefile)
 if [ ! -f "$BINARY" ]; then
   echo -e "${RED}Error: Failed to find binary at $BINARY${NC}"
-  echo -e "${YELLOW}Tip:${NC} Make sure shardeumd binary is set in PATH or set BINARY=/absolute/path/to/shardeumd"
+  echo -e "${RED}Tip:${NC} Make sure shardeumd binary is set in PATH or set BINARY=/absolute/path/to/shardeumd"
   exit 1
 fi
 

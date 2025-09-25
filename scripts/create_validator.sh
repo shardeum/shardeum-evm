@@ -2,9 +2,7 @@
 
 set -e
 
-# Resolve repo root regardless of where the script is invoked from
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CURRENT_DIR="$(pwd)"
 
 # Parse command line arguments
 NODE_ID=""
@@ -101,9 +99,20 @@ MONIKER="${MONIKER:-$NODE_ID-validator}"
 NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-local}}"
 
 # Paths
-BASE_DIR="$REPO_ROOT/.$NETWORK"
+BASE_DIR="${HOME:-$CURRENT_DIR}/.$NETWORK"
+if [[ "$NETWORK" == "local" ]]; then
+  BASE_DIR="$CURRENT_DIR/.$NETWORK"
+fi
+
 NODE_DIR="$BASE_DIR/$NODE_ID"
-BINARY="$REPO_ROOT/build/shardeumd"
+BINARY="${BINARY:-$(command -v shardeumd)}"
+
+# Verify binary exists (skip build if called from makefile)
+if [ ! -f "$BINARY" ]; then
+  echo -e "${RED}Error: Failed to find binary at $BINARY${NC}"
+  echo -e "${RED}Tip:${NC} Make sure shardeumd binary is set in PATH or set BINARY=/absolute/path/to/shardeumd"
+  exit 1
+fi
 
 # Validate node exists
 if [[ ! -d "$NODE_DIR" ]]; then

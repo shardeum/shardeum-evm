@@ -141,7 +141,7 @@ fi
 
 # Paths & Binary
 BINARY="${BINARY:-shardeumd}"
-BASE_DIR="$/.$NETWORK"
+BASE_DIR="${HOME:-$CURRENT_DIR}/.$NETWORK"
 if [[ "$NETWORK" == "local" ]]; then
   BASE_DIR="$CURRENT_DIR/.$NETWORK"
 fi
@@ -185,17 +185,16 @@ if [ "$SKIP_BUILD" != "1" ]; then
     echo -e "${YELLOW}Building shardeumd binary${NC}"
     (cd "$REPO_ROOT" && make install)
     BINARY="$(command -v shardeumd)"
-  else 
-    echo -e "${RED}Tip:${NC} Make sure shardeumd binary is set in PATH or set BINARY=/absolute/path/to/shardeumd"
-  exit 1
   fi
 fi
 
 # Verify binary
 if [ ! -f "$BINARY" ]; then
-  echo -e "${RED}Error: Binary not found at $BINARY after build${NC}"
-  echo "Make sure 'make install' completed successfully or set BINARY=/absolute/path/to/shardeumd"
+  echo -e "${RED}Error: Binary not found at $BINARY${NC}"
+  echo -e "${RED}It's compulsory for non-local network to have 'shardeumd' in PATH or BINARY is set to /absolute/path/to/shardeumd. For local network, Make sure 'make install' completed successfully${NC}"
   exit 1
+else
+    echo "will use binary:" $BINARY
 fi
 
 # -----------------------------
@@ -458,7 +457,11 @@ for i in $(seq 0 $((NODES-1))); do
 done
 echo
 echo "Stop: pkill -f 'shardeumd.*$CHAINID' or Ctrl+C"
-echo "Logs: $BASE_DIR/node*/node.log"
+echo -e "${GREEN}Network: $NETWORK${NC}"
+echo -e "${GREEN}Chain ID: $CHAINID${NC}"
+echo -e "${GREEN}EVM Chain ID: $EVM_CHAIN_ID${NC}"
+echo -e "${GREEN}Node Data Directory: $BASE_DIR${NC}"
+echo -e "${GREEN}Logs: $BASE_DIR/node*/node.log${NC}"
 echo
 echo "Add more nodes: ./scripts/add_node.sh <node_id>"
 echo
