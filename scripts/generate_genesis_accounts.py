@@ -191,18 +191,75 @@ def extract_shardeum_accounts(db_path: str,
     
     return accounts_data, total_supply
 
+def load_secure_accounts(secure_accounts_path: str) -> List[Dict]:
+    """
+    Load secure accounts from JSON file (simple array format)
+    """
+    if not secure_accounts_path:
+        return []
+    
+    print(f"Loading secure accounts from {secure_accounts_path}...")
+    try:
+        with open(secure_accounts_path, 'r') as f:
+            secure_accounts_list = json.load(f)
+        
+        # Handle simple array format
+        if not isinstance(secure_accounts_list, list):
+            print(f"Error: Secure accounts file must contain a JSON array", file=sys.stderr)
+            return []
+        
+        accounts = []
+        for acc in secure_accounts_list:
+            # Get the source funds address (Ethereum format)
+            eth_addr = acc.get('SourceFundsAddress', '').lower().replace('0x', '')
+            if not eth_addr:
+                print(f"Warning: Missing SourceFundsAddress in secure account", file=sys.stderr)
+                continue
+                
+            # Convert to Cosmos address
+            cosmos_addr = fast_bech32_encode(eth_addr)
+            print(f"Secure account {acc.get('Name')} -> {cosmos_addr}")
+            if not cosmos_addr:
+                print(f"Warning: Failed to encode secure account {acc.get('SourceFundsAddress')}", file=sys.stderr)
+                continue
+            
+            # Get balance from SourceFundsBalance field
+            balance_str = acc.get('SourceFundsBalance', '0')
+            try:
+                balance = int(balance_str)
+            except ValueError:
+                print(f"Warning: Invalid balance {balance_str} for account {acc.get('Name', 'Unknown')}", file=sys.stderr)
+                balance = 0
+            
+            accounts.append({
+                'address': cosmos_addr,
+                'eth_address': eth_addr,
+                'balance': balance,
+                'name': acc.get('Name', ''),
+                'is_secure': True
+            })
+        
+        print(f"Loaded {len(accounts)} secure accounts", file=sys.stderr)
+        return accounts
+    except Exception as e:
+        print(f"Error loading secure accounts: {e}", file=sys.stderr)
+        return []
+
 def update_genesis_with_accounts(genesis_path: str, 
                                 accounts_data: List[Dict],
                                 total_new_supply: int,
                                 output_path: str,
                                 include_balance: bool = True,
                                 include_nonce: bool = False,
-                                balance_multiplier: int = 1) -> None:
+                                balance_multiplier: int = 1,
+                                secure_accounts: List[Dict] = None) -> None:
     """
     Update genesis file with new accounts
     """
     print(f"\nUpdating genesis file...")
     print(f"Options: include_balance={include_balance}, include_nonce={include_nonce}, balance_multiplier={balance_multiplier}")
+    if secure_accounts:
+        print(f"Including {len(secure_accounts)} secure accounts")
     
     # Load existing genesis
     with open(genesis_path, 'r') as f:
@@ -237,9 +294,53 @@ def update_genesis_with_accounts(genesis_path: str,
     
     next_account_number = max_account_number + 1
     
-    # Process each account from Shardeum
+    # First, add secure accounts if provided
+    secure_addresses = set()
+    if secure_accounts:
+        for account_data in secure_accounts:
+            address = account_data['address']
+            balance = account_data['balance']
+            secure_addresses.add(address)
+            
+            # Add to auth accounts if not exists
+            if address not in existing_accounts:
+                new_account = {
+                    "@type": "/cosmos.auth.v1beta1.BaseAccount",
+                    "address": address,
+                    "pub_key": None,
+                    "sequence": "0"
+                }
+                genesis['app_state']['auth']['accounts'].append(new_account)
+                new_accounts += 1
+                next_account_number += 1
+            
+            # Set balance (always override for secure accounts)
+            if include_balance:
+                if address not in existing_balances:
+                    # Add new balance entry
+                    new_balance = {
+                        "address": address,
+                        "coins": [{"denom": "ashm", "amount": str(balance)}]
+                    }
+                    genesis['app_state']['bank']['balances'].append(new_balance)
+                    new_balance_entries += 1
+                else:
+                    # Update existing balance (override)
+                    balance_index = existing_balance_entries[address]
+                    balance_entry = genesis['app_state']['bank']['balances'][balance_index]
+                    for coin in balance_entry['coins']:
+                        if coin['denom'] == 'ashm':
+                            coin['amount'] = str(balance)
+                            break
+    
+    # Process each account from Shardeum (skip if it's a secure account)
     for account_data in accounts_data:
         address = account_data['address']
+        
+        # Skip if this is a secure account (already processed)
+        if address in secure_addresses:
+            continue
+            
         balance = account_data['balance']
         nonce = account_data['nonce']
         
@@ -411,6 +512,10 @@ Examples:
     parser.add_argument('--no-include-nonce', dest='include_nonce', action='store_false',
                        help='Do not include nonces (default behavior)')
     
+    # Secure accounts option
+    parser.add_argument('--secure-accounts',
+                       help='Path to JSON file containing secure accounts to preserve')
+    
     # Other options
     parser.add_argument('--backup', action='store_true',
                        help='Create backup of output file if it exists')
@@ -451,6 +556,11 @@ Examples:
             print("Warning: No accounts found to import", file=sys.stderr)
             sys.exit(1)
         
+        # Load secure accounts if specified
+        secure_accounts = []
+        if args.secure_accounts:
+            secure_accounts = load_secure_accounts(args.secure_accounts)
+        
         # Update genesis with accounts
         update_genesis_with_accounts(
             args.input_genesis,
@@ -459,7 +569,8 @@ Examples:
             args.output,
             args.include_balance,
             args.include_nonce,
-            args.balance_multiplier
+            args.balance_multiplier,
+            secure_accounts
         )
         
         # Validate the generated genesis if requested

@@ -217,9 +217,99 @@ def load_genesis_accounts(genesis_path: str, include_nonce: bool = False, balanc
     print(f"Loaded {len(account_data)} accounts from genesis with total supply {total_supply}", file=sys.stderr)
     return account_data, total_supply
 
+def load_secure_accounts_for_verification(secure_accounts_path: str) -> List[Dict]:
+    """
+    Load secure accounts from JSON file for verification (simple array format)
+    """
+    if not secure_accounts_path:
+        return []
+    
+    print(f"Loading secure accounts from {secure_accounts_path}...")
+    try:
+        with open(secure_accounts_path, 'r') as f:
+            secure_accounts_list = json.load(f)
+        
+        # Handle simple array format
+        if not isinstance(secure_accounts_list, list):
+            print(f"Error: Secure accounts file must contain a JSON array", file=sys.stderr)
+            return []
+        
+        accounts = []
+        for acc in secure_accounts_list:
+            eth_addr = acc.get('SourceFundsAddress', '').lower().replace('0x', '')
+            if not eth_addr:
+                print(f"Warning: Missing SourceFundsAddress in secure account", file=sys.stderr)
+                continue
+                
+            cosmos_addr = fast_bech32_encode(eth_addr)
+            if not cosmos_addr:
+                print(f"Warning: Failed to encode secure account {acc.get('SourceFundsAddress')}", file=sys.stderr)
+                continue
+            
+            balance_str = acc.get('SourceFundsBalance', '0')
+            try:
+                balance = int(balance_str)
+            except ValueError:
+                print(f"Warning: Invalid balance {balance_str} for account {acc.get('Name', 'Unknown')}", file=sys.stderr)
+                balance = 0
+            
+            accounts.append({
+                'address': cosmos_addr,
+                'eth_address': eth_addr,
+                'expected_balance': balance,
+                'name': acc.get('Name', ''),
+            })
+        
+        print(f"Loaded {len(accounts)} secure accounts for verification", file=sys.stderr)
+        return accounts
+    except Exception as e:
+        print(f"Error loading secure accounts: {e}", file=sys.stderr)
+        return []
+
+def verify_secure_accounts(secure_accounts: List[Dict], genesis_data: Dict[str, Dict]) -> Tuple[bool, Dict]:
+    """Verify that all secure accounts are present in genesis with correct balances"""
+    print("Verifying secure accounts...")
+    
+    results = {
+        'total_secure': len(secure_accounts),
+        'missing_secure': [],
+        'balance_mismatches': [],
+        'matched_secure': 0,
+        'total_expected_balance': sum(acc['expected_balance'] for acc in secure_accounts)
+    }
+    
+    for acc in secure_accounts:
+        address = acc['address']
+        expected_balance = acc['expected_balance']
+        
+        if address not in genesis_data:
+            results['missing_secure'].append({
+                'address': address,
+                'name': acc['name'],
+                'expected_balance': expected_balance
+            })
+        else:
+            genesis_balance = genesis_data[address].get('balance', 0)
+            if genesis_balance != expected_balance:
+                results['balance_mismatches'].append({
+                    'address': address,
+                    'name': acc['name'],
+                    'expected_balance': expected_balance,
+                    'genesis_balance': genesis_balance,
+                    'difference': genesis_balance - expected_balance
+                })
+            else:
+                results['matched_secure'] += 1
+    
+    is_valid = (len(results['missing_secure']) == 0 and 
+                len(results['balance_mismatches']) == 0)
+    
+    return is_valid, results
+
 def verify_accounts(shardeum_accounts: List[Tuple[str, int, int, str]], 
                    genesis_data: Dict[str, Dict],
-                   check_nonce: bool = False, balance_multiplier: int = 1) -> Tuple[bool, Dict]:
+                   check_nonce: bool = False, balance_multiplier: int = 1,
+                   secure_accounts: List[Dict] = None) -> Tuple[bool, Dict]:
     """Verify that all Shardeum accounts are present in genesis with correct balances, nonces, and unique IDs"""
     print("Verifying accounts...")
     print(f"Options: check_nonce={check_nonce}, balance_multiplier={balance_multiplier}")
@@ -294,6 +384,12 @@ def verify_accounts(shardeum_accounts: List[Tuple[str, int, int, str]],
                 len(results['balance_mismatches']) == 0 and
                 (not check_nonce or len(results['nonce_mismatches']) == 0))
     
+    # If secure accounts were provided, verify them separately
+    if secure_accounts:
+        secure_valid, secure_results = verify_secure_accounts(secure_accounts, genesis_data)
+        results['secure_accounts_results'] = secure_results
+        is_valid = is_valid and secure_valid
+    
     return is_valid, results
 
 def print_report(results: Dict):
@@ -346,24 +442,50 @@ def print_report(results: Dict):
         if len(results['nonce_mismatches']) > 10:
             print(f"  ... and {len(results['nonce_mismatches']) - 10} more")
     
+    # Print secure accounts verification if present
+    if 'secure_accounts_results' in results:
+        secure_results = results['secure_accounts_results']
+        print(f"\n" + "-"*80)
+        print("SECURE ACCOUNTS VERIFICATION")
+        print("-"*80)
+        print(f"Total secure accounts:         {secure_results['total_secure']}")
+        print(f"Matched secure accounts:       {secure_results['matched_secure']}")
+        print(f"Missing secure accounts:       {len(secure_results['missing_secure'])}")
+        print(f"Balance mismatches:            {len(secure_results['balance_mismatches'])}")
+        
+        if secure_results['missing_secure']:
+            print(f"\n❌ MISSING SECURE ACCOUNTS:")
+            for acc in secure_results['missing_secure']:
+                print(f"  - {acc['name']}: {acc['address']} (expected: {acc['expected_balance']:,} wei)")
+        
+        if secure_results['balance_mismatches']:
+            print(f"\n❌ SECURE ACCOUNT BALANCE MISMATCHES:")
+            for mismatch in secure_results['balance_mismatches']:
+                print(f"  - {mismatch['name']}: {mismatch['address']}")
+                print(f"    Expected: {mismatch['expected_balance']:,}")
+                print(f"    Genesis:  {mismatch['genesis_balance']:,}")
+                print(f"    Diff:     {mismatch['difference']:+,}")
+    
     print("\n" + "="*80)
     
     check_nonce = results.get('check_nonce', False)
+    has_secure_accounts = 'secure_accounts_results' in results
     
-    if check_nonce:
-        if (len(results['missing_accounts']) == 0 and 
-            len(results['balance_mismatches']) == 0 and 
-            len(results.get('nonce_mismatches', [])) == 0):
-            print("✅ VERIFICATION PASSED: All accounts, balances, and nonces are correctly imported!")
-        else:
-            print("❌ VERIFICATION FAILED: Some accounts are missing or have incorrect data!")
+    # Check overall verification status
+    basic_valid = (len(results['missing_accounts']) == 0 and 
+                   len(results['balance_mismatches']) == 0 and 
+                   (not check_nonce or len(results.get('nonce_mismatches', [])) == 0))
+    
+    secure_valid = True
+    if has_secure_accounts:
+        secure_results = results['secure_accounts_results']
+        secure_valid = (len(secure_results['missing_secure']) == 0 and 
+                       len(secure_results['balance_mismatches']) == 0)
+    
+    if basic_valid and secure_valid:
+        print("✅ VERIFICATION PASSED: All accounts are correctly imported!")
     else:
-        if (len(results['missing_accounts']) == 0 and 
-            len(results['balance_mismatches']) == 0 and 
-            len(results.get('nonce_mismatches', [])) == 0):
-            print("✅ VERIFICATION PASSED: All accounts, balances, and nonces are correctly imported!")
-        else:
-            print("❌ VERIFICATION FAILED: Some accounts are missing or have incorrect data!")
+        print("❌ VERIFICATION FAILED: Some accounts are missing or have incorrect data!")
             
     print("="*80)
 
@@ -401,6 +523,8 @@ Examples:
                        help='Multiplier applied to Shardeum balances for verification (default: 1)')
     parser.add_argument('--check-nonce', action='store_true', default=False,
                        help='Also verify nonces/sequences (default: False)')
+    parser.add_argument('--secure-accounts',
+                       help='Path to JSON file containing secure accounts to verify')
     parser.add_argument('--verbose', '-v', action='store_true',
                        help='Enable verbose output')
     
@@ -423,12 +547,18 @@ Examples:
             args.balance_multiplier
         )
         
+        # Load secure accounts if specified
+        secure_accounts = None
+        if args.secure_accounts:
+            secure_accounts = load_secure_accounts_for_verification(args.secure_accounts)
+        
         # Verify accounts
         is_valid, results = verify_accounts(
             shardeum_accounts, 
             genesis_data,
             args.check_nonce,
-            args.balance_multiplier
+            args.balance_multiplier,
+            secure_accounts
         )
         
         # Print report
