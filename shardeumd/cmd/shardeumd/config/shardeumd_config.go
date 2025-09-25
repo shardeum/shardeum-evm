@@ -6,13 +6,13 @@ import (
 
 	corevm "github.com/ethereum/go-ethereum/core/vm"
 
+	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	cosmosevmserverconfig "github.com/shardeum/shardeum-evm/server/config"
 	cosmosevmutils "github.com/shardeum/shardeum-evm/utils"
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 
 	clienthelpers "cosmossdk.io/client/v2/helpers"
 
@@ -25,7 +25,7 @@ import (
 )
 
 func MustGetDefaultNodeHome() string {
-	defaultNodeHome, err := clienthelpers.GetNodeHomeDirectory(".evmd")
+	defaultNodeHome, err := clienthelpers.GetNodeHomeDirectory(".shardeumd")
 	if err != nil {
 		panic(err)
 	}

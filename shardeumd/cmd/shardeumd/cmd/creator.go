@@ -13,7 +13,7 @@ import (
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/shardeum/shardeum-evm/shardeumd"
-	evmdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
+	shardeumdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 
@@ -94,8 +94,8 @@ func (a appCreator) newApp(
 		traceStore,
 		true,
 		simtestutil.EmptyAppOptions{},
-		evmdconfig.ShardeumChainID(),
-		evmdconfig.EvmAppOptions,
+		shardeumdconfig.ShardeumChainID(),
+		shardeumdconfig.EvmAppOptions,
 		baseappOptions...,
 	)
 }
@@ -137,8 +137,8 @@ func (a appCreator) appExport(
 		traceStore,
 		loadLatest,
 		appOpts,
-		evmdconfig.ShardeumChainID(),
-		evmdconfig.EvmAppOptions,
+		shardeumdconfig.ShardeumChainID(),
+		shardeumdconfig.EvmAppOptions,
 	)
 
 	if height != -1 {

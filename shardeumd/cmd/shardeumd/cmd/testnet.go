@@ -11,9 +11,9 @@ import (
 
 	cosmosevmhd "github.com/shardeum/shardeum-evm/crypto/hd"
 	cosmosevmkeyring "github.com/shardeum/shardeum-evm/crypto/keyring"
-	"github.com/shardeum/shardeum-evm/shardeumd"
-	evmdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 	cosmosevmserverconfig "github.com/shardeum/shardeum-evm/server/config"
+	"github.com/shardeum/shardeum-evm/shardeumd"
+	shardeumdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -268,8 +268,8 @@ func initTestnetFiles(
 	appConfig.Telemetry.EnableHostnameLabel = false
 	appConfig.Telemetry.GlobalLabels = [][]string{{"chain_id", args.chainID}}
 	evm := cosmosevmserverconfig.DefaultEVMConfig()
-	evm.EVMChainID = evmdconfig.ShardeumChainID()
-	evmCfg := evmdconfig.EVMAppConfig{
+	evm.EVMChainID = shardeumdconfig.ShardeumChainID()
+	evmCfg := shardeumdconfig.EVMAppConfig{
 		Config:  *appConfig,
 		EVM:     *evm,
 		JSONRPC: *cosmosevmserverconfig.DefaultJSONRPCConfig(),
@@ -441,7 +441,7 @@ func initTestnetFiles(
 			return err
 		}
 
-		srvconfig.SetConfigTemplate(evmdconfig.EVMAppTemplate)
+		srvconfig.SetConfigTemplate(shardeumdconfig.EVMAppTemplate)
 
 		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config", "app.toml"), evmCfg)
 	}
@@ -683,8 +683,8 @@ func NewTestNetworkFixture() network.TestFixture {
 		nil,
 		true,
 		simtestutil.EmptyAppOptions{},
-		evmdconfig.ShardeumChainID(),
-		evmdconfig.EvmAppOptions,
+		shardeumdconfig.ShardeumChainID(),
+		shardeumdconfig.EvmAppOptions,
 	)
 
 	appCtr := func(val network.ValidatorI) servertypes.Application {
@@ -694,8 +694,8 @@ func NewTestNetworkFixture() network.TestFixture {
 			nil,
 			true,
 			simtestutil.EmptyAppOptions{},
-			evmdconfig.ShardeumChainID(),
-			evmdconfig.EvmAppOptions,
+			shardeumdconfig.ShardeumChainID(),
+			shardeumdconfig.EvmAppOptions,
 		)
 	}
 
