@@ -51,7 +51,7 @@
       </div>
     </div>
 
-    <!-- Recent Blocks and Transactions -->
+    <!-- Recent Blocks and Recent Proposals -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Recent Blocks -->
       <div class="card">
@@ -82,7 +82,58 @@
         </div>
       </div>
 
-      <!-- Network Status -->
+      <!-- Recent Proposals -->
+      <div class="card">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium text-gray-900">Recent Proposals</h3>
+            <router-link
+              to="/governance"
+              class="text-sm text-shardeum-primary hover:text-shardeum-primary/80"
+            >
+              View All
+            </router-link>
+          </div>
+        </div>
+        <div class="divide-y divide-gray-200">
+          <div
+            v-for="proposal in recentProposals"
+            :key="proposal.proposalId"
+            class="px-6 py-4 hover:bg-gray-50 cursor-pointer"
+            @click="$router.push('/governance')"
+          >
+            <div class="flex items-start justify-between">
+              <div class="flex-1 pr-4">
+                <div class="flex items-center space-x-2 mb-1">
+                  <h4 class="text-sm font-medium text-gray-900 truncate">
+                    #{{ proposal.proposalId }} {{ proposal.content.title }}
+                  </h4>
+                  <span
+                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full flex-shrink-0"
+                    :class="{
+                      'bg-yellow-100 text-yellow-800': proposal.status === 2,
+                      'bg-green-100 text-green-800': proposal.status === 3,
+                      'bg-red-100 text-red-800': proposal.status === 4,
+                      'bg-gray-100 text-gray-800': proposal.status === 1
+                    }"
+                  >
+                    {{ getProposalStatusText(proposal.status) }}
+                  </span>
+                </div>
+                <p class="text-xs text-gray-600 line-clamp-2">{{ proposal.content.description }}</p>
+              </div>
+            </div>
+          </div>
+          <div v-if="recentProposals.length === 0" class="px-6 py-8 text-center">
+            <DocumentTextIcon class="mx-auto h-12 w-12 text-gray-400" />
+            <p class="mt-2 text-sm text-gray-500">No recent proposals</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Network Status -->
+    <div class="grid grid-cols-1 lg:grid-cols-1 gap-6">
       <div class="card">
         <div class="px-6 py-4 border-b border-gray-200">
           <h3 class="text-lg font-medium text-gray-900">Network Status</h3>
@@ -170,10 +221,13 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useNetworkStore } from '@/stores/network'
 import { useWalletStore } from '@/stores/wallet'
+import { useGovernanceStore } from '@/stores/governance'
 import { apiService } from '@/services/api'
+import { getProposalStatusText } from '@/types/governance'
 
 const networkStore = useNetworkStore()
 const walletStore = useWalletStore()
+const governanceStore = useGovernanceStore()
 
 const networkInfo = reactive({
   latestBlock: null as number | null,
@@ -189,16 +243,27 @@ const recentBlocks = ref<Array<{
   size: number
 }>>([])
 
+const recentProposals = ref<Array<{
+  proposalId: string
+  content: {
+    title: string
+    description: string
+  }
+  status: number
+}>>([])
+
 let updateInterval: NodeJS.Timeout
 
 onMounted(async () => {
   await loadNetworkInfo()
   await loadRecentBlocks()
+  await loadRecentProposals()
   
   // Update every 30 seconds
   updateInterval = setInterval(() => {
     loadNetworkInfo()
     loadRecentBlocks()
+    loadRecentProposals()
   }, 30000)
 })
 
@@ -240,6 +305,19 @@ async function loadRecentBlocks() {
     recentBlocks.value = formattedBlocks
   } catch (error) {
     console.error('Failed to load recent blocks:', error)
+  }
+}
+
+async function loadRecentProposals() {
+  try {
+    const allProposals = await apiService.getProposals()
+    // Get the 3 most recent proposals
+    recentProposals.value = allProposals
+      .sort((a, b) => parseInt(b.proposalId) - parseInt(a.proposalId))
+      .slice(0, 3)
+  } catch (error) {
+    console.error('Failed to load recent proposals:', error)
+    recentProposals.value = []
   }
 }
 

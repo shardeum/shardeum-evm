@@ -45,6 +45,11 @@ export const useGovernanceStore = defineStore('governance', () => {
       proposals.value = data.sort((a, b) => 
         parseInt(b.proposalId) - parseInt(a.proposalId)
       )
+      
+      // Load votes for all proposals to show vote breakdown
+      await Promise.all(
+        proposals.value.map(proposal => loadProposalVotes(proposal.proposalId))
+      )
     } catch (err) {
       error.value = 'Failed to load proposals'
       console.error('Failed to load proposals:', err)
@@ -112,7 +117,54 @@ export const useGovernanceStore = defineStore('governance', () => {
   }
 
   function getVotePercentages(proposal: GovernanceProposal) {
+    // Always try to calculate from individual votes first (for better breakdown)
+    const votes = getProposalVotes(proposal.proposalId)
+    if (votes.length > 0) {
+      return calculateLiveVotePercentages(votes)
+    }
+    
+    // Fallback to final tally if no individual votes are loaded
     return calculateVotePercentages(proposal.finalTallyResult)
+  }
+  
+  function calculateLiveVotePercentages(votes: ProposalVote[]) {
+    const tallies = {
+      yes: 0,
+      no: 0,
+      abstain: 0,
+      noWithVeto: 0
+    }
+    
+    votes.forEach(vote => {
+      switch (vote.option) {
+        case 1: // VOTE_OPTION_YES
+          tallies.yes++
+          break
+        case 2: // VOTE_OPTION_ABSTAIN
+          tallies.abstain++
+          break
+        case 3: // VOTE_OPTION_NO
+          tallies.no++
+          break
+        case 4: // VOTE_OPTION_NO_WITH_VETO
+          tallies.noWithVeto++
+          break
+      }
+    })
+    
+    const total = tallies.yes + tallies.no + tallies.abstain + tallies.noWithVeto
+    
+    if (total === 0) {
+      return { yes: 0, no: 0, abstain: 0, noWithVeto: 0, total: 0n }
+    }
+    
+    return {
+      yes: Math.round((tallies.yes / total) * 100),
+      no: Math.round((tallies.no / total) * 100),
+      abstain: Math.round((tallies.abstain / total) * 100),
+      noWithVeto: Math.round((tallies.noWithVeto / total) * 100),
+      total: BigInt(total)
+    }
   }
 
   function isVotingActive(proposal: GovernanceProposal): boolean {
@@ -142,6 +194,31 @@ export const useGovernanceStore = defineStore('governance', () => {
       default:
         return 'Unknown'
     }
+  }
+
+  function getVoteOptionText(option: number): string {
+    switch (option) {
+      case 1:
+        return 'Yes'
+      case 2:
+        return 'Abstain'
+      case 3:
+        return 'No'
+      case 4:
+        return 'No with Veto'
+      default:
+        return 'Unknown'
+    }
+  }
+
+  function getIndividualVotes(proposalId: string) {
+    const votes = getProposalVotes(proposalId)
+    return votes.map(vote => ({
+      voter: vote.voter,
+      option: vote.option,
+      optionText: getVoteOptionText(vote.option),
+      shortVoter: vote.voter.substring(0, 10) + '...' + vote.voter.substring(vote.voter.length - 6)
+    }))
   }
 
   // Transaction functions using ping.pub approach
@@ -185,6 +262,8 @@ export const useGovernanceStore = defineStore('governance', () => {
     isVotingActive,
     isDepositPeriod,
     formatProposalType,
+    getVoteOptionText,
+    getIndividualVotes,
     voteOnProposal,
     // submitProposal, // Removed - focusing on voting only
     clearSelectedProposal

@@ -121,6 +121,35 @@
               </div>
             </div>
 
+            <!-- Individual Votes -->
+            <div v-if="individualVotes.length > 0" class="card p-4">
+              <h5 class="text-base font-medium text-gray-900 mb-4">Individual Votes ({{ individualVotes.length }})</h5>
+              <div class="space-y-2 max-h-64 overflow-y-auto">
+                <div 
+                  v-for="vote in individualVotes" 
+                  :key="vote.voter"
+                  class="flex items-center justify-between p-2 bg-gray-50 rounded-md"
+                >
+                  <div class="flex items-center">
+                    <span class="font-mono text-xs text-gray-600">{{ vote.shortVoter }}</span>
+                  </div>
+                  <div class="flex items-center">
+                    <span 
+                      class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                      :class="{
+                        'bg-green-100 text-green-800': vote.option === 1,
+                        'bg-yellow-100 text-yellow-800': vote.option === 2,
+                        'bg-red-100 text-red-800': vote.option === 3,
+                        'bg-purple-100 text-purple-800': vote.option === 4
+                      }"
+                    >
+                      {{ vote.optionText }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Vote Buttons -->
             <div v-if="walletStore.isConnected && isVotingActive" class="card p-4">
               <h5 class="text-base font-medium text-gray-900 mb-4">Cast Your Vote</h5>
@@ -210,6 +239,10 @@ const voting = ref(false)
 
 const isVotingActive = computed(() => {
   return governanceStore.isVotingActive(props.proposal)
+})
+
+const individualVotes = computed(() => {
+  return governanceStore.getIndividualVotes(props.proposal.proposalId)
 })
 
 function getVotePercentages(proposal: any) {

@@ -197,25 +197,25 @@ class ApiService {
 
   async getProposals(): Promise<GovernanceProposal[]> {
     try {
-      const response = await this.fetchApi('/cosmos/gov/v1beta1/proposals?pagination.limit=50')
+      const response = await this.fetchApi('/cosmos/gov/v1/proposals?pagination.limit=50')
       const proposals = response.proposals || []
       
       return proposals.map((p: any) => ({
-        proposalId: p.proposal_id || p.id,
+        proposalId: p.id || p.proposal_id,
         content: {
-          typeUrl: p.content?.['@type'] || '',
-          title: p.content?.title || '',
-          description: p.content?.description || '',
-          recipient: p.content?.recipient,
-          amount: p.content?.amount,
-          changes: p.content?.changes
+          typeUrl: p.messages?.[0]?.['@type'] || '',
+          title: p.title || '',
+          description: p.summary || '',
+          recipient: p.messages?.[0]?.recipient,
+          amount: p.messages?.[0]?.amount,
+          changes: p.messages?.[0]?.changes
         },
         status: this.parseProposalStatus(p.status),
         finalTallyResult: {
-          yes: p.final_tally_result?.yes || '0',
-          abstain: p.final_tally_result?.abstain || '0',
-          no: p.final_tally_result?.no || '0',
-          noWithVeto: p.final_tally_result?.no_with_veto || '0'
+          yes: p.final_tally_result?.yes_count || p.final_tally_result?.yes || '0',
+          abstain: p.final_tally_result?.abstain_count || p.final_tally_result?.abstain || '0',
+          no: p.final_tally_result?.no_count || p.final_tally_result?.no || '0',
+          noWithVeto: p.final_tally_result?.no_with_veto_count || p.final_tally_result?.no_with_veto || '0'
         },
         submitTime: p.submit_time,
         depositEndTime: p.deposit_end_time,
@@ -231,27 +231,27 @@ class ApiService {
 
   async getProposal(proposalId: string): Promise<GovernanceProposal | null> {
     try {
-      const response = await this.fetchApi(`/cosmos/gov/v1beta1/proposals/${proposalId}`)
+      const response = await this.fetchApi(`/cosmos/gov/v1/proposals/${proposalId}`)
       const p = response.proposal
       
       if (!p) return null
       
       return {
-        proposalId: p.proposal_id || p.id,
+        proposalId: p.id || p.proposal_id,
         content: {
-          typeUrl: p.content?.['@type'] || '',
-          title: p.content?.title || '',
-          description: p.content?.description || '',
-          recipient: p.content?.recipient,
-          amount: p.content?.amount,
-          changes: p.content?.changes
+          typeUrl: p.messages?.[0]?.['@type'] || '',
+          title: p.title || '',
+          description: p.summary || '',
+          recipient: p.messages?.[0]?.recipient,
+          amount: p.messages?.[0]?.amount,
+          changes: p.messages?.[0]?.changes
         },
         status: this.parseProposalStatus(p.status),
         finalTallyResult: {
-          yes: p.final_tally_result?.yes || '0',
-          abstain: p.final_tally_result?.abstain || '0',
-          no: p.final_tally_result?.no || '0',
-          noWithVeto: p.final_tally_result?.no_with_veto || '0'
+          yes: p.final_tally_result?.yes_count || p.final_tally_result?.yes || '0',
+          abstain: p.final_tally_result?.abstain_count || p.final_tally_result?.abstain || '0',
+          no: p.final_tally_result?.no_count || p.final_tally_result?.no || '0',
+          noWithVeto: p.final_tally_result?.no_with_veto_count || p.final_tally_result?.no_with_veto || '0'
         },
         submitTime: p.submit_time,
         depositEndTime: p.deposit_end_time,
@@ -267,15 +267,18 @@ class ApiService {
 
   async getProposalVotes(proposalId: string): Promise<ProposalVote[]> {
     try {
-      const response = await this.fetchApi(`/cosmos/gov/v1beta1/proposals/${proposalId}/votes?pagination.limit=100`)
+      const response = await this.fetchApi(`/cosmos/gov/v1/proposals/${proposalId}/votes?pagination.limit=100`)
       const votes = response.votes || []
       
-      return votes.map((v: any) => ({
-        proposalId: v.proposal_id,
-        voter: v.voter,
-        option: v.option,
-        options: v.options || []
-      }))
+      return votes.map((v: any) => {
+        const optionString = v.options?.[0]?.option || v.option // v1 API uses options array, v1beta1 uses option field
+        return {
+          proposalId: v.proposal_id,
+          voter: v.voter,
+          option: this.parseVoteOption(optionString),
+          options: v.options || []
+        }
+      })
     } catch (error) {
       console.error('Failed to get proposal votes:', error)
       return []
@@ -284,7 +287,7 @@ class ApiService {
 
   async getProposalDeposits(proposalId: string): Promise<ProposalDeposit[]> {
     try {
-      const response = await this.fetchApi(`/cosmos/gov/v1beta1/proposals/${proposalId}/deposits?pagination.limit=100`)
+      const response = await this.fetchApi(`/cosmos/gov/v1/proposals/${proposalId}/deposits?pagination.limit=100`)
       const deposits = response.deposits || []
       
       return deposits.map((d: any) => ({
@@ -331,6 +334,22 @@ class ApiService {
         return 4
       case 'PROPOSAL_STATUS_FAILED':
         return 5
+      default:
+        return 0
+    }
+  }
+
+  private parseVoteOption(option: string): number {
+    // Convert string vote option to enum number
+    switch (option) {
+      case 'VOTE_OPTION_YES':
+        return 1
+      case 'VOTE_OPTION_ABSTAIN':
+        return 2
+      case 'VOTE_OPTION_NO':
+        return 3
+      case 'VOTE_OPTION_NO_WITH_VETO':
+        return 4
       default:
         return 0
     }
