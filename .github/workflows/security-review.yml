@@ -86,7 +86,7 @@ jobs:
         run: |
           cd argus-agent
           if [ -f requirements.txt ]; then
-            pip install --no-cache-dir -r requirements.txt
+            pip install --no-cache-dir --require-hashes -r requirements.txt
           fi
 
       - name: Run security review
