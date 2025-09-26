@@ -129,11 +129,10 @@ if [ ! -f "$CONFIG_FILE" ]; then
   exit 1
 fi
 
-# Read network configuration (expects keys: chain_id, evm_chain_id, base_denom, genesis_file)
+# Read network configuration (expects keys: chain_id, evm_chain_id, base_denom)
 CHAINID=$(jq -r '.chain_id' "$CONFIG_FILE")
 EVM_CHAIN_ID=$(jq -r '.evm_chain_id' "$CONFIG_FILE")
 BASE_DENOM=$(jq -r '.base_denom' "$CONFIG_FILE")
-CFG_GENESIS_FILE=$(jq -r '.genesis_file // "genesis.json"' "$CONFIG_FILE")
 
 # Overrides
 if [[ -n "$CUSTOM_CHAIN_ID" ]]; then
@@ -211,17 +210,35 @@ if [ -n "$GENESIS_FILE" ]; then
   GENESIS_TO_USE="$GENESIS_FILE"
   echo -e "${YELLOW}Using custom genesis file: $GENESIS_FILE${NC}"
 else
-  GENESIS_PATH="$SHARDEUM_CONFIG_DIR/environments/$CFG_GENESIS_FILE"
-  if [ ! -f "$GENESIS_PATH" ]; then
+  # Check for split genesis files first (pattern: {network}-genesis.genesis.json)
+  SPLIT_GENESIS_PATH="$SHARDEUM_CONFIG_DIR/environments/${NETWORK}-genesis.genesis.json"
+  
+  # Also check for monolithic genesis file (pattern: {network}-genesis.json)
+  MONOLITHIC_GENESIS_PATH="$SHARDEUM_CONFIG_DIR/environments/${NETWORK}-genesis.json"
+  
+  if [ -f "$SPLIT_GENESIS_PATH" ]; then
+    # Use split genesis file (base file without accounts)
+    GENESIS_TO_USE="$SPLIT_GENESIS_PATH"
+    echo -e "${YELLOW}Using network split genesis file: $GENESIS_TO_USE${NC}"
+  elif [ -f "$MONOLITHIC_GENESIS_PATH" ]; then
+    # Use monolithic genesis file
+    GENESIS_TO_USE="$MONOLITHIC_GENESIS_PATH"
+    echo -e "${YELLOW}Using network genesis file: $GENESIS_TO_USE${NC}"
+  else
+    # Fallback to generic genesis.json if network-specific doesn't exist
     GENESIS_PATH="$REPO_ROOT/config/genesis.json"
+    if [ ! -f "$GENESIS_PATH" ]; then
+      echo -e "${RED}Error: No genesis file found for network '${NETWORK}'${NC}"
+      echo "Looked for:"
+      echo "  - $SPLIT_GENESIS_PATH (split genesis)"
+      echo "  - $MONOLITHIC_GENESIS_PATH (monolithic genesis)"
+      echo "  - $GENESIS_PATH (fallback)"
+      echo "Make sure you have the proper Shardeum network configuration"
+      exit 1
+    fi
+    GENESIS_TO_USE="$GENESIS_PATH"
+    echo -e "${YELLOW}Using fallback genesis file: $GENESIS_TO_USE${NC}"
   fi
-  if [ ! -f "$GENESIS_PATH" ]; then
-    echo -e "${RED}Error: Genesis file not found at $GENESIS_PATH${NC}"
-    echo "Make sure you have the proper Shardeum network configuration"
-    exit 1
-  fi
-  GENESIS_TO_USE="$GENESIS_PATH"
-  echo -e "${YELLOW}Using network genesis file: $GENESIS_TO_USE${NC}"
 fi
 
 # -----------------------------

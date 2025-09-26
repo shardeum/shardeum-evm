@@ -19,7 +19,6 @@ type NetworkConfig struct {
 	Decimals     evmtypes.Decimals `json:"decimals"`
 	Bech32Prefix string           `json:"bech32_prefix"`
 	Ports        NetworkPorts     `json:"ports"`
-	GenesisFile  string           `json:"genesis_file,omitempty"`
 }
 
 // NetworkPorts defines the port configuration for a network
