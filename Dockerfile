@@ -20,7 +20,7 @@ RUN adduser -D shardeum -G shardeum
 RUN chown -R shardeum:shardeum /app
 
 COPY --from=builder --chown=shardeum:shardeum /app/build/shardeumd /app/
-COPY --from=builder --chown=shardeum:shardeum /app/config/genesis.json /home/shardeum/.evmd/config/genesis.json
+COPY --from=builder --chown=shardeum:shardeum /app/config/environments config/environments
 
 USER shardeum
 
