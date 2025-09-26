@@ -16,6 +16,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CURRENT_DIR="$(pwd)"
 
+# Source genesis utilities from unified script
+source "$SCRIPT_DIR/genesis_account_split.sh"
+
 # -----------------------------
 # Usage
 # -----------------------------
@@ -235,9 +238,27 @@ export SHARDEUM_CHAIN_ID="$CHAINID"
 # Init to produce template
 "$BINARY" init "node0" --chain-id "$CHAINID" --home "$NODE0_DIR" --overwrite > /dev/null 2>&1
 
-# Replace with selected genesis
+# Replace with selected genesis (handle split accounts if present)
 echo -e "${YELLOW}Placing selected genesis at node0${NC}"
-cp "$GENESIS_TO_USE" "$NODE0_DIR/config/genesis.json"
+
+# Check if genesis has split account files
+if has_split_accounts "$GENESIS_TO_USE"; then
+  echo -e "${YELLOW}Detected split account files, merging...${NC}"
+  MERGED_GENESIS=$(load_genesis_with_accounts "$GENESIS_TO_USE" "$NODE0_DIR/config/genesis.json")
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}Failed to merge genesis accounts${NC}"
+    exit 1
+  fi
+  # If output was different from target, copy it
+  if [ "$MERGED_GENESIS" != "$NODE0_DIR/config/genesis.json" ]; then
+    cp "$MERGED_GENESIS" "$NODE0_DIR/config/genesis.json"
+    rm -f "$MERGED_GENESIS"  # Clean up temp file
+  fi
+  ACCOUNT_COUNT=$(jq '.app_state.auth.accounts | length' "$NODE0_DIR/config/genesis.json")
+  echo -e "${GREEN}Merged ${ACCOUNT_COUNT} accounts into genesis${NC}"
+else
+  cp "$GENESIS_TO_USE" "$NODE0_DIR/config/genesis.json"
+fi
 
 # -----------------------------
 # Keys: validator + optional dev accounts
