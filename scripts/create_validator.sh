@@ -162,14 +162,28 @@ echo -e "${YELLOW}Validator address: $VALIDATOR_ADDR${NC}"
 echo -e "${YELLOW}Checking validator account balance...${NC}"
 BALANCE=$("$BINARY" query bank balances "$VALIDATOR_ADDR" --node "tcp://localhost:$RPC_PORT" -o json | jq -r ".balances[] | select(.denom==\"$BASE_DENOM\") | .amount")
 
+# Calculate required balance with reasonable gas fee buffer
+case "$NETWORK" in
+  "mainnet")
+    FEE_BUFFER="5000000000000000000"    # 5 SHM buffer for mainnet gas fees
+    ;;
+  "testnet"|"devnet"|"local")
+    FEE_BUFFER="5000000000000000000"    # 5 SHM buffer for dev networks
+    ;;
+  *)
+    FEE_BUFFER="5000000000000000000"    # Default to 5 SHM
+    ;;
+esac
+
 if [[ -z "$BALANCE" || "$BALANCE" == "null" ]]; then
   echo -e "${RED}Error: Validator account has no $BASE_DENOM balance${NC}"
-  echo "Fund the account first with at least $(($AMOUNT + 500000000000000000000)) $BASE_DENOM"
+  REQUIRED_BALANCE=$(echo "$AMOUNT + $FEE_BUFFER" | bc)
+  echo "Fund the account first with at least $REQUIRED_BALANCE $BASE_DENOM"
   exit 1
 fi
 
 # Use bc for large number arithmetic
-REQUIRED_BALANCE=$(echo "$AMOUNT + 500000000000000000000" | bc)
+REQUIRED_BALANCE=$(echo "$AMOUNT + $FEE_BUFFER" | bc)
 if [[ $(echo "$BALANCE < $REQUIRED_BALANCE" | bc) -eq 1 ]]; then
   echo -e "${RED}Error: Insufficient balance. Required: $REQUIRED_BALANCE, Available: $BALANCE${NC}"
   exit 1
@@ -200,6 +214,21 @@ cat > "$VALIDATOR_JSON" << EOF
 }
 EOF
 
+# Set network-specific gas fees to meet minimum global fee requirement
+case "$NETWORK" in
+  "mainnet")
+    VALIDATOR_FEES="408000000000000000000${BASE_DENOM}" # 408 SHM (meets minimum global fee)
+    ;;
+  "testnet"|"devnet"|"local")
+    VALIDATOR_FEES="408000000000000000000${BASE_DENOM}" # 408 SHM (meets minimum global fee)
+    ;;
+  *)
+    VALIDATOR_FEES="408000000000000000000${BASE_DENOM}" # Default to 408 SHM
+    ;;
+esac
+
+echo -e "${YELLOW}Using network-specific validator fees: $VALIDATOR_FEES${NC}"
+
 # Create validator transaction
 echo -e "${YELLOW}Creating validator transaction...${NC}"
 "$BINARY" tx staking create-validator "$VALIDATOR_JSON" \
@@ -209,7 +238,7 @@ echo -e "${YELLOW}Creating validator transaction...${NC}"
   --node "tcp://localhost:$RPC_PORT" \
   --chain-id="$CHAINID" \
   --gas 500000 \
-  --fees 400000000000000000000${BASE_DENOM} \
+  --fees "$VALIDATOR_FEES" \
   --yes
 
 if [ $? -eq 0 ]; then
