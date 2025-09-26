@@ -12,8 +12,8 @@ jobs:
 
     permissions:
       contents: read
-      pull-requests: write
-      issues: write
+      pull-requests: write # To create comments on PRs
+      #issues: read # To read issues
       actions: read # To read workflow runs
       statuses: read # To read commit statuses
 
@@ -25,7 +25,7 @@ jobs:
           username: ${{ github.event.comment.user.login }}
           organization: shardeum
           team: "Tech Team"
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.SECURITY_REVIEW_PAT }}
 
       - name: Debug team check output
         run: |
@@ -79,14 +79,14 @@ jobs:
         if: steps.team_check.outputs.isTeamMember == 'true'
         uses: actions/setup-python@v4
         with:
-          python-version: "3.x"
+          python-version: "3.11"
 
       - name: Install dependencies
         if: steps.team_check.outputs.isTeamMember == 'true'
         run: |
           cd argus-agent
           if [ -f requirements.txt ]; then
-            pip install --require-hashes -r requirements.txt
+            pip install --no-cache-dir -r requirements.txt
           fi
 
       - name: Run security review
@@ -112,10 +112,10 @@ jobs:
           # Use GITHUB_TOKEN which already has necessary permissions for reading PR data
           GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Google Gemini API authentication
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY || secrets.ORG_GOOGLE_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           # Optional integrations
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN || secrets.ORG_SLACK_BOT_TOKEN }}
-          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY || secrets.ORG_LINEAR_API_KEY }}
+          #SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN || secrets.ORG_SLACK_BOT_TOKEN }}
+          #LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY || secrets.ORG_LINEAR_API_KEY }}
 
       - name: Upload review output
         if: ${{ steps.team_check.outputs.isTeamMember == 'true' && steps.security_review.outputs.has_output == 'true' }}
