@@ -334,6 +334,22 @@ fi
 # Gentx + collect
 # -----------------------------
 echo -e "${YELLOW}Creating genesis transaction for validator${NC}"
+
+# Set network-specific gas fees to meet minimum global fee requirement
+case "$NETWORK" in
+  "mainnet")
+    GENTX_FEES="408000000000000000000$BASE_DENOM"   # 408 SHM (meets minimum global fee)
+    ;;
+  "testnet"|"devnet"|"local")
+    GENTX_FEES="408000000000000000000$BASE_DENOM"   # 408 SHM (meets minimum global fee)
+    ;;
+  *)
+    GENTX_FEES="408000000000000000000$BASE_DENOM"   # Default to 408 SHM
+    ;;
+esac
+
+echo -e "${YELLOW}Using network-specific fees: $GENTX_FEES${NC}"
+
 "$BINARY" genesis gentx "validator" 1000000000000000000${BASE_DENOM} \
   --chain-id "$CHAINID" \
   --moniker "node0" \
@@ -341,6 +357,7 @@ echo -e "${YELLOW}Creating genesis transaction for validator${NC}"
   --commission-max-rate="0.20" \
   --commission-max-change-rate="0.01" \
   --min-self-delegation="1" \
+  --fees="$GENTX_FEES" \
   --keyring-backend test \
   --home "$NODE0_DIR"
 
