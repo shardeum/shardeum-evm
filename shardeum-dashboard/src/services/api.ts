@@ -300,20 +300,17 @@ class ApiService {
 
   async getGovernanceParams(): Promise<GovernanceParams | null> {
     try {
-      // Get deposit params
-      const depositResponse = await this.fetchApi('/cosmos/gov/v1beta1/params/deposit')
-      // Get voting params  
-      const votingResponse = await this.fetchApi('/cosmos/gov/v1beta1/params/voting')
-      // Get tally params
-      const tallyResponse = await this.fetchApi('/cosmos/gov/v1beta1/params/tallying')
+      // Get all params from v1 API
+      const response = await this.fetchApi('/cosmos/gov/v1beta1/params/voting')
+      const params = response.params || {}
       
       return {
-        minDeposit: depositResponse.deposit_params?.min_deposit || [],
-        maxDepositPeriod: depositResponse.deposit_params?.max_deposit_period || '0',
-        votingPeriod: votingResponse.voting_params?.voting_period || '0',
-        quorum: tallyResponse.tally_params?.quorum || '0',
-        threshold: tallyResponse.tally_params?.threshold || '0',
-        vetoThreshold: tallyResponse.tally_params?.veto_threshold || '0'
+        minDeposit: params.min_deposit || [],
+        maxDepositPeriod: params.max_deposit_period || '0',
+        votingPeriod: params.voting_period || '0',
+        quorum: params.quorum || '0',
+        threshold: params.threshold || '0',
+        vetoThreshold: params.veto_threshold || '0'
       }
     } catch (error) {
       console.error('Failed to get governance params:', error)

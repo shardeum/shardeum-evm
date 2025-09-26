@@ -6,7 +6,7 @@ import { OfflineDirectSigner, OfflineAminoSigner, Registry, TxBodyEncodeObject, 
 import { TxRaw } from 'cosmjs-types/cosmos/tx/v1beta1/tx'
 import { MsgDelegate, MsgUndelegate } from 'cosmjs-types/cosmos/staking/v1beta1/tx'
 import { MsgVote, MsgSubmitProposal, MsgDeposit } from 'cosmjs-types/cosmos/gov/v1beta1/tx'
-import { VoteOption, TextProposal } from 'cosmjs-types/cosmos/gov/v1beta1/gov'
+import { VoteOption } from 'cosmjs-types/cosmos/gov/v1beta1/gov'
 import { ParameterChangeProposal } from 'cosmjs-types/cosmos/params/v1beta1/params'
 import { CommunityPoolSpendProposal } from 'cosmjs-types/cosmos/distribution/v1beta1/distribution'
 import { SoftwareUpgradeProposal, CancelSoftwareUpgradeProposal, Plan } from 'cosmjs-types/cosmos/upgrade/v1beta1/upgrade'
@@ -726,9 +726,14 @@ export const useWalletStore = defineStore('wallet', () => {
       throw new Error('Wallet not connected')
     }
 
+    // Validate that we have a valid address
+    if (!address.value || address.value.trim() === '') {
+      throw new Error('Wallet address not available. Please reconnect your wallet.')
+    }
+
     try {
       const { currentNetwork } = networkStore
-      const signerAddress = address.value
+      const signerAddress = address.value.trim()
 
       // Get account info from chain using REST API (exactly like ping.pub)
       const accountResponse = await fetch(`${getApiBaseUrl()}/cosmos/auth/v1beta1/accounts/${signerAddress}`)
@@ -802,7 +807,7 @@ export const useWalletStore = defineStore('wallet', () => {
 
       // Wrap message in Any type for encoding
       const msgAny = Any.fromPartial({
-        typeUrl: '/cosmos.gov.v1beta1.MsgVote',
+        typeUrl: '/cosmos.gov.v1.MsgVote',
         value: MsgVote.encode(MsgVote.fromPartial(transaction.messages[0].value)).finish()
       })
 
@@ -953,10 +958,12 @@ export const useWalletStore = defineStore('wallet', () => {
       
       // Check for broadcast errors
       if (result.code && result.code !== 0) {
+        console.error('Broadcast error - result.code:', result.code, 'message:', result.message)
         throw new Error(result.message || 'Broadcast error')
       }
 
       if (result.tx_response && result.tx_response.code !== 0) {
+        console.error('Transaction failed - tx_response.code:', result.tx_response.code, 'raw_log:', result.tx_response.raw_log)
         throw new Error(result.tx_response.raw_log || 'Vote transaction failed')
       }
 
@@ -993,9 +1000,14 @@ export const useWalletStore = defineStore('wallet', () => {
       throw new Error('Wallet not connected')
     }
 
+    // Validate that we have a valid address
+    if (!address.value || address.value.trim() === '') {
+      throw new Error('Wallet address not available. Please reconnect your wallet.')
+    }
+
     try {
       const { currentNetwork } = networkStore
-      const signerAddress = address.value
+      const signerAddress = address.value.trim()
 
       // Get account info from chain using REST API (exactly like ping.pub)
       const accountResponse = await fetch(`${getApiBaseUrl()}/cosmos/auth/v1beta1/accounts/${signerAddress}`)
@@ -1031,82 +1043,36 @@ export const useWalletStore = defineStore('wallet', () => {
 
       console.log('Account info for proposal submission:', { accountNumber, sequence })
 
-      // Create proposal content based on type
-      let proposalContent: Any;
+      // In cosmos.gov.v1, we don't use wrapped proposal content
+      // Instead, we create the messages directly
+      let messages: Any[] = [];
       
       if (proposalType === 'text') {
-        proposalContent = Any.fromPartial({
-          typeUrl: '/cosmos.gov.v1beta1.TextProposal',
-          value: TextProposal.encode(TextProposal.fromPartial({
-            title,
-            description
-          })).finish()
-        })
-      } else if (proposalType === 'community-spend' && recipient && spendAmount) {
-        proposalContent = Any.fromPartial({
-          typeUrl: '/cosmos.distribution.v1beta1.CommunityPoolSpendProposal',
-          value: CommunityPoolSpendProposal.encode(CommunityPoolSpendProposal.fromPartial({
-            title,
-            description,
-            recipient,
-            amount: [{
-              denom: denom,
-              amount: spendAmount
-            }]
-          })).finish()
-        })
-      } else if (proposalType === 'param-change' && paramSubspace && paramKey && paramValue) {
-        proposalContent = Any.fromPartial({
-          typeUrl: '/cosmos.params.v1beta1.ParameterChangeProposal',
-          value: ParameterChangeProposal.encode(ParameterChangeProposal.fromPartial({
-            title,
-            description,
-            changes: [{
-              subspace: paramSubspace,
-              key: paramKey,
-              value: paramValue
-            }]
-          })).finish()
-        })
-      } else if (proposalType === 'software-upgrade' && upgradeName && upgradeHeight) {
-        proposalContent = Any.fromPartial({
-          typeUrl: '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal',
-          value: SoftwareUpgradeProposal.encode(SoftwareUpgradeProposal.fromPartial({
-            title,
-            description,
-            plan: Plan.fromPartial({
-              name: upgradeName,
-              height: BigInt(upgradeHeight),
-              info: upgradeInfo || ''
-            })
-          })).finish()
-        })
-      } else if (proposalType === 'cancel-upgrade') {
-        proposalContent = Any.fromPartial({
-          typeUrl: '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal',
-          value: CancelSoftwareUpgradeProposal.encode(CancelSoftwareUpgradeProposal.fromPartial({
-            title,
-            description
-          })).finish()
-        })
+        // For text proposals, we just need the basic proposal info
+        // The messages array can be empty for text proposals
+        messages = []
       } else {
-        throw new Error('Invalid proposal type or missing required parameters')
+        throw new Error(`Proposal type '${proposalType}' not yet implemented for cosmos.gov.v1. Please use text proposals for now.`)
       }
 
-      // Create the transaction object exactly like ping.pub does
+      // Create the transaction object for cosmos.gov.v1
       const transaction = {
         chainId: currentNetwork.chainId,
         signerAddress: signerAddress,
         messages: [
           {
-            typeUrl: '/cosmos.gov.v1beta1.MsgSubmitProposal',
+            typeUrl: '/cosmos.gov.v1.MsgSubmitProposal',
             value: {
-              content: proposalContent,
+              messages: messages,
               initialDeposit: [{
                 denom: denom,
                 amount: initialDeposit
               }],
-              proposer: signerAddress
+              proposer: signerAddress,
+              metadata: '',
+              title: title,
+              summary: description,
+              expedited: false
             }
           }
         ],
@@ -1134,7 +1100,7 @@ export const useWalletStore = defineStore('wallet', () => {
 
       // Wrap message in Any type for encoding
       const msgAny = Any.fromPartial({
-        typeUrl: '/cosmos.gov.v1beta1.MsgSubmitProposal',
+        typeUrl: '/cosmos.gov.v1.MsgSubmitProposal',
         value: MsgSubmitProposal.encode(MsgSubmitProposal.fromPartial(transaction.messages[0].value)).finish()
       })
 
@@ -1291,13 +1257,27 @@ export const useWalletStore = defineStore('wallet', () => {
       
       // Check for broadcast errors
       if (result.code && result.code !== 0) {
+        console.error('Broadcast error:', { code: result.code, message: result.message, result })
         throw new Error(result.message || 'Broadcast error')
       }
 
       if (result.tx_response && result.tx_response.code !== 0) {
-        console.error('Transaction failed with code:', result.tx_response.code)
-        console.error('Raw log:', result.tx_response.raw_log)
-        throw new Error(result.tx_response.raw_log || 'Proposal submission transaction failed')
+        console.error('Transaction failed:', {
+          code: result.tx_response.code,
+          rawLog: result.tx_response.raw_log,
+          txHash: result.tx_response.txhash,
+          gasWanted: result.tx_response.gas_wanted,
+          gasUsed: result.tx_response.gas_used,
+          fullResponse: result.tx_response
+        })
+        
+        // Try to provide more helpful error messages
+        let errorMessage = result.tx_response.raw_log || 'Proposal submission transaction failed'
+        if (errorMessage.includes('empty address string')) {
+          errorMessage = `Address validation error: ${errorMessage}. This might be due to missing required fields in the proposal.`
+        }
+        
+        throw new Error(errorMessage)
       }
 
       return result.tx_response || result
@@ -1600,6 +1580,19 @@ export const useWalletStore = defineStore('wallet', () => {
       maximumFractionDigits: 6 
     })
   }
+
+  // Helper function to validate wallet connection and address
+  function validateWalletConnection(): void {
+    if (!isConnected.value) {
+      throw new Error('Wallet not connected. Please connect your Keplr wallet first.')
+    }
+    if (!window.keplr) {
+      throw new Error('Keplr wallet extension not found. Please install Keplr.')
+    }
+    if (!address.value || address.value.trim() === '') {
+      throw new Error('Wallet address not available. Please disconnect and reconnect your wallet.')
+    }
+  }
   
   return {
     isConnected,
@@ -1617,6 +1610,7 @@ export const useWalletStore = defineStore('wallet', () => {
     voteOnProposalManually,
     submitProposalManually,
     disconnect,
-    formatBalance
+    formatBalance,
+    validateWalletConnection
   }
 })

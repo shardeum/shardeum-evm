@@ -150,52 +150,14 @@ export const useGovernanceStore = defineStore('governance', () => {
       throw new Error('Wallet not connected')
     }
     
+    console.log('Voting on proposal:', { proposalId, option, walletAddress: walletStore.address })
+    
     const voteOptionValue = voteOptionStringToEnum(option)
     return await walletStore.voteOnProposalManually(proposalId, voteOptionValue)
   }
 
-  async function submitProposal(
-    proposalType: 'text' | 'community-spend' | 'param-change' | 'software-upgrade' | 'cancel-upgrade',
-    title: string,
-    description: string,
-    initialDeposit: string,
-    // For community spend
-    recipient?: string,
-    spendAmount?: string,
-    // For parameter change
-    paramSubspace?: string,
-    paramKey?: string,
-    paramValue?: string,
-    // For software upgrade
-    upgradeName?: string,
-    upgradeHeight?: number,
-    upgradeInfo?: string,
-    // For cancel upgrade
-    cancelUpgradeName?: string
-  ) {
-    if (!walletStore.isConnected) {
-      throw new Error('Wallet not connected')
-    }
-    
-    const { currentNetwork } = networkStore
-    
-    return await walletStore.submitProposalManually(
-      proposalType,
-      title,
-      description,
-      initialDeposit,
-      currentNetwork.baseDenom,
-      recipient,
-      spendAmount,
-      paramSubspace,
-      paramKey,
-      paramValue,
-      upgradeName,
-      upgradeHeight,
-      upgradeInfo,
-      cancelUpgradeName
-    )
-  }
+  // Proposal submission removed - focusing on voting functionality only
+  // Proposals should be submitted through governance forums or by validators
 
   function clearSelectedProposal() {
     selectedProposal.value = null
@@ -224,7 +186,7 @@ export const useGovernanceStore = defineStore('governance', () => {
     isDepositPeriod,
     formatProposalType,
     voteOnProposal,
-    submitProposal,
+    // submitProposal, // Removed - focusing on voting only
     clearSelectedProposal
   }
 })

@@ -48,7 +48,6 @@
             </div>
           </div>
           <div class="flex items-center space-x-4">
-            <NetworkSelector />
             <WalletConnect />
           </div>
         </div>
@@ -62,6 +61,5 @@
 </template>
 
 <script setup lang="ts">
-import NetworkSelector from '@/components/NetworkSelector.vue'
 import WalletConnect from '@/components/WalletConnect.vue'
 </script>

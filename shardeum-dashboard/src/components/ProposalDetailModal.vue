@@ -212,9 +212,9 @@ const isVotingActive = computed(() => {
   return governanceStore.isVotingActive(props.proposal)
 })
 
-const getVotePercentages = computed(() => {
-  return governanceStore.getVotePercentages(props.proposal)
-})
+function getVotePercentages(proposal: any) {
+  return governanceStore.getVotePercentages(proposal)
+}
 
 async function vote(option: VoteOptionString) {
   if (!walletStore.isConnected) return

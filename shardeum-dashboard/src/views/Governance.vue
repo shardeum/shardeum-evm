@@ -11,14 +11,10 @@
           <ArrowPathIcon class="w-4 h-4 mr-2" :class="{ 'animate-spin': loading }" />
           Refresh
         </button>
-        <button
-          v-if="walletStore.isConnected"
-          @click="showCreateModal = true"
-          class="btn btn-primary"
-        >
-          <PlusIcon class="w-4 h-4 mr-2" />
-          New Proposal
-        </button>
+        <!-- Proposal creation removed - focus on voting functionality -->
+        <div v-if="walletStore.isConnected" class="text-sm text-gray-600">
+          Connected: {{ walletStore.shortAddress }}
+        </div>
       </div>
     </div>
 
@@ -26,7 +22,7 @@
     <div v-if="!walletStore.isConnected" class="card p-8 text-center">
       <WalletIcon class="w-16 h-16 text-gray-400 mx-auto mb-4" />
       <h3 class="text-lg font-medium text-gray-900 mb-2">Connect Your Wallet</h3>
-      <p class="text-gray-500 mb-6">Connect your Keplr wallet to participate in governance</p>
+      <p class="text-gray-500 mb-6">Connect your Keplr wallet to vote on governance proposals</p>
       <button @click="walletStore.connectKeplr" class="btn btn-primary">
         Connect Keplr Wallet
       </button>
@@ -42,7 +38,16 @@
       <div v-else-if="proposals.length === 0" class="card p-8 text-center">
         <DocumentTextIcon class="w-12 h-12 text-gray-400 mx-auto mb-4" />
         <h3 class="text-lg font-medium text-gray-900 mb-2">No Proposals</h3>
-        <p class="text-gray-500">No governance proposals found</p>
+        <p class="text-gray-500 mb-4">No governance proposals found.</p>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left max-w-md mx-auto">
+          <div class="flex">
+            <InformationCircleIcon class="w-5 h-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
+            <div class="text-sm text-blue-800">
+              <div class="font-medium mb-1">How are proposals created?</div>
+              <div>Proposals are typically submitted by validators or core developers using the CLI or governance forums. This dashboard focuses on voting functionality.</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div
@@ -98,12 +103,7 @@
       </div>
     </div>
 
-    <!-- Create Proposal Modal -->
-    <CreateProposalModal
-      v-if="showCreateModal"
-      @close="showCreateModal = false"
-      @success="handleCreateSuccess"
-    />
+    <!-- Proposal creation removed - focusing on voting functionality -->
 
     <!-- Proposal Detail Modal -->
     <ProposalDetailModal
@@ -121,12 +121,13 @@ import {
   ArrowPathIcon,
   PlusIcon,
   WalletIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  InformationCircleIcon
 } from '@heroicons/vue/24/outline'
 import { useNetworkStore } from '@/stores/network'
 import { useWalletStore } from '@/stores/wallet'
 import { useGovernanceStore } from '@/stores/governance'
-import CreateProposalModal from '@/components/CreateProposalModal.vue'
+// import CreateProposalModal from '@/components/CreateProposalModal.vue' // Removed - focusing on voting only
 import ProposalDetailModal from '@/components/ProposalDetailModal.vue'
 import { getProposalStatusText } from '@/types/governance'
 
@@ -134,7 +135,7 @@ const networkStore = useNetworkStore()
 const walletStore = useWalletStore()
 const governanceStore = useGovernanceStore()
 
-const showCreateModal = ref(false)
+// const showCreateModal = ref(false) // Removed - focusing on voting only
 
 // Use governance store values
 const proposals = computed(() => governanceStore.proposals)
@@ -154,16 +155,7 @@ function selectProposal(proposal: any) {
   governanceStore.loadProposal(proposal.proposalId)
 }
 
-async function handleCreateSuccess() {
-  showCreateModal.value = false
-  // Immediately try to refresh, then again after a delay for blockchain processing
-  await loadProposals()
-  
-  // Wait a moment for the transaction to be processed and try again
-  setTimeout(async () => {
-    await loadProposals()
-  }, 3000) // Wait 3 seconds before refreshing again
-}
+// Proposal creation functions removed - focusing on voting only
 
 function handleVoteSuccess() {
   loadProposals()

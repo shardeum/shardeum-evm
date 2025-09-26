@@ -33,6 +33,30 @@
               {{ walletStore.formatBalance() }} {{ networkStore.currentNetwork.symbol }}
             </div>
           </div>
+          
+          <!-- Network Selector -->
+          <div class="p-4 border-b border-gray-200">
+            <div class="text-sm text-gray-600 mb-2">Network</div>
+            <div class="space-y-1">
+              <button
+                v-for="network in networkStore.availableNetworks"
+                :key="network.id"
+                @click="selectNetwork(network.id)"
+                class="flex items-center w-full px-3 py-2 text-sm rounded-md hover:bg-gray-100"
+                :class="{ 'bg-gray-100': network.id === networkStore.currentNetworkId }"
+              >
+                <div 
+                  class="w-2 h-2 rounded-full mr-3"
+                  :class="network.id === networkStore.currentNetworkId ? 'bg-green-500' : 'bg-gray-300'"
+                ></div>
+                <div class="flex-1 text-left">
+                  <div class="font-medium">{{ network.name }}</div>
+                  <div class="text-xs text-gray-500">{{ network.chainId }}</div>
+                </div>
+              </button>
+            </div>
+          </div>
+          
           <div class="p-2">
             <button
               @click="refreshBalance"
@@ -98,6 +122,10 @@ async function connect() {
 function disconnect() {
   walletStore.disconnect()
   isAccountMenuOpen.value = false
+}
+
+function selectNetwork(networkId: string) {
+  networkStore.setNetwork(networkId)
 }
 
 async function refreshBalance() {

@@ -19,11 +19,15 @@
             </label>
             <select v-model="proposalType" class="input">
               <option value="text">Text Proposal (Signaling)</option>
-              <option value="community-spend">Community Pool Spend</option>
+              <!-- Other proposal types temporarily disabled for cosmos.gov.v1 migration -->
+              <!-- <option value="community-spend">Community Pool Spend</option>
               <option value="param-change">Parameter Change</option>
               <option value="software-upgrade">Software Upgrade</option>
-              <option value="cancel-upgrade">Cancel Software Upgrade</option>
+              <option value="cancel-upgrade">Cancel Software Upgrade</option> -->
             </select>
+            <p class="text-xs text-gray-500 mt-1">
+              Note: Only text proposals are currently supported. Other proposal types coming soon.
+            </p>
           </div>
 
           <!-- Title -->
