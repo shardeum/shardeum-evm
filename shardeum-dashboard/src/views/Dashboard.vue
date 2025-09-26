@@ -286,6 +286,22 @@ async function loadNetworkInfo() {
     } catch (e) {
       console.warn('Could not fetch validators:', e)
     }
+
+    // Get total supply
+    try {
+      const totalSupply = await apiService.getTotalSupply()
+      networkInfo.totalSupply = totalSupply
+    } catch (e) {
+      console.warn('Could not fetch total supply:', e)
+    }
+
+    // Get average block time
+    try {
+      const avgBlockTime = await apiService.getAverageBlockTime(10)
+      networkInfo.avgBlockTime = avgBlockTime
+    } catch (e) {
+      console.warn('Could not calculate average block time:', e)
+    }
   } catch (error) {
     console.error('Failed to load network info:', error)
   }

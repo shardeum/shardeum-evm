@@ -387,6 +387,45 @@ class ApiService {
       return null
     }
   }
+
+  async getTotalSupply(): Promise<string> {
+    try {
+      const response = await this.fetchApi('/cosmos/bank/v1beta1/supply')
+      const supply = response.supply || []
+      
+      // Find the native token (ashm) in the supply
+      const nativeToken = supply.find((s: any) => s.denom === 'ashm')
+      return nativeToken ? nativeToken.amount : '0'
+    } catch (error) {
+      console.error('Failed to get total supply:', error)
+      return '0'
+    }
+  }
+
+  async getAverageBlockTime(blockCount: number = 10): Promise<number | null> {
+    try {
+      const blocks = await this.getLatestBlocks(blockCount)
+      if (blocks.length < 2) return null
+
+      // Calculate time differences between consecutive blocks
+      const timeDiffs: number[] = []
+      for (let i = 0; i < blocks.length - 1; i++) {
+        const currentTime = new Date(blocks[i].header.time).getTime()
+        const previousTime = new Date(blocks[i + 1].header.time).getTime()
+        const diff = (currentTime - previousTime) / 1000 // Convert to seconds
+        if (diff > 0) timeDiffs.push(diff)
+      }
+
+      if (timeDiffs.length === 0) return null
+
+      // Calculate average
+      const average = timeDiffs.reduce((sum, diff) => sum + diff, 0) / timeDiffs.length
+      return Math.round(average * 10) / 10 // Round to 1 decimal place
+    } catch (error) {
+      console.error('Failed to calculate average block time:', error)
+      return null
+    }
+  }
 }
 
 export const apiService = new ApiService()
