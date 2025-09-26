@@ -253,7 +253,6 @@
     },
     "bank": {
       "params": {
-        "send_enabled": [],
         "default_send_enabled": true
       },
       "balances": [
@@ -642,9 +641,7 @@
     },
     "distribution": {
       "params": {
-        "community_tax": "0.020000000000000000",
-        "base_proposer_reward": "0.000000000000000000",
-        "bonus_proposer_reward": "0.000000000000000000",
+        "community_tax": "0.000000000000000000",
         "withdraw_addr_enabled": true
       },
       "fee_pool": {
@@ -693,12 +690,12 @@
     },
     "feemarket": {
       "params": {
-        "no_base_fee": true,
+        "no_base_fee": false,
         "base_fee_change_denominator": 8,
         "elasticity_multiplier": 2,
         "enable_height": "0",
-        "base_fee": "1000000000.000000000000000000",
-        "min_gas_price": "0.000000000000000000",
+        "base_fee": "1000000000",
+        "min_gas_price": "2040000000000000",
         "min_gas_multiplier": "0.500000000000000000"
       },
       "block_gas": "0"
@@ -718,29 +715,29 @@
         "min_deposit": [
           {
             "denom": "ashm",
-            "amount": "10000000"
+            "amount": "430000000000000000000000"
           }
         ],
         "max_deposit_period": "172800s",
-        "voting_period": "172800s",
+        "voting_period": "259200s",
         "quorum": "0.334000000000000000",
         "threshold": "0.500000000000000000",
         "veto_threshold": "0.334000000000000000",
-        "min_initial_deposit_ratio": "0.000000000000000000",
+        "min_initial_deposit_ratio": "0.100000000000000000",
+        "min_deposit_ratio": "0.010000000000000000",
         "proposal_cancel_ratio": "0.500000000000000000",
         "proposal_cancel_dest": "",
+        "burn_proposal_deposit_prevote": false,
+        "burn_vote_quorum": false,
+        "burn_vote_veto": true,
         "expedited_voting_period": "86400s",
         "expedited_threshold": "0.667000000000000000",
         "expedited_min_deposit": [
           {
             "denom": "ashm",
-            "amount": "50000000"
+            "amount": "1290000000000000000000000"
           }
-        ],
-        "burn_vote_quorum": false,
-        "burn_proposal_deposit_prevote": false,
-        "burn_vote_veto": true,
-        "min_deposit_ratio": "0.010000000000000000"
+        ]
       },
       "constitution": ""
     },
@@ -818,8 +815,8 @@
       "port_id": "transfer",
       "denoms": [],
       "params": {
-        "send_enabled": true,
-        "receive_enabled": true
+        "send_enabled": false,
+        "receive_enabled": false
       },
       "total_escrowed": []
     },
@@ -845,11 +842,11 @@
     },
     "slashing": {
       "params": {
-        "signed_blocks_window": "100",
-        "min_signed_per_window": "0.500000000000000000",
+        "signed_blocks_window": "34560",
+        "min_signed_per_window": "0.050000000000000000",
         "downtime_jail_duration": "600s",
         "slash_fraction_double_sign": "0.050000000000000000",
-        "slash_fraction_downtime": "0.010000000000000000"
+        "slash_fraction_downtime": "0.000100000000000000"
       },
       "signing_infos": [],
       "missed_blocks": []
@@ -857,11 +854,11 @@
     "staking": {
       "params": {
         "unbonding_time": "1814400s",
-        "max_validators": 100,
+        "max_validators": 30,
         "max_entries": 7,
         "historical_entries": 10000,
         "bond_denom": "ashm",
-        "min_commission_rate": "0.000000000000000000"
+        "min_commission_rate": "0.050000000000000000"
       },
       "last_total_power": "0",
       "last_validator_powers": [],
@@ -875,12 +872,12 @@
   "consensus": {
     "params": {
       "block": {
-        "max_bytes": "22020096",
-        "max_gas": "10000000"
+        "max_bytes": "5242880",
+        "max_gas": "100000000"
       },
       "evidence": {
-        "max_age_num_blocks": "100000",
-        "max_age_duration": "172800000000000",
+        "max_age_num_blocks": "1000000",
+        "max_age_duration": "1814400000000000",
         "max_bytes": "1048576"
       },
       "validator": {
@@ -889,7 +886,7 @@
         ]
       },
       "version": {
-        "app": "0"
+        "app": "1"
       },
       "abci": {
         "vote_extensions_enable_height": "0"
