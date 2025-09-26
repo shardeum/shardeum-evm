@@ -17,6 +17,12 @@
       "accounts": [
         {
           "@type": "/cosmos.auth.v1beta1.BaseAccount",
+          "address": "shardeum10vpz8ljmp26jye3zw4de9k4gqgg6gce3gu5dgn",
+          "pub_key": null,
+          "sequence": "0"
+        },
+        {
+          "@type": "/cosmos.auth.v1beta1.BaseAccount",
           "address": "shardeum106chadt0rmrleh0n9z7gc0693cdm0axa7uef6g",
           "pub_key": null,
           "sequence": "0"

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -23,50 +22,35 @@ import (
 
 // NetworkConfig represents the minimal network configuration needed for genesis resolution
 type NetworkConfig struct {
-	GenesisFile string `json:"genesis_file,omitempty"`
+	// Empty for now, can be expanded with other fields as needed
 }
 
 // getNetworkGenesisPath resolves the genesis file path for a given network
 func getNetworkGenesisPath(network string) (string, error) {
-	// Try to load network config to get genesis file name
-	var networkConfigPath string
-	
+	var configDir string
+
 	// 1) Check SHARDEUM_CONFIG_DIR first
-	if configDir := os.Getenv("SHARDEUM_CONFIG_DIR"); configDir != "" {
-		networkConfigPath = filepath.Join(configDir, "environments", fmt.Sprintf("%s.json", network))
+	if envDir := os.Getenv("SHARDEUM_CONFIG_DIR"); envDir != "" {
+		configDir = envDir
 	} else {
 		// 2) Use default path
-		networkConfigPath = filepath.Join("config", "environments", fmt.Sprintf("%s.json", network))
+		configDir = "config"
 	}
 
-	// Load network config to get genesis file name
-	data, err := os.ReadFile(networkConfigPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read network config: %w", err)
+	// Check for split genesis files first (pattern: {network}-genesis.genesis.json)
+	splitGenesisPath := filepath.Join(configDir, "environments", fmt.Sprintf("%s-genesis.genesis.json", network))
+	if _, err := os.Stat(splitGenesisPath); err == nil {
+		fmt.Printf("DEBUG: Found split genesis file: %s\n", splitGenesisPath)
+		return splitGenesisPath, nil
 	}
 
-	var config NetworkConfig
-	if err := json.Unmarshal(data, &config); err != nil {
-		return "", fmt.Errorf("failed to parse network config: %w", err)
+	// Then check for monolithic genesis file (pattern: {network}-genesis.json)
+	monolithicGenesisPath := filepath.Join(configDir, "environments", fmt.Sprintf("%s-genesis.json", network))
+	if _, err := os.Stat(monolithicGenesisPath); err == nil {
+		return monolithicGenesisPath, nil
 	}
 
-	if config.GenesisFile == "" {
-		return "", fmt.Errorf("no genesis file specified in network config")
-	}
-
-	// Resolve genesis file path using same logic as network config
-	var genesisPath string
-	if configDir := os.Getenv("SHARDEUM_CONFIG_DIR"); configDir != "" {
-		genesisPath = filepath.Join(configDir, "environments", config.GenesisFile)
-	} else {
-		genesisPath = filepath.Join("config", "environments", config.GenesisFile)
-	}
-
-	if _, err := os.Stat(genesisPath); err != nil {
-		return "", fmt.Errorf("genesis file not found: %s", genesisPath)
-	}
-
-	return genesisPath, nil
+	return "", fmt.Errorf("genesis file not found: checked %s and %s", splitGenesisPath, monolithicGenesisPath)
 }
 
 // GetBlockGasLimit reads the genesis json file using AppGenesisFromFile

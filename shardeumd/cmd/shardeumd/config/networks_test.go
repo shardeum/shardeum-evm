@@ -106,7 +106,6 @@ func (suite *NetworkConfigTestSuite) createStandardNetworkConfigs() {
 				WebSocket: "8546",
 				GRPC:      "9090",
 			},
-			GenesisFile: "mainnet-genesis.json",
 		},
 		"testnet": {
 			Name:         "testnet",
@@ -123,7 +122,6 @@ func (suite *NetworkConfigTestSuite) createStandardNetworkConfigs() {
 				WebSocket: "8546",
 				GRPC:      "9090",
 			},
-			GenesisFile: "testnet-genesis.json",
 		},
 		"devnet": {
 			Name:         "devnet",
@@ -140,7 +138,6 @@ func (suite *NetworkConfigTestSuite) createStandardNetworkConfigs() {
 				WebSocket: "8546",
 				GRPC:      "9090",
 			},
-			GenesisFile: "devnet-genesis.json",
 		},
 		"local": {
 			Name:         "local",
@@ -157,7 +154,6 @@ func (suite *NetworkConfigTestSuite) createStandardNetworkConfigs() {
 				WebSocket: "8546",
 				GRPC:      "9090",
 			},
-			GenesisFile: "local-genesis.json",
 		},
 	}
 
@@ -216,7 +212,6 @@ func (suite *NetworkConfigTestSuite) TestGetNetworkConfig_CustomFile() {
 			WebSocket: "8546",
 			GRPC:      "9090",
 		},
-		GenesisFile: "custom-genesis.json",
 	}
 	suite.createTestConfig("custom", customConfig)
 

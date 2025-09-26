@@ -12,6 +12,5 @@
     "json_rpc": "8545",
     "websocket": "8546",
     "grpc": "9090"
-  },
-  "genesis_file": "devnet-genesis.json"
+  }
 }
