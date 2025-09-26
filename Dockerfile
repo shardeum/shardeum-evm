@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25.1-alpine3.22 AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY . .
 RUN make build
 
 # Production stage
-FROM alpine
+FROM alpine:3.22.1
 
 WORKDIR /app
 
