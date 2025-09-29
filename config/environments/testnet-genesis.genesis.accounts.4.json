@@ -25226,7 +25226,7 @@
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum1ra827tjan750c8juscmly6af78nds3kx0tl2sk",
+      "address": "shardeum1twv0y2s9426yqxmmh3u3r30q86ha8j0wcu7ajf",
       "pub_key": null,
       "sequence": "0"
     },
@@ -58760,7 +58760,7 @@
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum1v4p2q6rwst7vptl789mczqvenx73n4ldtzqhc3",
+      "address": "shardeum16r5ta5cpvcnkfgrkxvgnnnjwfd4eqlhend3ly8",
       "pub_key": null,
       "sequence": "0"
     },
@@ -97839,7 +97839,7 @@
       ]
     },
     {
-      "address": "shardeum1ra827tjan750c8juscmly6af78nds3kx0tl2sk",
+      "address": "shardeum1twv0y2s9426yqxmmh3u3r30q86ha8j0wcu7ajf",
       "coins": [
         {
           "denom": "ashm",
@@ -148140,7 +148140,7 @@
       ]
     },
     {
-      "address": "shardeum1v4p2q6rwst7vptl789mczqvenx73n4ldtzqhc3",
+      "address": "shardeum16r5ta5cpvcnkfgrkxvgnnnjwfd4eqlhend3ly8",
       "coins": [
         {
           "denom": "ashm",

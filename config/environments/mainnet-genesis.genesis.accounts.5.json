@@ -33819,7 +33819,7 @@
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum1ylgu2zgjexwmhurmysy78682ktz2nm6q3q6mfk",
+      "address": "shardeum1lg3dd9d0zmvkpcrmrkr5guc6dn8s2k43gr3p6j",
       "pub_key": null,
       "sequence": "0",
       "account_number": "44832"
@@ -92167,7 +92167,7 @@
       ]
     },
     {
-      "address": "shardeum1ylgu2zgjexwmhurmysy78682ktz2nm6q3q6mfk",
+      "address": "shardeum1lg3dd9d0zmvkpcrmrkr5guc6dn8s2k43gr3p6j",
       "coins": [
         {
           "denom": "ashm",
