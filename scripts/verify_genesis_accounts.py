@@ -14,6 +14,9 @@ import sqlite3
 import sys
 import argparse
 from typing import Dict, List, Tuple, Optional
+import os
+import glob
+from pathlib import Path
 
 # Bech32 encoding constants (copied from genesis_importer.sh)
 CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
@@ -176,7 +179,8 @@ def extract_shardeum_accounts(db_path: str, min_balance: int = 0, max_accounts: 
 
 def load_genesis_accounts(genesis_path: str, include_nonce: bool = False, balance_multiplier: int = 1) -> Tuple[Dict[str, Dict], int]:
     """
-    Load accounts, balances, sequences (nonces), and unique IDs from genesis.json
+    Load accounts, balances, sequences (nonces), and unique IDs from genesis.json.
+    Supports both monolithic and split genesis formats.
     Returns: (account_data_dict, total_supply)
     where account_data_dict = {address: {'balance': int, 'sequence': int}}
     """
@@ -189,30 +193,94 @@ def load_genesis_accounts(genesis_path: str, include_nonce: bool = False, balanc
     account_data = {}
     total_supply = 0
     
-    # First, extract sequences and unique IDs from auth.accounts
+    # Check if this is a split genesis (no accounts/balances in main file)
     auth_accounts = genesis.get('app_state', {}).get('auth', {}).get('accounts', [])
-    for acc in auth_accounts:
-        address = acc.get('address')
-        sequence = int(acc.get('sequence', '0')) if include_nonce else 0
-        account_data[address] = {'balance': 0, 'sequence': sequence}
-    
-    # Extract balances from bank.balances
     bank_balances = genesis.get('app_state', {}).get('bank', {}).get('balances', [])
     
-    for balance_entry in bank_balances:
-        address = balance_entry.get('address')
-        coins = balance_entry.get('coins', [])
+    # If main genesis has accounts, use monolithic approach
+    if auth_accounts or bank_balances:
+        print("Loading from monolithic genesis file...")
         
-        for coin in coins:
-            if coin.get('denom') == 'ashm':
-                amount = int(coin.get('amount', 0))
+        # Extract sequences from auth.accounts
+        for acc in auth_accounts:
+            address = acc.get('address')
+            sequence = int(acc.get('sequence', '0')) if include_nonce else 0
+            account_data[address] = {'balance': 0, 'sequence': sequence}
+        
+        # Extract balances from bank.balances
+        for balance_entry in bank_balances:
+            address = balance_entry.get('address')
+            coins = balance_entry.get('coins', [])
+            
+            for coin in coins:
+                if coin.get('denom') == 'ashm':
+                    amount = int(coin.get('amount', 0))
+                    
+                    if address not in account_data:
+                        account_data[address] = {'balance': 0, 'sequence': 0}
+                    
+                    account_data[address]['balance'] = amount
+                    total_supply += amount
+                    break
+    
+    else:
+        # Split genesis format - load from account files
+        print("No accounts found in main genesis, checking for split account files...")
+        
+        genesis_dir = os.path.dirname(genesis_path)
+        genesis_name = os.path.basename(genesis_path)
+        
+        # Determine base name for account files
+        base_name = genesis_name.replace('.genesis.json', '')
+        if base_name == genesis_name:
+            base_name = genesis_name.replace('.json', '')
+        
+        # Handle already split pattern (e.g., "mainnet-genesis.genesis.json")
+        if base_name.endswith('.genesis'):
+            base_name = base_name[:-8]  # Remove '.genesis'
+        
+        # Find account files
+        account_pattern = os.path.join(genesis_dir, f"{base_name}.genesis.accounts.*.json")
+        account_files = sorted(glob.glob(account_pattern), 
+                             key=lambda x: int(Path(x).stem.split('.')[-1]))
+        
+        if not account_files:
+            print(f"Warning: No split account files found matching pattern: {account_pattern}", file=sys.stderr)
+            print(f"Looked for files like: {base_name}.genesis.accounts.N.json", file=sys.stderr)
+        else:
+            print(f"Found {len(account_files)} account files, loading...", file=sys.stderr)
+            
+            # Load accounts and balances from split files
+            for account_file in account_files:
+                print(f"Loading {os.path.basename(account_file)}...", file=sys.stderr)
+                with open(account_file, 'r') as f:
+                    chunk_data = json.load(f)
                 
-                if address not in account_data:
-                    account_data[address] = {'balance': 0, 'sequence': 0}
+                # Process accounts (sequences/nonces)
+                chunk_accounts = chunk_data.get('accounts', [])
+                for acc in chunk_accounts:
+                    address = acc.get('address')
+                    if address:
+                        sequence = int(acc.get('sequence', '0')) if include_nonce else 0
+                        account_data[address] = {'balance': 0, 'sequence': sequence}
                 
-                account_data[address]['balance'] = amount
-                total_supply += amount
-                break
+                # Process balances
+                chunk_balances = chunk_data.get('balances', [])
+                for balance_entry in chunk_balances:
+                    address = balance_entry.get('address')
+                    if address:
+                        coins = balance_entry.get('coins', [])
+                        
+                        for coin in coins:
+                            if coin.get('denom') == 'ashm':
+                                amount = int(coin.get('amount', 0))
+                                
+                                if address not in account_data:
+                                    account_data[address] = {'balance': 0, 'sequence': 0}
+                                
+                                account_data[address]['balance'] = amount
+                                total_supply += amount
+                                break
     
     print(f"Loaded {len(account_data)} accounts from genesis with total supply {total_supply}", file=sys.stderr)
     return account_data, total_supply
@@ -394,11 +462,29 @@ def verify_accounts(shardeum_accounts: List[Tuple[str, int, int, str]],
     
     return is_valid, results
 
-def print_report(results: Dict):
+def print_report(results: Dict, genesis_path: str = ''):
     """Print verification report"""
     print("\n" + "="*80)
     print("GENESIS ACCOUNT VERIFICATION REPORT")
     print("="*80)
+    
+    if genesis_path:
+        print(f"Genesis file: {genesis_path}")
+        
+        # Check if this was loaded from split files
+        genesis_dir = os.path.dirname(genesis_path)
+        genesis_name = os.path.basename(genesis_path)
+        base_name = genesis_name.replace('.genesis.json', '')
+        if base_name == genesis_name:
+            base_name = genesis_name.replace('.json', '')
+        if base_name.endswith('.genesis'):
+            base_name = base_name[:-8]
+        
+        account_pattern = os.path.join(genesis_dir, f"{base_name}.genesis.accounts.*.json")
+        account_files = glob.glob(account_pattern)
+        if account_files:
+            print(f"Split account files: {len(account_files)} files detected")
+        print()
     
     print(f"Total accounts in Shardeum DB: {results['total_shardeum']:,}")
     print(f"Total accounts in Genesis:     {results['total_genesis']:,}")
@@ -511,6 +597,12 @@ Examples:
 
   # Verify with balance multiplier (e.g., if genesis was generated with multiplier 250)
   %(prog)s --genesis-path genesis.json --balance-multiplier 250
+
+  # Verify split genesis files (automatically detected)
+  %(prog)s --genesis-path config/environments/mainnet-genesis.genesis.json
+
+  # Verify with secure accounts file
+  %(prog)s --genesis-path genesis.json --secure-accounts secure_accounts.json
         """
     )
     parser.add_argument('--db-path', default='accounts.sqlite3',
@@ -529,6 +621,8 @@ Examples:
                        help='Path to JSON file containing secure accounts to verify')
     parser.add_argument('--verbose', '-v', action='store_true',
                        help='Enable verbose output')
+    parser.add_argument('--auto-detect-split', action='store_true', default=True,
+                       help='Automatically detect and load split genesis files (default: True)')
     
     args = parser.parse_args()
     
@@ -564,7 +658,7 @@ Examples:
         )
         
         # Print report
-        print_report(results)
+        print_report(results, args.genesis_path)
 
         print("Total Genesis accounts (including validator account): ", results['total_genesis'])
         print("Total Shardeum accounts: ", results['total_shardeum'])
