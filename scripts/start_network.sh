@@ -338,13 +338,13 @@ echo -e "${YELLOW}Creating genesis transaction for validator${NC}"
 # Set network-specific gas fees to meet minimum global fee requirement
 case "$NETWORK" in
   "mainnet")
-    GENTX_FEES="2040000000000000000000$BASE_DENOM"   # 2040 SHM (meets minimum global fee requirement)
+    GENTX_FEES="2100000000000000000000$BASE_DENOM"   # 2100 SHM (exceeds minimum global fee requirement)
     ;;
   "testnet"|"devnet"|"local")
-    GENTX_FEES="2040000000000000000000$BASE_DENOM"   # 2040 SHM (meets minimum global fee requirement)
+    GENTX_FEES="2100000000000000000000$BASE_DENOM"   # 2100 SHM (exceeds minimum global fee requirement)
     ;;
   *)
-    GENTX_FEES="2040000000000000000000$BASE_DENOM"   # Default to 2040 SHM
+    GENTX_FEES="2100000000000000000000$BASE_DENOM"   # Default to 2100 SHM
     ;;
 esac
 
