@@ -1,0 +1,21 @@
+{
+  "accounts": [
+        {
+          "@type": "/cosmos.auth.v1beta1.BaseAccount",
+          "address": "shardeum1jhfxwuu23vt839fcu5fxk4a5ww4hyx8pxqty3s",
+          "pub_key": null,
+          "sequence": "0"
+        }
+  ],
+  "balances": [
+          {
+          "address": "shardeum1jhfxwuu23vt839fcu5fxk4a5ww4hyx8pxqty3s",
+          "coins": [
+            {
+              "denom": "ashm",
+              "amount": "1000000001000000000000000000"
+            }
+          ]
+        }
+  ]
+}
