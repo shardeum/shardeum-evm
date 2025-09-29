@@ -147,7 +147,7 @@ BASE_DIR="${HOME:-$CURRENT_DIR}/.$NETWORK"
 if [[ "$NETWORK" == "local" ]]; then
   BASE_DIR="$CURRENT_DIR/.$NETWORK"
 fi
-MIN_GAS="0.000006$BASE_DENOM"
+MIN_GAS="2048130280389041$BASE_DENOM"
 
 # -----------------------------
 # Validate nodes number
