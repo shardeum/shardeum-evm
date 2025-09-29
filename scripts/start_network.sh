@@ -338,28 +338,74 @@ echo -e "${YELLOW}Creating genesis transaction for validator${NC}"
 # Set network-specific gas fees to meet minimum global fee requirement
 case "$NETWORK" in
   "mainnet")
-    GENTX_FEES="408000000000000000000$BASE_DENOM"   # 408 SHM (meets minimum global fee)
+    GENTX_FEES="2040000000000000000000$BASE_DENOM"   # 2040 SHM (meets minimum global fee requirement)
     ;;
   "testnet"|"devnet"|"local")
-    GENTX_FEES="408000000000000000000$BASE_DENOM"   # 408 SHM (meets minimum global fee)
+    GENTX_FEES="2040000000000000000000$BASE_DENOM"   # 2040 SHM (meets minimum global fee requirement)
     ;;
   *)
-    GENTX_FEES="408000000000000000000$BASE_DENOM"   # Default to 408 SHM
+    GENTX_FEES="2040000000000000000000$BASE_DENOM"   # Default to 2040 SHM
     ;;
 esac
 
 echo -e "${YELLOW}Using network-specific fees: $GENTX_FEES${NC}"
 
-"$BINARY" genesis gentx "validator" 1000000000000000000${BASE_DENOM} \
-  --chain-id "$CHAINID" \
-  --moniker "node0" \
-  --commission-rate="0.10" \
-  --commission-max-rate="0.20" \
-  --commission-max-change-rate="0.01" \
-  --min-self-delegation="1" \
-  --fees="$GENTX_FEES" \
-  --keyring-backend test \
-  --home "$NODE0_DIR"
+# Check if genesis has custom initial_height to handle gentx signing properly
+INITIAL_HEIGHT=$(jq -r '.initial_height' "$NODE0_DIR/config/genesis.json" 2>/dev/null || echo "1")
+echo -e "${YELLOW}Genesis initial height: $INITIAL_HEIGHT${NC}"
+
+# For custom initial heights, we may need to set account-number explicitly
+if [ "$INITIAL_HEIGHT" != "1" ] && [ "$INITIAL_HEIGHT" != "0" ]; then
+  echo -e "${YELLOW}Custom initial height detected, using explicit account number${NC}"
+  
+  # Get the validator's account number from genesis
+  VALIDATOR_ADDR=$("$BINARY" keys show validator --keyring-backend test --home "$NODE0_DIR" --address)
+  ACCOUNT_NUM=$(jq -r ".app_state.auth.accounts[] | select(.address == \"$VALIDATOR_ADDR\") | .account_number" "$NODE0_DIR/config/genesis.json" 2>/dev/null || echo "")
+  
+  if [ -n "$ACCOUNT_NUM" ] && [ "$ACCOUNT_NUM" != "null" ]; then
+    echo -e "${YELLOW}Using account number: $ACCOUNT_NUM${NC}"
+    "$BINARY" genesis gentx "validator" 1000000000000000000${BASE_DENOM} \
+      --chain-id "$CHAINID" \
+      --moniker "node0" \
+      --commission-rate="0.10" \
+      --commission-max-rate="0.20" \
+      --commission-max-change-rate="0.01" \
+      --min-self-delegation="1" \
+      --fees="$GENTX_FEES" \
+      --keyring-backend test \
+      --account-number "$ACCOUNT_NUM" \
+      --sequence "0" \
+      --gas "1000000" \
+      --offline \
+      --home "$NODE0_DIR"
+  else
+    echo -e "${YELLOW}Could not determine account number, trying without explicit params${NC}"
+    "$BINARY" genesis gentx "validator" 1000000000000000000${BASE_DENOM} \
+      --chain-id "$CHAINID" \
+      --moniker "node0" \
+      --commission-rate="0.10" \
+      --commission-max-rate="0.20" \
+      --commission-max-change-rate="0.01" \
+      --min-self-delegation="1" \
+      --fees="$GENTX_FEES" \
+      --keyring-backend test \
+      --gas "1000000" \
+      --home "$NODE0_DIR"
+  fi
+else
+  # Standard gentx for height 1
+  "$BINARY" genesis gentx "validator" 1000000000000000000${BASE_DENOM} \
+    --chain-id "$CHAINID" \
+    --moniker "node0" \
+    --commission-rate="0.10" \
+    --commission-max-rate="0.20" \
+    --commission-max-change-rate="0.01" \
+    --min-self-delegation="1" \
+    --fees="$GENTX_FEES" \
+    --keyring-backend test \
+    --gas "1000000" \
+    --home "$NODE0_DIR"
+fi
 
 echo -e "${YELLOW}Collecting genesis transaction${NC}"
 "$BINARY" genesis collect-gentxs --home "$NODE0_DIR"
