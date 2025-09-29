@@ -63,6 +63,37 @@
             padding: 10px;
             margin: 20px 0;
         }
+        .custom-form {
+            background-color: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+        .custom-form.show {
+            display: block;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-group input:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
     </style>
 </head>
 <body>
@@ -76,6 +107,7 @@
                 <option value="testnet">Testnet</option>
                 <option value="devnet">Devnet</option>
                 <option value="mainnet">Mainnet</option>
+                <option value="custom">Custom</option>
             </select>
         </div>
         
@@ -89,6 +121,53 @@
             <span id="decimalsDisplay">• Decimals: 18</span>
         </div>
 
+        <div class="custom-form" id="customForm">
+            <h3>Custom Network Configuration</h3>
+            <p><strong>Network Endpoints (typically change per deployment):</strong></p>
+            <div class="form-group">
+                <label for="customChainId">Chain ID *</label>
+                <input type="text" id="customChainId" placeholder="e.g., shardeum-sphinx-1" required>
+            </div>
+            <div class="form-group">
+                <label for="customChainName">Chain Name *</label>
+                <input type="text" id="customChainName" placeholder="e.g., Shardeum Sphinx" required>
+            </div>
+            <div class="form-group">
+                <label for="customRpcUrl">RPC URL *</label>
+                <input type="url" id="customRpcUrl" placeholder="e.g., https://rpc.example.com:26657" required>
+            </div>
+            <div class="form-group">
+                <label for="customRestUrl">REST URL *</label>
+                <input type="url" id="customRestUrl" placeholder="e.g., https://api.example.com:1317" required>
+            </div>
+            <div class="form-group">
+                <label for="customJsonRpcUrl">JSON-RPC URL (optional)</label>
+                <input type="url" id="customJsonRpcUrl" placeholder="e.g., https://evm.example.com:8545">
+            </div>
+            
+            <p><strong>Token Configuration (Shardeum defaults, rarely change):</strong></p>
+            <div class="form-group">
+                <label for="customTokenSymbol">Token Symbol *</label>
+                <input type="text" id="customTokenSymbol" value="SHM" required>
+            </div>
+            <div class="form-group">
+                <label for="customBaseDenom">Base Denomination *</label>
+                <input type="text" id="customBaseDenom" value="ashm" required>
+            </div>
+            <div class="form-group">
+                <label for="customDecimals">Token Decimals *</label>
+                <input type="number" id="customDecimals" value="18" min="0" max="18" required>
+            </div>
+            <div class="form-group">
+                <label for="customBech32Prefix">Bech32 Prefix *</label>
+                <input type="text" id="customBech32Prefix" value="shardeum" required>
+            </div>
+            <div class="form-group">
+                <label for="customEvmChainId">EVM Chain ID (optional)</label>
+                <input type="number" id="customEvmChainId" value="8119">
+            </div>
+        </div>
+
         <button onclick="addShardeumToKeplr()">Add Selected Network to Keplr</button>
         
         <div id="status"></div>
@@ -97,8 +176,9 @@
             <h3>Prerequisites:</h3>
             <ul>
                 <li>Keplr browser extension installed</li>
-                <li>Shardeum node running for selected network</li>
+                <li>For predefined networks: Shardeum node running for selected network</li>
                 <li>For local/testnet/devnet: Use <code>make start-network NETWORK=&lt;network&gt;</code></li>
+                <li>For custom networks: Ensure your chain is running and endpoints are accessible</li>
                 <li>API server enabled (check ports in network details above)</li>
                 <li>Access this page via http:// (not file://)</li>
             </ul>
@@ -110,6 +190,28 @@
                 <li>If you get "failed to fetch", restart your network with the updated script</li>
                 <li>Make sure both RPC (26657) and API (1317) endpoints are running</li>
                 <li>Test endpoints: <a href="http://127.0.0.1:26657/status" target="_blank">RPC Status</a> | <a href="http://127.0.0.1:1317/cosmos/base/tendermint/v1beta1/node_info" target="_blank">API Info</a></li>
+                <li>For custom networks: Verify your URLs are accessible and return valid responses</li>
+                <li>Ensure HTTPS is used for custom networks in production (HTTP only for local development)</li>
+            </ul>
+        </div>
+
+        <div class="info">
+            <h3>Custom Network Guide:</h3>
+            <p><strong>Fields that typically change per Shardeum deployment:</strong></p>
+            <ul>
+                <li><strong>Chain ID:</strong> Unique identifier (e.g., "shardeum-sphinx-1", "shardeum-betanet")</li>
+                <li><strong>Chain Name:</strong> Display name (e.g., "Shardeum Sphinx", "Shardeum Betanet")</li>
+                <li><strong>RPC URL:</strong> Tendermint RPC endpoint (port 26657)</li>
+                <li><strong>REST URL:</strong> Cosmos SDK REST API endpoint (port 1317)</li>
+                <li><strong>JSON-RPC URL:</strong> EVM JSON-RPC endpoint (port 8545, optional)</li>
+            </ul>
+            <p><strong>Shardeum standard values (pre-filled, rarely change):</strong></p>
+            <ul>
+                <li><strong>Token Symbol:</strong> SHM (Shardeum standard)</li>
+                <li><strong>Base Denom:</strong> ashm (atto-SHM, Shardeum standard)</li>
+                <li><strong>Decimals:</strong> 18 (Shardeum standard)</li>
+                <li><strong>Bech32 Prefix:</strong> shardeum (Shardeum standard)</li>
+                <li><strong>EVM Chain ID:</strong> 8119 (Shardeum standard, optional for EVM features)</li>
             </ul>
         </div>
     </div>
@@ -173,19 +275,97 @@
 
         function updateNetworkDetails() {
             const selectedNetwork = document.getElementById('networkSelect').value;
-            const network = networks[selectedNetwork];
+            const networkDetails = document.getElementById('networkDetails');
+            const customForm = document.getElementById('customForm');
             
-            document.getElementById('chainIdDisplay').textContent = `• Chain ID: ${network.chainId}`;
-            document.getElementById('rpcDisplay').textContent = `• RPC: ${network.rpcUrl}`;
-            document.getElementById('restDisplay').textContent = `• REST: ${network.restUrl}`;
-            document.getElementById('jsonRpcDisplay').textContent = `• JSON-RPC: ${network.jsonRpcUrl}`;
-            document.getElementById('tokenDisplay').textContent = `• Token: ${network.displayDenom.toUpperCase()} (${network.baseDenom})`;
-            document.getElementById('decimalsDisplay').textContent = `• Decimals: ${network.decimals}`;
+            if (selectedNetwork === 'custom') {
+                // Hide network details and show custom form
+                networkDetails.style.display = 'none';
+                customForm.classList.add('show');
+                updateCustomNetworkDetails();
+            } else {
+                // Show network details and hide custom form
+                networkDetails.style.display = 'block';
+                customForm.classList.remove('show');
+                
+                const network = networks[selectedNetwork];
+                document.getElementById('chainIdDisplay').textContent = `• Chain ID: ${network.chainId}`;
+                document.getElementById('rpcDisplay').textContent = `• RPC: ${network.rpcUrl}`;
+                document.getElementById('restDisplay').textContent = `• REST: ${network.restUrl}`;
+                document.getElementById('jsonRpcDisplay').textContent = `• JSON-RPC: ${network.jsonRpcUrl}`;
+                document.getElementById('tokenDisplay').textContent = `• Token: ${network.displayDenom.toUpperCase()} (${network.baseDenom})`;
+                document.getElementById('decimalsDisplay').textContent = `• Decimals: ${network.decimals}`;
+            }
+        }
+
+        function updateCustomNetworkDetails() {
+            // Add event listeners to update network details as user types
+            const inputs = ['customChainId', 'customRpcUrl', 'customRestUrl', 'customJsonRpcUrl', 'customTokenSymbol', 'customBaseDenom', 'customDecimals'];
+            inputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                input.addEventListener('input', function() {
+                    displayCustomNetworkDetails();
+                });
+            });
+            displayCustomNetworkDetails();
+        }
+
+        function displayCustomNetworkDetails() {
+            const chainId = document.getElementById('customChainId').value || 'Not set';
+            const rpcUrl = document.getElementById('customRpcUrl').value || 'Not set';
+            const restUrl = document.getElementById('customRestUrl').value || 'Not set';
+            const jsonRpcUrl = document.getElementById('customJsonRpcUrl').value || 'Not set';
+            const tokenSymbol = document.getElementById('customTokenSymbol').value || 'TOKEN';
+            const baseDenom = document.getElementById('customBaseDenom').value || 'Not set';
+            const decimals = document.getElementById('customDecimals').value || 'Not set';
+
+            const networkDetails = document.getElementById('networkDetails');
+            networkDetails.innerHTML = `
+                <strong>Custom Network Details:</strong><br>
+                <span>• Chain ID: ${chainId}</span><br>
+                <span>• RPC: ${rpcUrl}</span><br>
+                <span>• REST: ${restUrl}</span><br>
+                <span>• JSON-RPC: ${jsonRpcUrl}</span><br>
+                <span>• Token: ${tokenSymbol.toUpperCase()} (${baseDenom})</span><br>
+                <span>• Decimals: ${decimals}</span>
+            `;
+            networkDetails.style.display = 'block';
+        }
+
+        function getCustomNetworkConfig() {
+            const chainId = document.getElementById('customChainId').value.trim();
+            const chainName = document.getElementById('customChainName').value.trim();
+            const rpcUrl = document.getElementById('customRpcUrl').value.trim();
+            const restUrl = document.getElementById('customRestUrl').value.trim();
+            const jsonRpcUrl = document.getElementById('customJsonRpcUrl').value.trim();
+            const tokenSymbol = document.getElementById('customTokenSymbol').value.trim();
+            const baseDenom = document.getElementById('customBaseDenom').value.trim();
+            const decimals = parseInt(document.getElementById('customDecimals').value) || 6;
+            const bech32Prefix = document.getElementById('customBech32Prefix').value.trim();
+            const evmChainId = parseInt(document.getElementById('customEvmChainId').value) || null;
+
+            // Validate required fields
+            if (!chainId || !chainName || !rpcUrl || !restUrl || !tokenSymbol || !baseDenom || !bech32Prefix) {
+                throw new Error('Please fill in all required fields marked with *');
+            }
+
+            return {
+                name: 'custom',
+                chainId: chainId,
+                evmChainId: evmChainId,
+                baseDenom: baseDenom,
+                displayDenom: tokenSymbol.toLowerCase(),
+                decimals: decimals,
+                bech32Prefix: bech32Prefix,
+                rpcUrl: rpcUrl,
+                restUrl: restUrl,
+                jsonRpcUrl: jsonRpcUrl,
+                displayName: chainName
+            };
         }
 
         async function addShardeumToKeplr() {
             const selectedNetwork = document.getElementById('networkSelect').value;
-            const network = networks[selectedNetwork];
             const statusDiv = document.getElementById('status');
             
             if (!window.keplr) {
@@ -194,8 +374,15 @@
             }
 
             try {
-                // First add as Cosmos chain for staking support
-                await window.keplr.experimentalSuggestChain({
+                let network;
+                if (selectedNetwork === 'custom') {
+                    network = getCustomNetworkConfig();
+                } else {
+                    network = networks[selectedNetwork];
+                }
+
+                // Prepare chain suggestion config
+                const chainConfig = {
                     chainId: network.chainId,
                     chainName: network.displayName,
                     rpc: network.rpcUrl,
@@ -203,7 +390,6 @@
                     bip44: {
                         coinType: 60,
                     },
-                    features: ["eth-address-gen", "eth-key-sign"],
                     bech32Config: {
                         bech32PrefixAccAddr: network.bech32Prefix,
                         bech32PrefixAccPub: `${network.bech32Prefix}pub`,
@@ -236,15 +422,23 @@
                         coinMinimalDenom: network.baseDenom,
                         coinDecimals: network.decimals,
                     },
-                });
+                };
 
-                statusDiv.innerHTML = `<div class="success">✅ ${network.displayName} (Cosmos) added to Keplr successfully!</div>`;
+                // Add EVM features if evmChainId is provided
+                if (network.evmChainId) {
+                    chainConfig.features = ["eth-address-gen", "eth-key-sign"];
+                }
+
+                // Add chain to Keplr
+                await window.keplr.experimentalSuggestChain(chainConfig);
+
+                statusDiv.innerHTML = `<div class="success">✅ ${network.displayName} added to Keplr successfully!</div>`;
                 
-              
-                // Enable both modes
+                // Enable the chain
                 await window.keplr.enable(network.chainId);
-     
-                statusDiv.innerHTML += '<div class="success">✅ Both Cosmos staking and EVM transactions enabled!</div>';
+                
+                const evmFeatures = network.evmChainId ? ' Both Cosmos staking and EVM transactions enabled!' : ' Cosmos chain enabled!';
+                statusDiv.innerHTML += `<div class="success">✅${evmFeatures}</div>`;
                 
             } catch (error) {
                 console.error('Error adding chain to Keplr:', error);
