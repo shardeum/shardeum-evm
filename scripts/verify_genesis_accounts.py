@@ -217,7 +217,7 @@ def load_genesis_accounts(genesis_path: str, include_nonce: bool = False, balanc
     print(f"Loaded {len(account_data)} accounts from genesis with total supply {total_supply}", file=sys.stderr)
     return account_data, total_supply
 
-def load_secure_accounts_for_verification(secure_accounts_path: str) -> List[Dict]:
+def load_secure_accounts_for_verification(secure_accounts_path: str, balance_multiplier: int = 1) -> List[Dict]:
     """
     Load secure accounts from JSON file for verification (simple array format)
     """
@@ -249,6 +249,8 @@ def load_secure_accounts_for_verification(secure_accounts_path: str) -> List[Dic
             balance_str = acc.get('SourceFundsBalance', '0')
             try:
                 balance = int(balance_str)
+                # Apply balance multiplier for verification
+                balance = balance * balance_multiplier
             except ValueError:
                 print(f"Warning: Invalid balance {balance_str} for account {acc.get('Name', 'Unknown')}", file=sys.stderr)
                 balance = 0
@@ -550,7 +552,7 @@ Examples:
         # Load secure accounts if specified
         secure_accounts = None
         if args.secure_accounts:
-            secure_accounts = load_secure_accounts_for_verification(args.secure_accounts)
+            secure_accounts = load_secure_accounts_for_verification(args.secure_accounts, args.balance_multiplier)
         
         # Verify accounts
         is_valid, results = verify_accounts(

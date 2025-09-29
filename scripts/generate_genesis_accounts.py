@@ -191,7 +191,7 @@ def extract_shardeum_accounts(db_path: str,
     
     return accounts_data, total_supply
 
-def load_secure_accounts(secure_accounts_path: str) -> List[Dict]:
+def load_secure_accounts(secure_accounts_path: str, balance_multiplier: int = 1) -> List[Dict]:
     """
     Load secure accounts from JSON file (simple array format)
     """
@@ -227,6 +227,8 @@ def load_secure_accounts(secure_accounts_path: str) -> List[Dict]:
             balance_str = acc.get('SourceFundsBalance', '0')
             try:
                 balance = int(balance_str)
+                # Apply balance multiplier
+                balance = balance * balance_multiplier
             except ValueError:
                 print(f"Warning: Invalid balance {balance_str} for account {acc.get('Name', 'Unknown')}", file=sys.stderr)
                 balance = 0
@@ -388,9 +390,15 @@ def update_genesis_with_accounts(genesis_path: str,
         # The new total supply should be the sum of all balances
         all_balances_sum = sum(account_data['balance'] for account_data in accounts_data)
         
+        # Add secure account balances
+        if secure_accounts:
+            all_balances_sum += sum(acc['balance'] for acc in secure_accounts)
+        
         # Add existing validator/dev account balances that aren't being replaced
+        secure_addresses_set = set(acc['address'] for acc in secure_accounts) if secure_accounts else set()
         for address, balance in existing_balances.items():
-            if not any(acc['address'] == address for acc in accounts_data):
+            if (not any(acc['address'] == address for acc in accounts_data) and 
+                address not in secure_addresses_set):
                 all_balances_sum += balance
         
         genesis['app_state']['bank']['supply'][0]['amount'] = str(all_balances_sum)
@@ -559,7 +567,7 @@ Examples:
         # Load secure accounts if specified
         secure_accounts = []
         if args.secure_accounts:
-            secure_accounts = load_secure_accounts(args.secure_accounts)
+            secure_accounts = load_secure_accounts(args.secure_accounts, args.balance_multiplier)
         
         # Update genesis with accounts
         update_genesis_with_accounts(
