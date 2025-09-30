@@ -217,13 +217,13 @@ EOF
 # Set network-specific gas fees to meet minimum global fee requirement
 case "$NETWORK" in
   "mainnet")
-    VALIDATOR_FEES="408000000000000000000${BASE_DENOM}" # 408 SHM (meets minimum global fee)
+    VALIDATOR_FEES="1024065140194520500000${BASE_DENOM}" # 1024 SHM (meets minimum global fee)
     ;;
   "testnet"|"devnet"|"local")
-    VALIDATOR_FEES="408000000000000000000${BASE_DENOM}" # 408 SHM (meets minimum global fee)
+    VALIDATOR_FEES="1024065140194520500000${BASE_DENOM}" # 1024 SHM (meets minimum global fee)
     ;;
   *)
-    VALIDATOR_FEES="408000000000000000000${BASE_DENOM}" # Default to 408 SHM
+    VALIDATOR_FEES="1024065140194520500000${BASE_DENOM}" # Default to 1024 SHM
     ;;
 esac
 
