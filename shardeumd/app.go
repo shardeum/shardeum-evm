@@ -737,29 +737,29 @@ func NewShardeumApp(
 
 	// set the EVM priority nonce mempool
 	// If you wish to use the noop mempool, remove this codeblock
-	if evmtypes.GetChainConfig() != nil {
-		// Get the block gas limit from genesis file
-		blockGasLimit := evmconfig.GetBlockGasLimit(appOpts, logger)
-		// Get GetMinTip from app.toml or cli flag configuration
-		mipTip := evmconfig.GetMinTip(appOpts, logger)
+	// if evmtypes.GetChainConfig() != nil {
+	// 	// Get the block gas limit from genesis file
+	// 	blockGasLimit := evmconfig.GetBlockGasLimit(appOpts, logger)
+	// 	// Get GetMinTip from app.toml or cli flag configuration
+	// 	mipTip := evmconfig.GetMinTip(appOpts, logger)
 
-		mempoolConfig := &evmmempool.EVMMempoolConfig{
-			AnteHandler:   app.GetAnteHandler(),
-			BlockGasLimit: blockGasLimit,
-			MinTip:        mipTip,
-		}
+	// 	mempoolConfig := &evmmempool.EVMMempoolConfig{
+	// 		AnteHandler:   app.GetAnteHandler(),
+	// 		BlockGasLimit: blockGasLimit,
+	// 		MinTip:        mipTip,
+	// 	}
 
-		evmMempool := evmmempool.NewExperimentalEVMMempool(app.CreateQueryContext, logger, app.EVMKeeper, app.FeeMarketKeeper, app.txConfig, app.clientCtx, mempoolConfig)
-		app.EVMMempool = evmMempool
+	// 	evmMempool := evmmempool.NewExperimentalEVMMempool(app.CreateQueryContext, logger, app.EVMKeeper, app.FeeMarketKeeper, app.txConfig, app.clientCtx, mempoolConfig)
+	// 	app.EVMMempool = evmMempool
 
-		app.SetMempool(evmMempool)
-		checkTxHandler := evmmempool.NewCheckTxHandler(evmMempool)
-		app.SetCheckTxHandler(checkTxHandler)
+	// 	app.SetMempool(evmMempool)
+	// 	checkTxHandler := evmmempool.NewCheckTxHandler(evmMempool)
+	// 	app.SetCheckTxHandler(checkTxHandler)
 
-		abciProposalHandler := baseapp.NewDefaultProposalHandler(evmMempool, app)
-		abciProposalHandler.SetSignerExtractionAdapter(evmmempool.NewEthSignerExtractionAdapter(sdkmempool.NewDefaultSignerExtractionAdapter()))
-		app.SetPrepareProposal(abciProposalHandler.PrepareProposalHandler())
-	}
+	// 	abciProposalHandler := baseapp.NewDefaultProposalHandler(evmMempool, app)
+	// 	abciProposalHandler.SetSignerExtractionAdapter(evmmempool.NewEthSignerExtractionAdapter(sdkmempool.NewDefaultSignerExtractionAdapter()))
+	// 	app.SetPrepareProposal(abciProposalHandler.PrepareProposalHandler())
+	// }
 
 	// In v0.46, the SDK introduces _postHandlers_. PostHandlers are like
 	// antehandlers, but are run _after_ the `runMsgs` execution. They are also
