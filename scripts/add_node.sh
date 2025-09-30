@@ -319,6 +319,7 @@ else
   sed -i "s/seeds = \"\"/seeds = \"$SEED_ADDRESS\"/" "$NODE_DIR/config/config.toml"
   sed -i "s/^persistent_peers = \".*\"/persistent_peers = \"${_ESCAPED_PERSISTENT}\"/" "$NODE_DIR/config/config.toml"
   sed -i "s/allow_duplicate_ip = false/allow_duplicate_ip = true/" "$NODE_DIR/config/config.toml"
+  sed -i "s#address = \"tcp://localhost:1317\"#address = \"tcp://0.0.0.0:$API_PORT\"#" "$NODE_DIR/config/app.toml"
 fi
 
 if [ -n "$PERSISTENT_PEERS" ]; then
@@ -358,6 +359,7 @@ if [[ "$NODE_TYPE" == "full-node" ]]; then
   START_CMD+=(--json-rpc.address "127.0.0.1:$JSON_PORT")
   START_CMD+=(--json-rpc.ws-address "127.0.0.1:$WS_PORT")
   START_CMD+=(--json-rpc.api eth,txpool,personal,net,debug,web3)
+  START_CMD+=(--api.enable)
 fi
 
 # Execute the start command
