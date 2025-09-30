@@ -44,6 +44,66 @@ import (
 	"github.com/shardeum/shardeum-evm/mempool/txpool"
 )
 
+// Test that verifies the Cosmos instant finality reorg fix
+func TestTxPoolCosmosReorgFix(t *testing.T) {
+	t.Parallel()
+
+	// Use existing setup pattern
+	pool, key := setupPool()
+	defer pool.Close()
+
+	// Create test address and add balance
+	from := crypto.PubkeyToAddress(key.PublicKey)
+	testAddBalance(pool, from, big.NewInt(100000000000000)) // Add sufficient balance
+
+	// Create and add a test transaction 
+	tx := transaction(0, 21000, key)
+	pool.addRemoteSync(tx)
+
+	// Verify transaction was added by checking pool stats
+	pending, _ := pool.stats()
+	if pending == 0 {
+		t.Fatal("Expected pending transactions")
+	}
+
+	// Simulate a chain head update that would trigger reorg logic in original code
+	// This creates a scenario where oldHead.Hash() != newHead.ParentHash which
+	// would have caused reorg detection in the original code
+	oldHead := &types.Header{
+		Number:     big.NewInt(0),
+		ParentHash: common.Hash{},
+		Root:       types.EmptyRootHash,
+		Difficulty: common.Big0,
+		GasLimit:   100000,
+		BaseFee:    big.NewInt(1000000000), // 1 gwei base fee
+	}
+
+	newHead := &types.Header{
+		Number:     big.NewInt(2),
+		ParentHash: common.HexToHash("0x1234567890abcdef"), // Different from oldHead.Hash()
+		Root:       types.EmptyRootHash,
+		Difficulty: common.Big0,
+		GasLimit:   100000,
+		BaseFee:    big.NewInt(1000000000), // 1 gwei base fee
+	}
+
+	// This should not panic due to our Cosmos instant finality fix
+	// In the original code, this would have triggered complex reorg logic
+	// that could cause issues. Our fix simply logs and skips reorg logic.
+	<-pool.requestReset(oldHead, newHead)
+
+	// The key test: this reset operation should complete without panic
+	// In the original cosmos/evm issue, a reorg scenario would cause panics
+	// Our fix ensures Cosmos instant finality is handled gracefully by:
+	// 1. Detecting the reorg condition (oldHead.Hash() != newHead.ParentHash)
+	// 2. Logging the event instead of attempting complex reorg logic
+	// 3. Setting reinject = nil to skip transaction reinjection
+	
+	// Note: After reset, the pool state may be cleared, which is expected behavior
+	// The important part is that no panic occurred during the reset operation
+	t.Log("Cosmos reorg fix test passed - no panics during reset operation")
+}
+
 var (
 	// testTxPoolConfig is a transaction pool configuration without stateful disk
 	// sideeffects used during testing.
