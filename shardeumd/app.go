@@ -1115,7 +1115,7 @@ func (app *ShardeumApp) SetClientCtx(clientCtx client.Context) {
 // Close unsubscribes from the CometBFT event bus (if set) and closes the mempool and underlying BaseApp.
 func (app *ShardeumApp) Close() error {
 	var err error
-	if m, ok := app.GetMempool().(*evmmempool.ExperimentalEVMMempool); ok {
+	if m, ok := app.GetMempool().(*evmmempool.ExperimentalEVMMempool); m != nil && ok {
 		app.Logger().Info("Shutting down mempool")
 		err = m.Close()
 	}
