@@ -33,6 +33,7 @@ usage() {
   echo "      --chain-id <id>           Override chain ID"
   echo "      --create2-factory         Deploy create2 factory to genesis (default: false)"
   echo "      --allow-unprotected-txs   Enable unprotected transactions (default: false)"
+  echo "      --api-enable              Enable Cosmos API server (default: false)"
   echo "  -h, --help                    Show this help message"
   echo ""
   echo "Environment variables:"
@@ -74,6 +75,7 @@ NETWORK=""
 CUSTOM_CHAIN_ID=""
 DEPLOY_CREATE2_FACTORY="false"
 ALLOW_UNPROTECTED_TXS="false"
+API_ENABLE="false"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -91,6 +93,8 @@ while [[ $# -gt 0 ]]; do
       DEPLOY_CREATE2_FACTORY="true"; shift ;;
     --allow-unprotected-txs)
       ALLOW_UNPROTECTED_TXS="true"; shift ;;
+    --api-enable)
+      API_ENABLE="true"; shift ;;
     -h|--help)
       usage ;;
     -* )
@@ -443,20 +447,24 @@ done
 # -----------------------------
 # API servers
 # -----------------------------
-echo -e "${YELLOW}Configuring API servers${NC}"
-for i in $(seq 0 $((NODES-1))); do
-  NODE_DIR="$BASE_DIR/node$i"
-  API_PORT=$((1317 + i))
+if [ "$API_ENABLE" = "true" ]; then
+  echo -e "${YELLOW}Configuring API servers${NC}"
+  for i in $(seq 0 $((NODES-1))); do
+    NODE_DIR="$BASE_DIR/node$i"
+    API_PORT=$((1317 + i))
 
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/enable = false/enable = true/" "$NODE_DIR/config/app.toml"
-    sed -i '' "s#address = \"tcp://localhost:1317\"#address = \"tcp://127.0.0.1:$API_PORT\"#" "$NODE_DIR/config/app.toml"
-  else
-    sed -i "s/enable = false/enable = true/" "$NODE_DIR/config/app.toml"
-    sed -i "s#address = \"tcp://localhost:1317\"#address = \"tcp://127.0.0.1:$API_PORT\"#" "$NODE_DIR/config/app.toml"
-  fi
-  echo "Node $i API server enabled on port $API_PORT"
-done
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' "s/enable = false/enable = true/" "$NODE_DIR/config/app.toml"
+      sed -i '' "s#address = \"tcp://localhost:1317\"#address = \"tcp://127.0.0.1:$API_PORT\"#" "$NODE_DIR/config/app.toml"
+    else
+      sed -i "s/enable = false/enable = true/" "$NODE_DIR/config/app.toml"
+      sed -i "s#address = \"tcp://localhost:1317\"#address = \"tcp://127.0.0.1:$API_PORT\"#" "$NODE_DIR/config/app.toml"
+    fi
+    echo "Node $i API server enabled on port $API_PORT"
+  done
+else
+  echo -e "${YELLOW}API servers disabled (use --api-enable to enable)${NC}"
+fi
 
 echo -e "${GREEN}Network setup:${NC}"
 echo -e "  - Node0 is the sole validator"
