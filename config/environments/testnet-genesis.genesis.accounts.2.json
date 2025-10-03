@@ -2,60 +2,6 @@
   "accounts": [
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum17nj883kymy6hu9dssxun3r0l653qumvvx8r5m3",
-      "pub_key": null,
-      "sequence": "1"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum17njhag76xs94t8rp3njyxmkjssjnes670zmj8n",
-      "pub_key": null,
-      "sequence": "0"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum17njjqd3r3hqtw74hkyef82mfsv8aldd23qe5ax",
-      "pub_key": null,
-      "sequence": "1"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum17njremnlpd5fypsrxa0ck4zvafxhqqlrtuky63",
-      "pub_key": null,
-      "sequence": "1"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum17nm9lcgzsqrxwtw3gvepdul8hnrcyvpf6424mc",
-      "pub_key": null,
-      "sequence": "1"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum17nmczuwxmyk962jc8nz6kgsgv4td93pt3kss8c",
-      "pub_key": null,
-      "sequence": "1"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum17nme2lk8pvtsq0vh7r7pjnfxzrln53zqefurxg",
-      "pub_key": null,
-      "sequence": "0"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum17nn3rnmd04c6fj7q6f0g38ur0axw3t7t3hkfwm",
-      "pub_key": null,
-      "sequence": "1"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum17nne5r93fzkfhxh7dztymxz5jsm095usjya4rx",
-      "pub_key": null,
-      "sequence": "1"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
       "address": "shardeum17npu8tcgggy4afqu9cf936tpdr3rtgc54mj9dj",
       "pub_key": null,
       "sequence": "0"
@@ -95,12 +41,6 @@
       "address": "shardeum17nu8hquxm6m4hugrh9u7nuf5jzt3yhneynq4l3",
       "pub_key": null,
       "sequence": "1"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum17nuk7x9fktttfl4sdgsj6y3nhj3tcejzdawrjc",
-      "pub_key": null,
-      "sequence": "0"
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
@@ -1437,12 +1377,6 @@
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
       "address": "shardeum17unc5ydk6pxk9puhpv68l6f8q6ezek2w5vuyl7",
-      "pub_key": null,
-      "sequence": "0"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum17uq2jegxcad88fndpndls60xgeask0w275dfnt",
       "pub_key": null,
       "sequence": "0"
     },
@@ -3035,12 +2969,6 @@
       "address": "shardeum180dgvkemjt0z8pdez6wzg9kuq36qtu77mfppgv",
       "pub_key": null,
       "sequence": "1"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum180eg60x7j0gljqu84v2w09vnvsv348nfq9669z",
-      "pub_key": null,
-      "sequence": "0"
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
@@ -26630,12 +26558,6 @@
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum1apttydjkg846ww7yxz4vr68exrd9z0vaan35w2",
-      "pub_key": null,
-      "sequence": "0"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
       "address": "shardeum1apva4dj5lhrpgktdxtkup87su3gvkc70l2narp",
       "pub_key": null,
       "sequence": "1"
@@ -35306,12 +35228,6 @@
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum1cnft2pcugyqlylrwre94zxzkpqsmy7eg7n2ezs",
-      "pub_key": null,
-      "sequence": "0"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
       "address": "shardeum1cngszaf3r9wjz085zgnlcs7xce8ykacrur92yy",
       "pub_key": null,
       "sequence": "1"
@@ -41858,12 +41774,6 @@
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum1de9ag420myql6yf7nhg2at6qtz3c6jumfh7tmk",
-      "pub_key": null,
-      "sequence": "0"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
       "address": "shardeum1de9p0gs6spctqkjgf8rm689hqaqgpyz8z9xqwx",
       "pub_key": null,
       "sequence": "1"
@@ -47834,12 +47744,6 @@
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum1e36t7wrldsgzkknls2red3t6d5k3njcqw73l7c",
-      "pub_key": null,
-      "sequence": "0"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
       "address": "shardeum1e37a3xc27n27agfzat2rqrjjgmyrmmxgmskwwz",
       "pub_key": null,
       "sequence": "1"
@@ -48785,12 +48689,6 @@
       "address": "shardeum1e6sv2tn3heank4a8w3rf88z0j5u95qlxe27mzs",
       "pub_key": null,
       "sequence": "1"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum1e6sx3kxukj6qyrfs4x2scqx0ssyxz8m8n6m2f9",
-      "pub_key": null,
-      "sequence": "0"
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
@@ -50915,12 +50813,6 @@
       "address": "shardeum1efm3xmes4t6xz88auf92k93yvrhrhzn6htc0km",
       "pub_key": null,
       "sequence": "1"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum1efp2rcnepwv6r3lt0fqthu5lq2nxmxf0kggjhg",
-      "pub_key": null,
-      "sequence": "0"
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
@@ -59678,12 +59570,6 @@
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
-      "address": "shardeum1fgmj706ulgfvujg3q67asfe4we8298tzvuxavt",
-      "pub_key": null,
-      "sequence": "0"
-    },
-    {
-      "@type": "/cosmos.auth.v1beta1.BaseAccount",
       "address": "shardeum1fgnmlkgmxrh67zrsd5sstewc5xksnlcv0wh3mt",
       "pub_key": null,
       "sequence": "0"
@@ -59999,90 +59885,123 @@
       "address": "shardeum1fhpdjqgcrnwjf3v0pg0v4s4k305dc3frly9r6a",
       "pub_key": null,
       "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fhpdv8swfuwpphjmrjnxthj5g62plhly0uh7zx",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fhrjkq5kfp9yv2hmaadfsqy43knvqexw3m42kx",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fhsvzqwf58z79vvcgr4jrfcxmzuf0fldj0et7u",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fht8umkg49pau7jajmtnwtylga4u5v97csa0n2",
+      "pub_key": null,
+      "sequence": "0"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fhtgyeg5zkvnett04e9jdavm6jwwu70df3rh4m",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fhu6pe0gn8spun538rgduumpsw06745f4vwuj5",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fhuhs5dz66tnjav5hm7egur547xzke3ltlr82v",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fhv49qctmdl9nmneeepcndg7d6k3346hymnm77",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fhw5s9h0ahwddpqudhw8579e3wtkmyh3257c3c",
+      "pub_key": null,
+      "sequence": "0"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fhwddyfhh8qnhszqu33ff0hxn9s035wt52eyd3",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fhwxu859qhh6586p574tz9tt42822eutsqhgcx",
+      "pub_key": null,
+      "sequence": "0"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fhxcts7n0k2uvy206jgfdhv3cuevakr5vqcsu4",
+      "pub_key": null,
+      "sequence": "0"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fhxnurdsqurz8c53het8xzk7tv5zwu2u8s7hpt",
+      "pub_key": null,
+      "sequence": "0"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fj0fsvrxz4d6vv5qf3apk0ezx2zq87klceuwsh",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fj0jppzz2ju95ewh3cvylwt40qdeauxv4t77mr",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fj20lh0m7f9ypx8qx23zt8qvwq8lhxvxje70jk",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fj2l3xmnm4kqmt4flmsszak8gqkh5au5ltl5rz",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fj32pve4ne9gmljqt9lrye5gxmx2l3gvevet5x",
+      "pub_key": null,
+      "sequence": "1"
+    },
+    {
+      "@type": "/cosmos.auth.v1beta1.BaseAccount",
+      "address": "shardeum1fj36x03p9yydf0dynlqmfzfu8as9jye397qeth",
+      "pub_key": null,
+      "sequence": "1"
     }
   ],
   "balances": [
-    {
-      "address": "shardeum17nj883kymy6hu9dssxun3r0l653qumvvx8r5m3",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "217050881760000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum17njhag76xs94t8rp3njyxmkjssjnes670zmj8n",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "21600000000000000000000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum17njjqd3r3hqtw74hkyef82mfsv8aldd23qe5ax",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "2405040000161760000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum17njremnlpd5fypsrxa0ck4zvafxhqqlrtuky63",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "3535670440481760000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum17nm9lcgzsqrxwtw3gvepdul8hnrcyvpf6424mc",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "1099986359300640000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum17nmczuwxmyk962jc8nz6kgsgv4td93pt3kss8c",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "100800000000000000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum17nme2lk8pvtsq0vh7r7pjnfxzrln53zqefurxg",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "26400000000000000000000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum17nn3rnmd04c6fj7q6f0g38ur0axw3t7t3hkfwm",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "3535670440481760000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum17nne5r93fzkfhxh7dztymxz5jsm095usjya4rx",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "3535670440481760000"
-        }
-      ]
-    },
     {
       "address": "shardeum17npu8tcgggy4afqu9cf936tpdr3rtgc54mj9dj",
       "coins": [
@@ -60143,15 +60062,6 @@
         {
           "denom": "ashm",
           "amount": "238625017050881760000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum17nuk7x9fktttfl4sdgsj6y3nhj3tcejzdawrjc",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "1000001000000000000000000"
         }
       ]
     },
@@ -62159,15 +62069,6 @@
         {
           "denom": "ashm",
           "amount": "9598625017050881760000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum17uq2jegxcad88fndpndls60xgeask0w275dfnt",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "1000001000000000000000000"
         }
       ]
     },
@@ -64553,15 +64454,6 @@
         {
           "denom": "ashm",
           "amount": "2405040000161760000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum180eg60x7j0gljqu84v2w09vnvsv348nfq9669z",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "1000001000000000000000000"
         }
       ]
     },
@@ -99945,15 +99837,6 @@
       ]
     },
     {
-      "address": "shardeum1apttydjkg846ww7yxz4vr68exrd9z0vaan35w2",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "1001000000000000000000"
-        }
-      ]
-    },
-    {
       "address": "shardeum1apva4dj5lhrpgktdxtkup87su3gvkc70l2narp",
       "coins": [
         {
@@ -112959,15 +112842,6 @@
       ]
     },
     {
-      "address": "shardeum1cnft2pcugyqlylrwre94zxzkpqsmy7eg7n2ezs",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "1000001000000000000000000"
-        }
-      ]
-    },
-    {
       "address": "shardeum1cngszaf3r9wjz085zgnlcs7xce8ykacrur92yy",
       "coins": [
         {
@@ -122787,15 +122661,6 @@
       ]
     },
     {
-      "address": "shardeum1de9ag420myql6yf7nhg2at6qtz3c6jumfh7tmk",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "1001000000000000000000"
-        }
-      ]
-    },
-    {
       "address": "shardeum1de9p0gs6spctqkjgf8rm689hqaqgpyz8z9xqwx",
       "coins": [
         {
@@ -131751,15 +131616,6 @@
       ]
     },
     {
-      "address": "shardeum1e36t7wrldsgzkknls2red3t6d5k3njcqw73l7c",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "1000001000000000000000000"
-        }
-      ]
-    },
-    {
       "address": "shardeum1e37a3xc27n27agfzat2rqrjjgmyrmmxgmskwwz",
       "coins": [
         {
@@ -133178,15 +133034,6 @@
         {
           "denom": "ashm",
           "amount": "2405040000083520000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum1e6sx3kxukj6qyrfs4x2scqx0ssyxz8m8n6m2f9",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "1000001000000000000000000"
         }
       ]
     },
@@ -136373,15 +136220,6 @@
         {
           "denom": "ashm",
           "amount": "90881760000"
-        }
-      ]
-    },
-    {
-      "address": "shardeum1efp2rcnepwv6r3lt0fqthu5lq2nxmxf0kggjhg",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "1000001000000000000000000"
         }
       ]
     },
@@ -149517,15 +149355,6 @@
       ]
     },
     {
-      "address": "shardeum1fgmj706ulgfvujg3q67asfe4we8298tzvuxavt",
-      "coins": [
-        {
-          "denom": "ashm",
-          "amount": "1000001000000000000000000"
-        }
-      ]
-    },
-    {
       "address": "shardeum1fgnmlkgmxrh67zrsd5sstewc5xksnlcv0wh3mt",
       "coins": [
         {
@@ -149999,6 +149828,177 @@
         {
           "denom": "ashm",
           "amount": "22625017050881760000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fhpdv8swfuwpphjmrjnxthj5g62plhly0uh7zx",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "65475378529440000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fhrjkq5kfp9yv2hmaadfsqy43knvqexw3m42kx",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "3535670440589760000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fhsvzqwf58z79vvcgr4jrfcxmzuf0fldj0et7u",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "100800000000000000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fht8umkg49pau7jajmtnwtylga4u5v97csa0n2",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "12000000000000000000000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fhtgyeg5zkvnett04e9jdavm6jwwu70df3rh4m",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "65475378529440000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fhu6pe0gn8spun538rgduumpsw06745f4vwuj5",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "140935752283032000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fhuhs5dz66tnjav5hm7egur547xzke3ltlr82v",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "238625017050881760000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fhv49qctmdl9nmneeepcndg7d6k3346hymnm77",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "687491474559120000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fhw5s9h0ahwddpqudhw8579e3wtkmyh3257c3c",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "9576000000000000000000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fhwddyfhh8qnhszqu33ff0hxn9s035wt52eyd3",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "1025017050881760000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fhwxu859qhh6586p574tz9tt42822eutsqhgcx",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "14400000000000000000000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fhxcts7n0k2uvy206jgfdhv3cuevakr5vqcsu4",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "28798625017050881760000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fhxnurdsqurz8c53het8xzk7tv5zwu2u8s7hpt",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "14388000000000000000000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fj0fsvrxz4d6vv5qf3apk0ezx2zq87klceuwsh",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "481244032191384000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fj0jppzz2ju95ewh3cvylwt40qdeauxv4t77mr",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "140935752283032000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fj20lh0m7f9ypx8qx23zt8qvwq8lhxvxje70jk",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "1025017050881760000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fj2l3xmnm4kqmt4flmsszak8gqkh5au5ltl5rz",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "90881760000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fj32pve4ne9gmljqt9lrye5gxmx2l3gvevet5x",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "65475378529440000"
+        }
+      ]
+    },
+    {
+      "address": "shardeum1fj36x03p9yydf0dynlqmfzfu8as9jye397qeth",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "3425017050881760000"
         }
       ]
     }
