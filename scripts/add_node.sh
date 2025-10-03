@@ -258,6 +258,7 @@ echo -e "${YELLOW}Assigned ports: RPC=$RPC_PORT, P2P=$P2P_PORT, JSON-RPC=$JSON_P
 # Get seed node info
 SEED_RPC_PORT=$(echo $SEED_NODE_RPC | sed 's/.*://' | sed 's/[^0-9]//g')
 SEED_P2P_PORT=$((SEED_RPC_PORT + 999))  # RPC port 26657 -> P2P port 27656
+SEED_HOST=$(echo $SEED_NODE_RPC | sed 's|http://||' | sed 's|https://||' | sed 's|:.*||')
 SEED_NODE_ID=$(curl -s "$SEED_NODE_RPC/status" | jq -r '.result.node_info.id')
 
 if [ -z "$SEED_NODE_ID" ] || [ "$SEED_NODE_ID" = "null" ]; then
@@ -265,7 +266,7 @@ if [ -z "$SEED_NODE_ID" ] || [ "$SEED_NODE_ID" = "null" ]; then
   exit 1
 fi
 
-SEED_ADDRESS="$SEED_NODE_ID@127.0.0.1:$SEED_P2P_PORT"
+SEED_ADDRESS="$SEED_NODE_ID@$SEED_HOST:$SEED_P2P_PORT"
 echo -e "${YELLOW}Using seed: $SEED_ADDRESS${NC}"
 
 # Configure seeds and local development settings
