@@ -14,6 +14,9 @@ import sqlite3
 import sys
 import argparse
 from typing import Dict, List, Tuple, Optional
+import os
+import glob
+from pathlib import Path
 
 # Bech32 encoding constants (copied from genesis_importer.sh)
 CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
@@ -176,7 +179,8 @@ def extract_shardeum_accounts(db_path: str, min_balance: int = 0, max_accounts: 
 
 def load_genesis_accounts(genesis_path: str, include_nonce: bool = False, balance_multiplier: int = 1) -> Tuple[Dict[str, Dict], int]:
     """
-    Load accounts, balances, sequences (nonces), and unique IDs from genesis.json
+    Load accounts, balances, sequences (nonces), and unique IDs from genesis.json.
+    Supports both monolithic and split genesis formats.
     Returns: (account_data_dict, total_supply)
     where account_data_dict = {address: {'balance': int, 'sequence': int}}
     """
@@ -189,37 +193,193 @@ def load_genesis_accounts(genesis_path: str, include_nonce: bool = False, balanc
     account_data = {}
     total_supply = 0
     
-    # First, extract sequences and unique IDs from auth.accounts
+    # Check if this is a split genesis (no accounts/balances in main file)
     auth_accounts = genesis.get('app_state', {}).get('auth', {}).get('accounts', [])
-    for acc in auth_accounts:
-        address = acc.get('address')
-        sequence = int(acc.get('sequence', '0')) if include_nonce else 0
-        account_data[address] = {'balance': 0, 'sequence': sequence}
-    
-    # Extract balances from bank.balances
     bank_balances = genesis.get('app_state', {}).get('bank', {}).get('balances', [])
     
-    for balance_entry in bank_balances:
-        address = balance_entry.get('address')
-        coins = balance_entry.get('coins', [])
+    # If main genesis has accounts, use monolithic approach
+    if auth_accounts or bank_balances:
+        print("Loading from monolithic genesis file...")
         
-        for coin in coins:
-            if coin.get('denom') == 'ashm':
-                amount = int(coin.get('amount', 0))
+        # Extract sequences from auth.accounts
+        for acc in auth_accounts:
+            address = acc.get('address')
+            sequence = int(acc.get('sequence', '0')) if include_nonce else 0
+            account_data[address] = {'balance': 0, 'sequence': sequence}
+        
+        # Extract balances from bank.balances
+        for balance_entry in bank_balances:
+            address = balance_entry.get('address')
+            coins = balance_entry.get('coins', [])
+            
+            for coin in coins:
+                if coin.get('denom') == 'ashm':
+                    amount = int(coin.get('amount', 0))
+                    
+                    if address not in account_data:
+                        account_data[address] = {'balance': 0, 'sequence': 0}
+                    
+                    account_data[address]['balance'] = amount
+                    total_supply += amount
+                    break
+    
+    else:
+        # Split genesis format - load from account files
+        print("No accounts found in main genesis, checking for split account files...")
+        
+        genesis_dir = os.path.dirname(genesis_path)
+        genesis_name = os.path.basename(genesis_path)
+        
+        # Determine base name for account files
+        base_name = genesis_name.replace('.genesis.json', '')
+        if base_name == genesis_name:
+            base_name = genesis_name.replace('.json', '')
+        
+        # Handle already split pattern (e.g., "mainnet-genesis.genesis.json")
+        if base_name.endswith('.genesis'):
+            base_name = base_name[:-8]  # Remove '.genesis'
+        
+        # Find account files
+        account_pattern = os.path.join(genesis_dir, f"{base_name}.genesis.accounts.*.json")
+        account_files = sorted(glob.glob(account_pattern), 
+                             key=lambda x: int(Path(x).stem.split('.')[-1]))
+        
+        if not account_files:
+            print(f"Warning: No split account files found matching pattern: {account_pattern}", file=sys.stderr)
+            print(f"Looked for files like: {base_name}.genesis.accounts.N.json", file=sys.stderr)
+        else:
+            print(f"Found {len(account_files)} account files, loading...", file=sys.stderr)
+            
+            # Load accounts and balances from split files
+            for account_file in account_files:
+                print(f"Loading {os.path.basename(account_file)}...", file=sys.stderr)
+                with open(account_file, 'r') as f:
+                    chunk_data = json.load(f)
                 
-                if address not in account_data:
-                    account_data[address] = {'balance': 0, 'sequence': 0}
+                # Process accounts (sequences/nonces)
+                chunk_accounts = chunk_data.get('accounts', [])
+                for acc in chunk_accounts:
+                    address = acc.get('address')
+                    if address:
+                        sequence = int(acc.get('sequence', '0')) if include_nonce else 0
+                        account_data[address] = {'balance': 0, 'sequence': sequence}
                 
-                account_data[address]['balance'] = amount
-                total_supply += amount
-                break
+                # Process balances
+                chunk_balances = chunk_data.get('balances', [])
+                for balance_entry in chunk_balances:
+                    address = balance_entry.get('address')
+                    if address:
+                        coins = balance_entry.get('coins', [])
+                        
+                        for coin in coins:
+                            if coin.get('denom') == 'ashm':
+                                amount = int(coin.get('amount', 0))
+                                
+                                if address not in account_data:
+                                    account_data[address] = {'balance': 0, 'sequence': 0}
+                                
+                                account_data[address]['balance'] = amount
+                                total_supply += amount
+                                break
     
     print(f"Loaded {len(account_data)} accounts from genesis with total supply {total_supply}", file=sys.stderr)
     return account_data, total_supply
 
+def load_secure_accounts_for_verification(secure_accounts_path: str, balance_multiplier: int = 1) -> List[Dict]:
+    """
+    Load secure accounts from JSON file for verification (simple array format)
+    """
+    if not secure_accounts_path:
+        return []
+    
+    print(f"Loading secure accounts from {secure_accounts_path}...")
+    try:
+        with open(secure_accounts_path, 'r') as f:
+            secure_accounts_list = json.load(f)
+        
+        # Handle simple array format
+        if not isinstance(secure_accounts_list, list):
+            print(f"Error: Secure accounts file must contain a JSON array", file=sys.stderr)
+            return []
+        
+        accounts = []
+        for acc in secure_accounts_list:
+            eth_addr = acc.get('SourceFundsAddress', '').lower().replace('0x', '')
+            if not eth_addr:
+                print(f"Warning: Missing SourceFundsAddress in secure account", file=sys.stderr)
+                continue
+                
+            cosmos_addr = fast_bech32_encode(eth_addr)
+            if not cosmos_addr:
+                print(f"Warning: Failed to encode secure account {acc.get('SourceFundsAddress')}", file=sys.stderr)
+                continue
+            
+            balance_str = acc.get('SourceFundsBalance', '0')
+            try:
+                balance = int(balance_str)
+                # Apply balance multiplier for verification
+                balance = balance * balance_multiplier
+            except ValueError:
+                print(f"Warning: Invalid balance {balance_str} for account {acc.get('Name', 'Unknown')}", file=sys.stderr)
+                balance = 0
+            
+            accounts.append({
+                'address': cosmos_addr,
+                'eth_address': eth_addr,
+                'expected_balance': balance,
+                'name': acc.get('Name', ''),
+            })
+        
+        print(f"Loaded {len(accounts)} secure accounts for verification", file=sys.stderr)
+        return accounts
+    except Exception as e:
+        print(f"Error loading secure accounts: {e}", file=sys.stderr)
+        return []
+
+def verify_secure_accounts(secure_accounts: List[Dict], genesis_data: Dict[str, Dict]) -> Tuple[bool, Dict]:
+    """Verify that all secure accounts are present in genesis with correct balances"""
+    print("Verifying secure accounts...")
+    
+    results = {
+        'total_secure': len(secure_accounts),
+        'missing_secure': [],
+        'balance_mismatches': [],
+        'matched_secure': 0,
+        'total_expected_balance': sum(acc['expected_balance'] for acc in secure_accounts)
+    }
+    
+    for acc in secure_accounts:
+        address = acc['address']
+        expected_balance = acc['expected_balance']
+        
+        if address not in genesis_data:
+            results['missing_secure'].append({
+                'address': address,
+                'name': acc['name'],
+                'expected_balance': expected_balance
+            })
+        else:
+            genesis_balance = genesis_data[address].get('balance', 0)
+            if genesis_balance != expected_balance:
+                results['balance_mismatches'].append({
+                    'address': address,
+                    'name': acc['name'],
+                    'expected_balance': expected_balance,
+                    'genesis_balance': genesis_balance,
+                    'difference': genesis_balance - expected_balance
+                })
+            else:
+                results['matched_secure'] += 1
+    
+    is_valid = (len(results['missing_secure']) == 0 and 
+                len(results['balance_mismatches']) == 0)
+    
+    return is_valid, results
+
 def verify_accounts(shardeum_accounts: List[Tuple[str, int, int, str]], 
                    genesis_data: Dict[str, Dict],
-                   check_nonce: bool = False, balance_multiplier: int = 1) -> Tuple[bool, Dict]:
+                   check_nonce: bool = False, balance_multiplier: int = 1,
+                   secure_accounts: List[Dict] = None) -> Tuple[bool, Dict]:
     """Verify that all Shardeum accounts are present in genesis with correct balances, nonces, and unique IDs"""
     print("Verifying accounts...")
     print(f"Options: check_nonce={check_nonce}, balance_multiplier={balance_multiplier}")
@@ -294,13 +454,37 @@ def verify_accounts(shardeum_accounts: List[Tuple[str, int, int, str]],
                 len(results['balance_mismatches']) == 0 and
                 (not check_nonce or len(results['nonce_mismatches']) == 0))
     
+    # If secure accounts were provided, verify them separately
+    if secure_accounts:
+        secure_valid, secure_results = verify_secure_accounts(secure_accounts, genesis_data)
+        results['secure_accounts_results'] = secure_results
+        is_valid = is_valid and secure_valid
+    
     return is_valid, results
 
-def print_report(results: Dict):
+def print_report(results: Dict, genesis_path: str = ''):
     """Print verification report"""
     print("\n" + "="*80)
     print("GENESIS ACCOUNT VERIFICATION REPORT")
     print("="*80)
+    
+    if genesis_path:
+        print(f"Genesis file: {genesis_path}")
+        
+        # Check if this was loaded from split files
+        genesis_dir = os.path.dirname(genesis_path)
+        genesis_name = os.path.basename(genesis_path)
+        base_name = genesis_name.replace('.genesis.json', '')
+        if base_name == genesis_name:
+            base_name = genesis_name.replace('.json', '')
+        if base_name.endswith('.genesis'):
+            base_name = base_name[:-8]
+        
+        account_pattern = os.path.join(genesis_dir, f"{base_name}.genesis.accounts.*.json")
+        account_files = glob.glob(account_pattern)
+        if account_files:
+            print(f"Split account files: {len(account_files)} files detected")
+        print()
     
     print(f"Total accounts in Shardeum DB: {results['total_shardeum']:,}")
     print(f"Total accounts in Genesis:     {results['total_genesis']:,}")
@@ -346,24 +530,50 @@ def print_report(results: Dict):
         if len(results['nonce_mismatches']) > 10:
             print(f"  ... and {len(results['nonce_mismatches']) - 10} more")
     
+    # Print secure accounts verification if present
+    if 'secure_accounts_results' in results:
+        secure_results = results['secure_accounts_results']
+        print(f"\n" + "-"*80)
+        print("SECURE ACCOUNTS VERIFICATION")
+        print("-"*80)
+        print(f"Total secure accounts:         {secure_results['total_secure']}")
+        print(f"Matched secure accounts:       {secure_results['matched_secure']}")
+        print(f"Missing secure accounts:       {len(secure_results['missing_secure'])}")
+        print(f"Balance mismatches:            {len(secure_results['balance_mismatches'])}")
+        
+        if secure_results['missing_secure']:
+            print(f"\n❌ MISSING SECURE ACCOUNTS:")
+            for acc in secure_results['missing_secure']:
+                print(f"  - {acc['name']}: {acc['address']} (expected: {acc['expected_balance']:,} wei)")
+        
+        if secure_results['balance_mismatches']:
+            print(f"\n❌ SECURE ACCOUNT BALANCE MISMATCHES:")
+            for mismatch in secure_results['balance_mismatches']:
+                print(f"  - {mismatch['name']}: {mismatch['address']}")
+                print(f"    Expected: {mismatch['expected_balance']:,}")
+                print(f"    Genesis:  {mismatch['genesis_balance']:,}")
+                print(f"    Diff:     {mismatch['difference']:+,}")
+    
     print("\n" + "="*80)
     
     check_nonce = results.get('check_nonce', False)
+    has_secure_accounts = 'secure_accounts_results' in results
     
-    if check_nonce:
-        if (len(results['missing_accounts']) == 0 and 
-            len(results['balance_mismatches']) == 0 and 
-            len(results.get('nonce_mismatches', [])) == 0):
-            print("✅ VERIFICATION PASSED: All accounts, balances, and nonces are correctly imported!")
-        else:
-            print("❌ VERIFICATION FAILED: Some accounts are missing or have incorrect data!")
+    # Check overall verification status
+    basic_valid = (len(results['missing_accounts']) == 0 and 
+                   len(results['balance_mismatches']) == 0 and 
+                   (not check_nonce or len(results.get('nonce_mismatches', [])) == 0))
+    
+    secure_valid = True
+    if has_secure_accounts:
+        secure_results = results['secure_accounts_results']
+        secure_valid = (len(secure_results['missing_secure']) == 0 and 
+                       len(secure_results['balance_mismatches']) == 0)
+    
+    if basic_valid and secure_valid:
+        print("✅ VERIFICATION PASSED: All accounts are correctly imported!")
     else:
-        if (len(results['missing_accounts']) == 0 and 
-            len(results['balance_mismatches']) == 0 and 
-            len(results.get('nonce_mismatches', [])) == 0):
-            print("✅ VERIFICATION PASSED: All accounts, balances, and nonces are correctly imported!")
-        else:
-            print("❌ VERIFICATION FAILED: Some accounts are missing or have incorrect data!")
+        print("❌ VERIFICATION FAILED: Some accounts are missing or have incorrect data!")
             
     print("="*80)
 
@@ -387,6 +597,12 @@ Examples:
 
   # Verify with balance multiplier (e.g., if genesis was generated with multiplier 250)
   %(prog)s --genesis-path genesis.json --balance-multiplier 250
+
+  # Verify split genesis files (automatically detected)
+  %(prog)s --genesis-path config/environments/mainnet-genesis.genesis.json
+
+  # Verify with secure accounts file
+  %(prog)s --genesis-path genesis.json --secure-accounts secure_accounts.json
         """
     )
     parser.add_argument('--db-path', default='accounts.sqlite3',
@@ -401,8 +617,12 @@ Examples:
                        help='Multiplier applied to Shardeum balances for verification (default: 1)')
     parser.add_argument('--check-nonce', action='store_true', default=False,
                        help='Also verify nonces/sequences (default: False)')
+    parser.add_argument('--secure-accounts',
+                       help='Path to JSON file containing secure accounts to verify')
     parser.add_argument('--verbose', '-v', action='store_true',
                        help='Enable verbose output')
+    parser.add_argument('--auto-detect-split', action='store_true', default=True,
+                       help='Automatically detect and load split genesis files (default: True)')
     
     args = parser.parse_args()
     
@@ -423,16 +643,22 @@ Examples:
             args.balance_multiplier
         )
         
+        # Load secure accounts if specified
+        secure_accounts = None
+        if args.secure_accounts:
+            secure_accounts = load_secure_accounts_for_verification(args.secure_accounts, args.balance_multiplier)
+        
         # Verify accounts
         is_valid, results = verify_accounts(
             shardeum_accounts, 
             genesis_data,
             args.check_nonce,
-            args.balance_multiplier
+            args.balance_multiplier,
+            secure_accounts
         )
         
         # Print report
-        print_report(results)
+        print_report(results, args.genesis_path)
 
         print("Total Genesis accounts (including validator account): ", results['total_genesis'])
         print("Total Shardeum accounts: ", results['total_shardeum'])
