@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Create split account file from old genesis addresses.
-Usage: python merge_genesis.py <addresses.json> <main_genesis_file.json> [--balance-multiplier N] [--network NAME]
+Usage: python merge_genesis.py <addresses.json> <main_genesis_file.json> [OPTIONS]
 
 This script creates a new split account file that will be automatically
 merged when the network starts, instead of modifying the main genesis file.
@@ -9,6 +9,7 @@ merged when the network starts, instead of modifying the main genesis file.
 Options:
   --balance-multiplier N    Multiply all balances by N (default: 1)
   --network NAME           Network name for split files (overrides auto-detection)
+  --add-balance            Add balance to existing addresses in split files instead of skipping duplicates
 """
 
 import json
@@ -176,9 +177,14 @@ def find_next_split_number(genesis_dir: str, base_name: str) -> int:
 
     return max(numbers) + 1 if numbers else 1
 
-def get_existing_addresses_from_all_sources(genesis_dir: str, base_name: str, main_genesis: Dict) -> tuple[Set[str], Set[str]]:
-    """Get existing addresses from main genesis and all split files"""
+def get_existing_addresses_from_all_sources(genesis_dir: str, base_name: str, main_genesis: Dict) -> tuple[Set[str], Set[str], Dict[str, str]]:
+    """Get existing addresses from main genesis and all split files
+
+    Returns:
+        tuple: (existing_eth_addresses, existing_cosmos_addresses, cosmos_to_split_file_map)
+    """
     existing_eth_addresses, existing_cosmos_addresses = get_existing_addresses(main_genesis)
+    cosmos_to_split_file_map = {}  # Maps cosmos address -> split file path
 
     # Also check split files for existing addresses
     pattern = os.path.join(genesis_dir, f"{base_name}.genesis.accounts.*.json")
@@ -194,18 +200,65 @@ def get_existing_addresses_from_all_sources(genesis_dir: str, base_name: str, ma
                 cosmos_addr = account.get('address', '')
                 if cosmos_addr and cosmos_addr.startswith('shardeum'):
                     existing_cosmos_addresses.add(cosmos_addr)
+                    cosmos_to_split_file_map[cosmos_addr] = split_file
 
             # Check balances for cosmos addresses
             for balance in split_data.get('balances', []):
                 cosmos_addr = balance.get('address', '')
                 if cosmos_addr and cosmos_addr.startswith('shardeum'):
                     existing_cosmos_addresses.add(cosmos_addr)
+                    cosmos_to_split_file_map[cosmos_addr] = split_file
 
         except Exception as e:
             print(f"Warning: Could not read split file {split_file}: {e}", file=sys.stderr)
 
     print(f"Found {len(existing_eth_addresses)} existing Ethereum addresses and {len(existing_cosmos_addresses)} existing Cosmos addresses")
-    return existing_eth_addresses, existing_cosmos_addresses
+    return existing_eth_addresses, existing_cosmos_addresses, cosmos_to_split_file_map
+
+def update_balance_in_split_file(split_file_path: str, cosmos_address: str, balance_to_add: int) -> bool:
+    """Update balance in an existing split file by adding to existing balance
+
+    Args:
+        split_file_path: Path to the split file
+        cosmos_address: Cosmos address to update
+        balance_to_add: Amount to add to existing balance
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # Load the split file
+        with open(split_file_path, 'r') as f:
+            split_data = json.load(f)
+
+        # Find and update the balance
+        balance_updated = False
+        for balance_entry in split_data.get('balances', []):
+            if balance_entry.get('address') == cosmos_address:
+                for coin in balance_entry.get('coins', []):
+                    if coin.get('denom') == 'ashm':
+                        old_amount = int(coin.get('amount', '0'))
+                        new_amount = old_amount + balance_to_add
+                        coin['amount'] = str(new_amount)
+                        print(f"Updated balance in {split_file_path}: {cosmos_address} from {old_amount:,} to {new_amount:,} ashm (+{balance_to_add:,})")
+                        balance_updated = True
+                        break
+            if balance_updated:
+                break
+
+        if not balance_updated:
+            print(f"Warning: Could not find balance entry for {cosmos_address} in {split_file_path}", file=sys.stderr)
+            return False
+
+        # Save the updated split file
+        with open(split_file_path, 'w') as f:
+            json.dump(split_data, f, indent=2)
+
+        return True
+
+    except Exception as e:
+        print(f"Error updating balance in split file {split_file_path}: {e}", file=sys.stderr)
+        return False
 
 def update_main_genesis_supply(main_genesis_path: str, added_balance: int) -> bool:
     """Update the total supply in the main genesis file"""
@@ -246,7 +299,7 @@ def update_main_genesis_supply(main_genesis_path: str, added_balance: int) -> bo
         print(f"Error updating main genesis supply: {e}", file=sys.stderr)
         return False
 
-def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_multiplier: int = 1, network: str = None):
+def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_multiplier: int = 1, network: str = None, add_balance: bool = False):
     """Create split account file from old genesis addresses"""
     print(f"Loading old genesis from {old_genesis_path}")
     old_genesis = load_old_genesis(old_genesis_path)
@@ -255,6 +308,10 @@ def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_mu
     main_genesis = load_new_genesis(new_genesis_path)
 
     print(f"Using balance multiplier: {balance_multiplier}")
+    if add_balance:
+        print(f"Add balance mode: ENABLED (will add to existing balances in split files)")
+    else:
+        print(f"Add balance mode: DISABLED (will skip duplicate addresses)")
 
     # Determine base name and directory for split files
     genesis_path = Path(new_genesis_path)
@@ -270,40 +327,30 @@ def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_mu
         print(f"Auto-detected base name: {base_name}")
 
     # Get existing addresses from ALL sources (main genesis + split files)
-    existing_eth_addresses, existing_cosmos_addresses = get_existing_addresses_from_all_sources(genesis_dir, base_name, main_genesis)
+    existing_eth_addresses, existing_cosmos_addresses, cosmos_to_split_file_map = get_existing_addresses_from_all_sources(genesis_dir, base_name, main_genesis)
 
     # Prepare data for new split file
     new_accounts = []
     new_balances = []
     added_count = 0
     skipped_count = 0
+    updated_count = 0
     total_added_balance = 0
-    
+
     print(f"Processing {len(old_genesis)} addresses from old genesis")
-    
+
     for eth_address, balance_data in old_genesis.items():
         # Normalize ethereum address
         eth_addr_normalized = eth_address.lower()
-        
+
         # Convert to cosmos address first to check for duplicates
         cosmos_address = eth_to_cosmos_address(eth_address)
         if not cosmos_address:
             print(f"Failed to convert address: {eth_address}")
             skipped_count += 1
             continue
-        
-        # Check if either ethereum or cosmos address already exists
-        if eth_addr_normalized in existing_eth_addresses:
-            print(f"Skipping duplicate Ethereum address: {eth_address}")
-            skipped_count += 1
-            continue
-            
-        if cosmos_address in existing_cosmos_addresses:
-            print(f"Skipping duplicate Cosmos address: {cosmos_address} (from Ethereum {eth_address})")
-            skipped_count += 1
-            continue
-        
-        # Get balance in wei
+
+        # Get balance in wei early (needed for both adding and updating)
         balance_wei = balance_data.get('wei', '0')
         balance_int = int(balance_wei)
 
@@ -316,6 +363,33 @@ def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_mu
             print(f"Skipping address with 0 balance: {eth_address}")
             skipped_count += 1
             continue
+
+        # Check if either ethereum or cosmos address already exists
+        if eth_addr_normalized in existing_eth_addresses:
+            print(f"Skipping duplicate Ethereum address in main genesis: {eth_address}")
+            skipped_count += 1
+            continue
+
+        if cosmos_address in existing_cosmos_addresses:
+            # Address exists - check if we should add to existing balance or skip
+            if add_balance and cosmos_address in cosmos_to_split_file_map:
+                # Add balance mode: update the existing balance in the split file
+                split_file = cosmos_to_split_file_map[cosmos_address]
+                if update_balance_in_split_file(split_file, cosmos_address, balance_int):
+                    total_added_balance += balance_int
+                    updated_count += 1
+                else:
+                    print(f"Failed to update balance for {cosmos_address} (from Ethereum {eth_address})")
+                    skipped_count += 1
+                continue
+            else:
+                # Normal mode: skip duplicates
+                if cosmos_address in cosmos_to_split_file_map:
+                    print(f"Skipping duplicate Cosmos address in split file: {cosmos_address} (from Ethereum {eth_address})")
+                else:
+                    print(f"Skipping duplicate Cosmos address in main genesis: {cosmos_address} (from Ethereum {eth_address})")
+                skipped_count += 1
+                continue
 
         # Create auth account and bank balance for the split file
         auth_account = create_auth_account(cosmos_address)
@@ -337,50 +411,55 @@ def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_mu
         else:
             print(f"Will add address: {eth_address} -> {cosmos_address} (balance: {balance_wei} wei)")
     
-    if added_count == 0:
-        print("No new addresses to add. No split file created.")
-        return
-
-    # Sort accounts and balances for consistency
-    new_accounts.sort(key=lambda x: x['address'])
-    new_balances.sort(key=lambda x: x['address'])
-
-    # Create split file data
-    split_data = {
-        'accounts': new_accounts,
-        'balances': new_balances
-    }
-
-    # Find next split file number and create the file
-    next_number = find_next_split_number(genesis_dir, base_name)
-    split_file_path = os.path.join(genesis_dir, f"{base_name}.genesis.accounts.{next_number}.json")
-
-    print(f"\nCreating split file:")
-    print(f"  Added: {added_count} addresses")
+    # Print summary
+    print(f"\nProcessing summary:")
+    print(f"  New addresses added: {added_count}")
+    print(f"  Existing addresses updated: {updated_count}")
     print(f"  Skipped: {skipped_count} addresses (duplicates or conversion errors)")
     if balance_multiplier != 1:
         print(f"  Balance multiplier: {balance_multiplier}")
-    print(f"  Total added balance: {total_added_balance:,} ashm")
+    print(f"  Total balance added to genesis: {total_added_balance:,} ashm")
 
-    # Save split file
-    try:
-        with open(split_file_path, 'w') as f:
-            json.dump(split_data, f, indent=2)
-        print(f"Successfully created split file: {split_file_path}")
-    except Exception as e:
-        print(f"Error creating split file: {e}", file=sys.stderr)
-        sys.exit(1)
+    # Create new split file only if we have new addresses
+    if added_count > 0:
+        # Sort accounts and balances for consistency
+        new_accounts.sort(key=lambda x: x['address'])
+        new_balances.sort(key=lambda x: x['address'])
 
-    # Update main genesis supply
+        # Create split file data
+        split_data = {
+            'accounts': new_accounts,
+            'balances': new_balances
+        }
+
+        # Find next split file number and create the file
+        next_number = find_next_split_number(genesis_dir, base_name)
+        split_file_path = os.path.join(genesis_dir, f"{base_name}.genesis.accounts.{next_number}.json")
+
+        # Save split file
+        try:
+            with open(split_file_path, 'w') as f:
+                json.dump(split_data, f, indent=2)
+            print(f"\nSuccessfully created new split file: {split_file_path}")
+        except Exception as e:
+            print(f"Error creating split file: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(f"\nNo new addresses to add. No new split file created.")
+
+    # Update main genesis supply if we added any balance (from new or updated addresses)
     if total_added_balance > 0:
-        print(f"Updating main genesis supply...")
+        print(f"\nUpdating main genesis supply...")
         if not update_main_genesis_supply(new_genesis_path, total_added_balance):
             print(f"Warning: Failed to update supply in main genesis", file=sys.stderr)
         else:
             print(f"Successfully updated supply in main genesis")
 
-    print(f"\nSplit file creation complete!")
-    print(f"The new accounts will be automatically included when the network starts.")
+    print(f"\nOperation complete!")
+    if added_count > 0:
+        print(f"The new accounts will be automatically included when the network starts.")
+    if updated_count > 0:
+        print(f"Updated balances have been added to existing accounts in split files.")
 
 def main():
     parser = argparse.ArgumentParser(description="Create split account file from old genesis addresses")
@@ -390,10 +469,12 @@ def main():
                        help="Multiplier to apply to all balances (default: 1)")
     parser.add_argument("--network", type=str, default=None,
                        help="Network name to use for split files (overrides auto-detection)")
+    parser.add_argument("--add-balance", action="store_true",
+                       help="Add balance to existing addresses in split files instead of skipping duplicates")
 
     args = parser.parse_args()
 
-    merge_genesis_files(args.old_genesis, args.main_genesis, args.balance_multiplier, args.network)
+    merge_genesis_files(args.old_genesis, args.main_genesis, args.balance_multiplier, args.network, args.add_balance)
 
 if __name__ == "__main__":
     main()
