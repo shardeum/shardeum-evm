@@ -1,0 +1,893 @@
+#!/usr/bin/env python3
+
+import json
+import os
+import signal
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+from decimal import Decimal, InvalidOperation, ROUND_DOWN
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+CONFIG_DIR = REPO_ROOT / "config"
+ENVIRONMENTS_DIR = CONFIG_DIR / "environments"
+LOCAL_DIR = REPO_ROOT / ".local"
+BINARY_PATH = REPO_ROOT / "build" / "shardeumd"
+LOCAL_CONFIG = json.loads((ENVIRONMENTS_DIR / "local.json").read_text())
+CHAIN_ID = LOCAL_CONFIG["chain_id"]
+BASE_DENOM = LOCAL_CONFIG["base_denom"]
+MIN_GAS_PRICE = f"2048130280389041{BASE_DENOM}"
+DEFAULT_NODE_COUNT = 10
+DECIMAL_FACTOR = 10**18
+STAKE_AMOUNT = DECIMAL_FACTOR  # 1 SHM
+FUND_AMOUNT = 3000 * DECIMAL_FACTOR  # 3000 SHM to cover stake + fees
+HIGH_FEE = 1024065140194520500000  # 1024.0651401945205 SHM global fee requirement
+BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+
+
+def run(cmd, **kwargs):
+    completed = subprocess.run(cmd, check=False, start_new_session=True, **kwargs)
+    if completed.returncode != 0:
+        raise RuntimeError(f"Command failed ({completed.returncode}): {' '.join(cmd)}")
+    return completed
+
+
+def run_capture(cmd, **kwargs):
+    kwargs.setdefault("text", True)
+    completed = subprocess.run(
+        cmd,
+        check=False,
+        start_new_session=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        **kwargs,
+    )
+    if completed.returncode != 0:
+        stdout = (completed.stdout or "").strip()
+        stderr = (completed.stderr or "").strip()
+        raise RuntimeError(
+            f"Command failed ({completed.returncode}): {' '.join(cmd)}\nstdout: {stdout}\nstderr: {stderr}"
+        )
+    return completed.stdout.strip()
+
+
+def ensure_binary():
+    if BINARY_PATH.exists():
+        return
+    print("Building shardeumd binary...")
+    run(["make", "build"], cwd=REPO_ROOT)
+    if not BINARY_PATH.exists():
+        raise RuntimeError("build/shardeumd not found after make build")
+
+
+def start_network(node_count=DEFAULT_NODE_COUNT):
+    ensure_binary()
+    env = os.environ.copy()
+    env["SHARDEUM_CONFIG_DIR"] = str(CONFIG_DIR.resolve())
+    env["SHARDEUM_NETWORK"] = "local"
+    env["SHARDEUM_CHAIN_ID"] = CHAIN_ID
+    env["BINARY"] = str(BINARY_PATH.resolve())
+    env["SKIP_BUILD"] = "1"
+    cmd = ["./scripts/start_network.sh", "--network", "local", "--nodes", str(node_count)]
+    print(f"Starting local network with {node_count} nodes...")
+    LOCAL_DIR.mkdir(exist_ok=True)
+    bootstrap_log = LOCAL_DIR / "bootstrap.log"
+    with open(bootstrap_log, "ab") as log_file:
+        log_file.write(f"\n=== start_network {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n".encode())
+        process = subprocess.Popen(
+            cmd,
+            cwd=REPO_ROOT,
+            env=env,
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+
+    waited = 0
+    while waited < 60:
+        if node_pid_path(0).exists():
+            time.sleep(2)
+            print("Local network reported ready. Returning to menu.")
+            print(f"Bootstrap output logged to {bootstrap_log}")
+            return
+        if process.poll() is not None:
+            raise RuntimeError(f"start_network.sh exited with code {process.returncode}; see {bootstrap_log}")
+        time.sleep(1)
+        waited += 1
+
+    print("Node0 pid not detected yet; bootstrap script still running in background.")
+    print(f"Check {bootstrap_log} for progress (process pid {process.pid}).")
+
+
+def stop_network():
+    node_dirs = sorted(LOCAL_DIR.glob("node*"))
+    if not node_dirs:
+        print("No local nodes found.")
+        return
+    for node_dir in node_dirs:
+        idx = int(node_dir.name.replace("node", ""))
+        stop_node(idx, silent=True)
+    print("All local nodes signalled to stop.")
+
+
+def node_pid_path(index):
+    return LOCAL_DIR / f"node{index}" / "node.pid"
+
+
+def node_log_path(index):
+    return LOCAL_DIR / f"node{index}" / "node.log"
+
+
+def pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def read_pid(index):
+    path = node_pid_path(index)
+    if not path.exists():
+        return None
+    try:
+        pid = int(path.read_text().strip())
+    except ValueError:
+        return None
+    return pid if pid_alive(pid) else None
+
+
+def stop_node(index, silent=False):
+    node_dir = LOCAL_DIR / f"node{index}"
+    if not node_dir.exists():
+        if not silent:
+            print(f"Node {index} directory not found at {node_dir}.")
+        return
+    pid = read_pid(index)
+    if not pid:
+        if not silent:
+            print(f"Node {index} is not running.")
+        return
+    if not silent:
+        print(f"Stopping node {index} (pid {pid})...")
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except OSError as err:
+        if not silent:
+            print(f"  Failed to signal node {index}: {err}")
+        return
+    deadline = time.time() + 10
+    while time.time() < deadline:
+        if not pid_alive(pid):
+            break
+        time.sleep(0.5)
+    if pid_alive(pid):
+        if not silent:
+            print(f"  Node {index} did not exit; sending SIGKILL.")
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except OSError:
+            pass
+    pid_file = node_pid_path(index)
+    if pid_file.exists():
+        pid_file.unlink()
+    if not silent:
+        print(f"Node {index} stopped.")
+
+
+def node_ports(index):
+    return {
+        "rpc": 26657 + index,
+        "p2p": 27656 + index,
+        "grpc": 9090 + index,
+        "api": 1317 + index,
+        "json": 8545 + index * 2,
+        "ws": 8546 + index * 2,
+    }
+
+
+def start_node(index):
+    ensure_binary()
+    node_dir = LOCAL_DIR / f"node{index}"
+    if not node_dir.exists():
+        print(f"Node {index} directory does not exist. Start the full network first.")
+        return
+    if read_pid(index):
+        print(f"Node {index} appears to be running already.")
+        return
+    ports = node_ports(index)
+    node_type = "validator" if index == 0 else "full-node"
+    cmd = [
+        str(BINARY_PATH.resolve()),
+        "start",
+        "--home",
+        str(node_dir),
+        "--chain-id",
+        CHAIN_ID,
+        "--rpc.laddr",
+        f"tcp://127.0.0.1:{ports['rpc']}",
+        "--p2p.laddr",
+        f"tcp://0.0.0.0:{ports['p2p']}",
+        "--grpc.address",
+        f"localhost:{ports['grpc']}",
+        "--minimum-gas-prices",
+        MIN_GAS_PRICE,
+        "--pruning",
+        "nothing",
+    ]
+    if index != 0:
+        cmd.extend([
+            "--json-rpc.enable",
+            "--json-rpc.address",
+            f"127.0.0.1:{ports['json']}",
+            "--json-rpc.ws-address",
+            f"127.0.0.1:{ports['ws']}",
+            "--json-rpc.api",
+            "eth,txpool,personal,net,debug,web3",
+        ])
+    env = os.environ.copy()
+    env["SHARDEUM_CONFIG_DIR"] = str(CONFIG_DIR.resolve())
+    env["SHARDEUM_NETWORK"] = "local"
+    env["SHARDEUM_CHAIN_ID"] = CHAIN_ID
+    log_path = node_log_path(index)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(log_path, "ab") as log_file:
+        process = subprocess.Popen(
+            cmd,
+            cwd=REPO_ROOT,
+            env=env,
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+    node_pid_path(index).write_text(str(process.pid))
+    print(f"Node {index} ({node_type}) started with pid {process.pid}.")
+
+
+def list_nodes():
+    if not LOCAL_DIR.exists():
+        print("No local network data found. Start the network first.")
+        return
+    node_indices = sorted(int(p.name.replace("node", "")) for p in LOCAL_DIR.glob("node*") if p.is_dir())
+    if not node_indices:
+        print("No node directories found under .local.")
+        return
+    print("Node status:")
+    for idx in node_indices:
+        pid = read_pid(idx)
+        ports = node_ports(idx)
+        status = "running" if pid else "stopped"
+        extra = f"rpc={ports['rpc']}"
+        print(f"  node{idx}: {status} {extra}")
+
+
+def fetch_height(port):
+    url = f"http://127.0.0.1:{port}/status"
+    try:
+        with urllib.request.urlopen(url, timeout=2) as resp:
+            data = json.loads(resp.read())
+    except (urllib.error.URLError, TimeoutError, ConnectionError):
+        return None
+    except ValueError:
+        return None
+    try:
+        info = data["result"]["sync_info"]
+        return int(info["latest_block_height"]), info.get("latest_block_time", "")
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def monitor_blocks(duration=20):
+    print(f"Monitoring block height for ~{duration} seconds...")
+    end_time = time.time() + duration
+    try:
+        while time.time() < end_time:
+            row = time.strftime("%H:%M:%S")
+            node_entries = []
+            for node_dir in sorted(LOCAL_DIR.glob("node*")):
+                idx = int(node_dir.name.replace("node", ""))
+                if not read_pid(idx):
+                    continue
+                height = fetch_height(node_ports(idx)["rpc"])
+                if height:
+                    node_entries.append(f"node{idx}:{height[0]}")
+            if node_entries:
+                print(f"[{row}] " + " ".join(node_entries))
+            else:
+                print(f"[{row}] no running RPC endpoints detected")
+            time.sleep(2)
+    except KeyboardInterrupt:
+        print("\nMonitoring interrupted.")
+    finally:
+        print("Returning to menu.")
+
+
+def ashm(amount_int):
+    return f"{amount_int}{BASE_DENOM}"
+
+
+def format_shm(amount_int):
+    value = Decimal(amount_int) / Decimal(DECIMAL_FACTOR)
+    text = format(value, 'f')
+    if '.' in text:
+        text = text.rstrip('0').rstrip('.')
+    return text or "0"
+
+
+def bech32_polymod(values):
+    generator = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
+    chk = 1
+    for value in values:
+        top = chk >> 25
+        chk = (chk & 0x1FFFFFF) << 5 ^ value
+        for i in range(5):
+            if ((top >> i) & 1) != 0:
+                chk ^= generator[i]
+    return chk
+
+
+def bech32_hrp_expand(hrp):
+    return [ord(c) >> 5 for c in hrp] + [0] + [ord(c) & 31 for c in hrp]
+
+
+def bech32_create_checksum(hrp, data):
+    values = bech32_hrp_expand(hrp) + data
+    polymod = bech32_polymod(values + [0, 0, 0, 0, 0, 0]) ^ 1
+    return [(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
+
+
+def bech32_encode(hrp, data):
+    combined = data + bech32_create_checksum(hrp, data)
+    return hrp + '1' + ''.join(BECH32_CHARSET[d] for d in combined)
+
+
+def bech32_decode(bech):
+    if any(ord(x) < 33 or ord(x) > 126 for x in bech):
+        return None, None
+    bech = bech.strip()
+    if bech.lower() != bech and bech.upper() != bech:
+        return None, None
+    bech = bech.lower()
+    pos = bech.rfind('1')
+    if pos < 1 or pos + 7 > len(bech):
+        return None, None
+    hrp = bech[:pos]
+    data_chars = bech[pos + 1 :]
+    data = [BECH32_CHARSET.find(c) for c in data_chars]
+    if -1 in data:
+        return None, None
+    if bech32_polymod(bech32_hrp_expand(hrp) + data) != 1:
+        return None, None
+    return hrp, data[:-6]
+
+
+def get_balance(address, rpc_port):
+    try:
+        output = run_capture(
+            [
+                str(BINARY_PATH.resolve()),
+                "query",
+                "bank",
+                "balances",
+                address,
+                "--node",
+                f"tcp://127.0.0.1:{rpc_port}",
+                "-o",
+                "json",
+            ],
+            cwd=REPO_ROOT,
+        )
+    except RuntimeError as err:
+        print(f"Balance query failed: {err}")
+        return None
+
+    try:
+        data = json.loads(output)
+    except json.JSONDecodeError:
+        print("Unable to parse balance response.")
+        return None
+
+    balances = data.get("balances", [])
+    for entry in balances:
+        if entry.get("denom") == BASE_DENOM:
+            try:
+                return int(entry.get("amount", "0"))
+            except ValueError:
+                return None
+    return 0
+
+
+def ensure_funds(address, target_rpc_port, required):
+    balance = get_balance(address, target_rpc_port)
+    if balance is None:
+        return None
+    if balance >= required:
+        return balance
+    if not read_pid(0):
+        print("node0 must be running to top up accounts.")
+        return balance
+    print("Funding validator account...")
+    rpc_port = node_ports(0)["rpc"]
+    fund_amount = ashm(FUND_AMOUNT)
+    fee_amount = ashm(HIGH_FEE)
+    run(
+        [
+            str(BINARY_PATH.resolve()),
+            "tx",
+            "bank",
+            "send",
+            "validator",
+            address,
+            fund_amount,
+            "--from",
+            "validator",
+            "--home",
+            str(LOCAL_DIR / "node0"),
+            "--keyring-backend",
+            "test",
+            "--node",
+            f"tcp://127.0.0.1:{rpc_port}",
+            "--chain-id",
+            CHAIN_ID,
+            "--gas",
+            "500000",
+            "--fees",
+            fee_amount,
+            "--yes",
+        ],
+        cwd=REPO_ROOT,
+    )
+
+    time.sleep(3)
+    return get_balance(address, target_rpc_port)
+
+
+def parse_shm_amount(raw):
+    if raw is None:
+        return None
+    try:
+        value = Decimal(str(raw).strip())
+    except (InvalidOperation, ValueError):
+        return None
+    if value <= 0:
+        return None
+    scaled = (value * Decimal(DECIMAL_FACTOR)).to_integral_value(rounding=ROUND_DOWN)
+    if scaled == 0:
+        return None
+    return int(scaled)
+
+
+def prompt_amount(prompt_text, default_shm):
+    default_str = str(default_shm)
+    while True:
+        raw = input(f"{prompt_text} [{default_str}]: ").strip()
+        if not raw:
+            raw = default_str
+        amount = parse_shm_amount(raw)
+        if amount:
+            return amount
+        print("Enter a numeric amount greater than zero (e.g., 1 or 0.5).")
+
+
+def get_validator_addresses(index, create_key=False):
+    node_dir = LOCAL_DIR / f"node{index}"
+    if not node_dir.exists():
+        print(f"node{index} directory not found at {node_dir}.")
+        return None
+
+    validator_key = f"validator-node{index}"
+    try:
+        run_capture(
+            [
+                str(BINARY_PATH.resolve()),
+                "keys",
+                "show",
+                validator_key,
+                "--keyring-backend",
+                "test",
+                "--home",
+                str(node_dir),
+            ],
+            cwd=REPO_ROOT,
+        )
+    except RuntimeError:
+        if not create_key:
+            print(f"Validator key '{validator_key}' not found. Promote node{index} first.")
+            return None
+        print(f"Creating validator key '{validator_key}' on node{index}...")
+        run(
+            [
+                str(BINARY_PATH.resolve()),
+                "keys",
+                "add",
+                validator_key,
+                "--keyring-backend",
+                "test",
+                "--home",
+                str(node_dir),
+            ],
+            cwd=REPO_ROOT,
+        )
+
+    account_addr = run_capture(
+        [
+            str(BINARY_PATH.resolve()),
+            "keys",
+            "show",
+            validator_key,
+            "--keyring-backend",
+            "test",
+            "--home",
+            str(node_dir),
+            "-a",
+        ],
+        cwd=REPO_ROOT,
+    )
+    hrp, data = bech32_decode(account_addr)
+    if hrp is None or data is None:
+        print("Failed to decode validator account address; cannot derive operator address.")
+        return None
+    valoper_addr = bech32_encode("shardeumvaloper", data)
+    return node_dir, validator_key, account_addr, valoper_addr
+
+
+def get_delegation_tokens(delegator_addr, validator_addr, rpc_port):
+    try:
+        output = run_capture(
+            [
+                str(BINARY_PATH.resolve()),
+                "query",
+                "staking",
+                "delegation",
+                delegator_addr,
+                validator_addr,
+                "--node",
+                f"tcp://127.0.0.1:{rpc_port}",
+                "-o",
+                "json",
+            ],
+            cwd=REPO_ROOT,
+        )
+    except RuntimeError:
+        # try legacy CLI output (text)
+        try:
+            output = run_capture(
+                [
+                    str(BINARY_PATH.resolve()),
+                    "query",
+                    "staking",
+                    "delegation",
+                    delegator_addr,
+                    validator_addr,
+                    "--node",
+                    f"tcp://127.0.0.1:{rpc_port}",
+                ],
+                cwd=REPO_ROOT,
+            )
+        except RuntimeError:
+            return 0
+
+    try:
+        data = json.loads(output)
+        if isinstance(data, dict):
+            balance = None
+            if "balance" in data:
+                balance = data.get("balance")
+            elif "delegation_response" in data:
+                balance = (
+                    data.get("delegation_response", {})
+                    .get("balance")
+                )
+            if balance is not None:
+                amount = None
+                if isinstance(balance, dict):
+                    amount = balance.get("amount")
+                elif isinstance(balance, str):
+                    amount = balance
+                if amount is not None:
+                    return int(amount)
+        return 0
+    except (json.JSONDecodeError, TypeError, ValueError):
+        # fallback to regex on text output
+        import re
+
+        match = re.search(r"balance:\s*(\d+)", output)
+        if match:
+            try:
+                return int(match.group(1))
+            except ValueError:
+                return 0
+        match = re.search(r"amount:\s*\"?(\d+)", output)
+        if match:
+            try:
+                return int(match.group(1))
+            except ValueError:
+                return 0
+        return 0
+
+
+def show_voting_power():
+    ensure_binary()
+    if not read_pid(0):
+        print("node0 must be running to query validator set.")
+        return
+
+    rpc_port = node_ports(0)["rpc"]
+    try:
+        output = run_capture(
+            [
+                str(BINARY_PATH.resolve()),
+                "query",
+                "staking",
+                "validators",
+                "--node",
+                f"tcp://127.0.0.1:{rpc_port}",
+                "-o",
+                "json",
+            ],
+            cwd=REPO_ROOT,
+        )
+    except RuntimeError as err:
+        print(f"Validator query failed: {err}")
+        return
+
+    try:
+        data = json.loads(output)
+    except json.JSONDecodeError:
+        print("Unable to parse validator set response.")
+        return
+
+    validators = data.get("validators", [])
+    if not validators:
+        print("No active validators reported.")
+        return
+
+    total_power = 0
+    records = []
+    for val in validators:
+        power = int(val.get("tokens", "0"))
+        moniker = val.get("description", {}).get("moniker", "")
+        val_addr = val.get("operator_address", "")
+        records.append((moniker, val_addr, power))
+        total_power += power
+
+    records.sort(key=lambda item: item[2], reverse=True)
+    print("Validators:")
+    for moniker, val_addr, power in records:
+        percent = (power / total_power * 100) if total_power else 0
+        print(f"  {moniker:20s} {val_addr} power={power} ({percent:.2f}% of total)")
+    print(f"Total voting power: {total_power}")
+
+
+def promote_node_to_validator():
+    ensure_binary()
+    if not read_pid(0):
+        print("node0 must be running to fund new validators.")
+        return
+
+    index = prompt_int("Node index to promote", 1)
+    if index <= 0:
+        print("node0 is already a validator; choose node index >= 1.")
+        return
+
+    if not read_pid(index):
+        print(f"node{index} is not running. Start it before promoting.")
+        return
+
+    info = get_validator_addresses(index, create_key=True)
+    if not info:
+        return
+
+    node_dir, validator_key, address, _ = info
+    print(f"Validator account: {address}")
+
+    rpc_port = node_ports(0)["rpc"]
+    target_rpc_port = node_ports(index)["rpc"]
+
+    required = STAKE_AMOUNT + HIGH_FEE
+    balance = ensure_funds(address, target_rpc_port, required)
+    if balance is None:
+        print("Unable to confirm funding; aborting promotion.")
+        return
+    print(f"Account balance: {balance} {BASE_DENOM}")
+    if balance < required:
+        print(
+            "Balance appears insufficient after funding. Check transactions before retrying."
+        )
+        return
+
+    print("Submitting create-validator transaction...")
+    env = os.environ.copy()
+    env["BINARY"] = str(BINARY_PATH.resolve())
+    env.setdefault("SHARDEUM_NETWORK", "local")
+    run(
+        [
+            "./scripts/create_validator.sh",
+            f"node{index}",
+            "--validator-key",
+            validator_key,
+            "--network",
+            "local",
+        ],
+        cwd=REPO_ROOT,
+        env=env,
+    )
+
+    print(f"node{index} promoted to validator (stake {ashm(STAKE_AMOUNT)}).")
+
+
+def increase_validator_stake():
+    ensure_binary()
+    if not read_pid(0):
+        print("node0 must be running to submit staking transactions.")
+        return
+
+    index = prompt_int("Validator node index", 0)
+    if index < 0:
+        print("Node index must be non-negative.")
+        return
+
+    if not read_pid(index):
+        print(f"node{index} is not running. Start it before adjusting stake.")
+        return
+
+    info = get_validator_addresses(index, create_key=False)
+    if not info:
+        return
+
+    node_dir, validator_key, account_addr, valoper_addr = info
+    amount = prompt_amount("Additional stake (SHM)", 1)
+    network_rpc = node_ports(0)["rpc"]
+    required = amount + HIGH_FEE
+    balance = ensure_funds(account_addr, network_rpc, required)
+    if balance is None:
+        print("Unable to confirm balance; aborting delegation.")
+        return
+    if balance < required:
+        print("Insufficient balance after funding attempt; retry with smaller amount.")
+        return
+
+    print(f"Delegating {format_shm(amount)} SHM to validator node{index}...")
+    run(
+        [
+            str(BINARY_PATH.resolve()),
+            "tx",
+            "staking",
+            "delegate",
+            valoper_addr,
+            ashm(amount),
+            "--from",
+            validator_key,
+            "--home",
+            str(node_dir),
+            "--keyring-backend",
+            "test",
+            "--node",
+            f"tcp://127.0.0.1:{network_rpc}",
+            "--chain-id",
+            CHAIN_ID,
+            "--gas",
+            "500000",
+            "--fees",
+            ashm(HIGH_FEE),
+            "--yes",
+        ],
+        cwd=REPO_ROOT,
+    )
+    print("Additional stake delegated successfully.")
+
+
+def decrease_validator_stake():
+    ensure_binary()
+    if not read_pid(0):
+        print("node0 must be running to submit staking transactions.")
+        return
+
+    index = prompt_int("Validator node index", 0)
+    if index < 0:
+        print("Node index must be non-negative.")
+        return
+
+    info = get_validator_addresses(index, create_key=False)
+    if not info:
+        return
+
+    node_dir, validator_key, account_addr, valoper_addr = info
+    network_rpc = node_ports(0)["rpc"]
+    current = get_delegation_tokens(account_addr, valoper_addr, network_rpc)
+    if current <= 0:
+        print("No active delegation found for this validator.")
+        return
+
+    print(f"Current bonded stake: {format_shm(current)} SHM")
+    amount = prompt_amount("Amount to unbond (SHM)", 1)
+    if amount > current:
+        print("Cannot unbond more than the current bonded stake.")
+        return
+
+    print(f"Unbonding {format_shm(amount)} SHM from validator node{index}...")
+    run(
+        [
+            str(BINARY_PATH.resolve()),
+            "tx",
+            "staking",
+            "unbond",
+            valoper_addr,
+            ashm(amount),
+            "--from",
+            validator_key,
+            "--home",
+            str(node_dir),
+            "--keyring-backend",
+            "test",
+            "--node",
+            f"tcp://127.0.0.1:{network_rpc}",
+            "--chain-id",
+            CHAIN_ID,
+            "--gas",
+            "500000",
+            "--fees",
+            ashm(HIGH_FEE),
+            "--yes",
+        ],
+        cwd=REPO_ROOT,
+    )
+    print("Unbond transaction submitted. Funds will become liquid after the unbonding period.")
+
+def prompt_int(prompt, default):
+    raw = input(f"{prompt} [{default}]: ").strip()
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        print("Invalid number; using default.")
+        return default
+
+
+def main():
+    actions = {
+        "1": ("Build shardeumd binary", lambda: ensure_binary() or print("Binary ready.")),
+        "2": ("Start local network", lambda: start_network(prompt_int("Number of nodes", DEFAULT_NODE_COUNT))),
+        "3": ("Stop entire network", stop_network),
+        "4": ("Show node status", list_nodes),
+        "5": ("Stop a node", lambda: stop_node(prompt_int("Node index", 0))),
+        "6": ("Start a node", lambda: start_node(prompt_int("Node index", 0))),
+        "7": ("Monitor block height", monitor_blocks),
+        "8": ("Show validator voting power", show_voting_power),
+        "9": ("Promote node to validator", promote_node_to_validator),
+        "10": ("Increase validator stake", increase_validator_stake),
+        "11": ("Decrease validator stake", decrease_validator_stake),
+        "12": ("Exit", None),
+    }
+
+    while True:
+        print("\nLocal Testomatic Menu")
+        for key, (desc, _) in actions.items():
+            print(f"  {key}. {desc}")
+        choice = input("Select option: ").strip()
+        if choice == "12":
+            print("Goodbye.")
+            return
+        action = actions.get(choice)
+        if not action:
+            print("Unknown option.")
+            continue
+        _, func = action
+        try:
+            func()
+        except KeyboardInterrupt:
+            print("\nOperation interrupted by user.")
+        except Exception as err:  # pylint: disable=broad-except
+            print(f"Error: {err}")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nExiting.")
+        sys.exit(0)
