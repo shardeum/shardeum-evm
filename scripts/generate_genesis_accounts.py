@@ -242,7 +242,7 @@ def load_secure_accounts(secure_accounts_path: str, balance_multiplier: int = 1)
                 print(f"Warning: Invalid balance {balance_str} for account {acc.get('Name', 'Unknown')}", file=sys.stderr)
                 balance = 0
 
-            # Get nonce from SourceFundsNonce field
+            # Get nonce from SourceFundsNonce field (or default to 0)
             nonce_str = acc.get('SourceFundsNonce', '0')
             try:
                 nonce = int(nonce_str)
@@ -263,9 +263,11 @@ def load_secure_accounts(secure_accounts_path: str, balance_multiplier: int = 1)
             if prime_vault_cosmos_addr:
                 account_info['prime_vault_address'] = prime_vault_cosmos_addr
                 account_info['prime_vault_eth_address'] = prime_vault_eth_addr
-                print(f"Secure account {acc.get('Name')}: {source_cosmos_addr} -> {prime_vault_cosmos_addr} (REPLACEMENT)")
+                # Prime vault replacements always start at nonce 0
+                account_info['prime_vault_nonce'] = 0
+                print(f"Secure account {acc.get('Name')}: {source_cosmos_addr} -> {prime_vault_cosmos_addr} (REPLACEMENT, nonce=0)")
             else:
-                print(f"Secure account {acc.get('Name')}: {source_cosmos_addr} (NO REPLACEMENT)")
+                print(f"Secure account {acc.get('Name')}: {source_cosmos_addr} (NO REPLACEMENT, nonce={nonce})")
 
             accounts.append(account_info)
 
@@ -334,6 +336,7 @@ def update_genesis_with_accounts(genesis_path: str,
             prime_vault_address = account_data.get('prime_vault_address')
             balance = account_data['balance']
             nonce = account_data['nonce']
+            prime_vault_nonce = account_data.get('prime_vault_nonce', 0)  # Default to 0 for replacements
             name = account_data.get('name', 'Unknown')
 
             # Determine if this is a replacement operation
@@ -342,6 +345,7 @@ def update_genesis_with_accounts(genesis_path: str,
             if is_replacement:
                 # REPLACEMENT MODE: Replace source_address with prime_vault_address
                 target_address = prime_vault_address
+                target_nonce = prime_vault_nonce  # Use prime vault nonce (always 0)
                 secure_addresses.add(prime_vault_address)
                 replaced_addresses.add(source_address)
 
@@ -381,6 +385,7 @@ def update_genesis_with_accounts(genesis_path: str,
             else:
                 # NO REPLACEMENT: Just use source_address
                 target_address = source_address
+                target_nonce = nonce  # Use original nonce for non-replacements
                 secure_addresses.add(source_address)
                 print(f"  Processing {name}: {source_address} (no replacement)", file=sys.stderr)
 
@@ -390,20 +395,20 @@ def update_genesis_with_accounts(genesis_path: str,
                     "@type": "/cosmos.auth.v1beta1.BaseAccount",
                     "address": target_address,
                     "pub_key": None,
-                    "sequence": str(nonce) if include_nonce else "0"
+                    "sequence": str(target_nonce) if include_nonce else "0"
                 }
                 genesis['app_state']['auth']['accounts'].append(new_account)
                 new_accounts += 1
                 next_account_number += 1
-                print(f"    Added new account {target_address}", file=sys.stderr)
+                print(f"    Added new account {target_address} (nonce={target_nonce if include_nonce else 0})", file=sys.stderr)
             else:
                 # Update existing account's sequence if needed
                 if include_nonce:
                     for acc in genesis['app_state']['auth']['accounts']:
                         if acc['address'] == target_address:
-                            acc['sequence'] = str(nonce)
+                            acc['sequence'] = str(target_nonce)
                             break
-                print(f"    Updated existing account {target_address}", file=sys.stderr)
+                print(f"    Updated existing account {target_address} (nonce={target_nonce if include_nonce else 0})", file=sys.stderr)
 
             # Set balance if include_balance is True
             if include_balance:
