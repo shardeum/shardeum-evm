@@ -40,7 +40,10 @@ func getNetworkGenesisPath(network string) (string, error) {
 	// Check for split genesis files first (pattern: {network}-genesis.genesis.json)
 	splitGenesisPath := filepath.Join(configDir, "environments", fmt.Sprintf("%s-genesis.genesis.json", network))
 	if _, err := os.Stat(splitGenesisPath); err == nil {
-		fmt.Printf("DEBUG: Found split genesis file: %s\n", splitGenesisPath)
+		// Optional debug path (stderr only) so export stdout remains pure JSON.
+		if os.Getenv("SHARDEUM_DEBUG_GENESIS") == "1" {
+			fmt.Fprintf(os.Stderr, "DEBUG: Found split genesis file: %s\n", splitGenesisPath)
+		}
 		return splitGenesisPath, nil
 	}
 
