@@ -334,7 +334,7 @@ def load_secure_accounts_for_verification(secure_accounts_path: str, balance_mul
                 print(f"Warning: Invalid balance {balance_str} for account {acc.get('Name', 'Unknown')}", file=sys.stderr)
                 balance = 0
 
-            # Get nonce from SourceFundsNonce field
+            # Get nonce from SourceFundsNonce field (or default to 0)
             nonce_str = acc.get('SourceFundsNonce', '0')
             try:
                 nonce = int(nonce_str)
@@ -355,11 +355,13 @@ def load_secure_accounts_for_verification(secure_accounts_path: str, balance_mul
                 account_info['address'] = prime_vault_cosmos_addr
                 account_info['prime_vault_eth_address'] = prime_vault_eth_addr
                 account_info['is_replacement'] = True
-                print(f"  Will verify replacement: {acc.get('Name')} at {prime_vault_cosmos_addr}", file=sys.stderr)
+                # Prime vault replacements always start at nonce 0
+                account_info['expected_nonce'] = 0
+                print(f"  Will verify replacement: {acc.get('Name')} at {prime_vault_cosmos_addr} (nonce expected: 0)", file=sys.stderr)
             else:
                 account_info['address'] = source_cosmos_addr
                 account_info['is_replacement'] = False
-                print(f"  Will verify: {acc.get('Name')} at {source_cosmos_addr}", file=sys.stderr)
+                print(f"  Will verify: {acc.get('Name')} at {source_cosmos_addr} (nonce expected: {nonce})", file=sys.stderr)
 
             accounts.append(account_info)
 
