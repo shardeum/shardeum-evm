@@ -98,6 +98,56 @@ def generate_validator_metadata(node_index):
     }
 
 
+def apply_genesis_validator_metadata():
+    """Issue an edit-validator tx to enrich node0 (genesis validator) with random metadata.
+    Only runs if node0 is up and we haven't already created a metadata file."""
+    if not read_pid(0):
+        return
+    node0_dir = LOCAL_DIR / "node0"
+    meta_path = node0_dir / "validator_metadata.json"
+    if meta_path.exists():
+        # Assume already handled (either from previous run or manual edit)
+        return
+    print("Applying random metadata to genesis validator (node0)...")
+    metadata = generate_validator_metadata(0)
+    try:
+        meta_path.write_text(json.dumps(metadata, indent=2))
+    except Exception:  # pylint: disable=broad-except
+        pass
+    rpc_port = node_ports(0)["rpc"]
+    # Wait briefly for chain to produce first block so staking edits succeed
+    start_wait = time.time()
+    while time.time() - start_wait < 15:
+        h = fetch_height(rpc_port)
+        if h and h[0] >= 1:
+            break
+        time.sleep(1)
+    fee_amount = ashm(HIGH_FEE)
+    base_cmd = [
+        str(BINARY_PATH.resolve()),
+        "tx", "staking", "edit-validator",
+        "--from", "validator",
+        "--home", str(node0_dir),
+        "--keyring-backend", "test",
+        "--node", f"tcp://127.0.0.1:{rpc_port}",
+        "--chain-id", CHAIN_ID,
+        "--gas", "500000",
+        "--fees", fee_amount,
+        "--identity", metadata["identity"],
+        "--website", metadata["website"],
+        "--security-contact", metadata["security"],
+        "--details", metadata["details"],
+        "--yes",
+    ]
+    # Some SDK builds accept --moniker to update moniker; attempt and fall back silently
+    try_cmd = base_cmd + ["--moniker", metadata["moniker"]]
+    try:
+        run(try_cmd, cwd=REPO_ROOT)
+    except RuntimeError:
+        run(base_cmd, cwd=REPO_ROOT)
+    print("Genesis validator metadata applied.")
+
+
 def ensure_binary():
     if BINARY_PATH.exists():
         return
@@ -136,6 +186,10 @@ def start_network(node_count=DEFAULT_NODE_COUNT):
             time.sleep(2)
             print("Local network reported ready. Returning to menu.")
             print(f"Bootstrap output logged to {bootstrap_log}")
+            try:
+                apply_genesis_validator_metadata()
+            except Exception as err:  # pylint: disable=broad-except
+                print(f"Warning: could not apply genesis validator metadata: {err}")
             return
         if process.poll() is not None:
             raise RuntimeError(f"start_network.sh exited with code {process.returncode}; see {bootstrap_log}")
