@@ -900,6 +900,60 @@ def decrease_validator_stake():
     )
     print("Unbond transaction submitted. Funds will become liquid after the unbonding period.")
 
+
+def show_validator_metadata():
+    """Show on-chain validator description metadata plus any local metadata files."""
+    ensure_binary()
+    if not read_pid(0):
+        print("node0 must be running to query validators.")
+        return
+    rpc_port = node_ports(0)["rpc"]
+    try:
+        output = run_capture([
+            str(BINARY_PATH.resolve()),
+            "query",
+            "staking",
+            "validators",
+            "--node",
+            f"tcp://127.0.0.1:{rpc_port}",
+            "-o",
+            "json",
+        ], cwd=REPO_ROOT)
+    except RuntimeError as err:
+        print(f"Failed to query validators: {err}")
+        return
+    try:
+        data = json.loads(output)
+    except json.JSONDecodeError:
+        print("Could not parse validator JSON.")
+        return
+    validators = data.get("validators", [])
+    if not validators:
+        print("No validators found on-chain.")
+        return
+    print("On-chain validator metadata:")
+    for val in validators:
+        desc = val.get("description", {})
+        op = val.get("operator_address", "")
+        print(f"  {desc.get('moniker','')} ({op})")
+        print(f"    website : {desc.get('website','')}")
+        print(f"    identity: {desc.get('identity','')}")
+        print(f"    security: {desc.get('security_contact','')}")
+        print(f"    details : {desc.get('details','')}")
+    # Local metadata files
+    print("\nLocal validator_metadata.json files:")
+    for node_dir in sorted(LOCAL_DIR.glob("node*")):
+        meta_file = node_dir / "validator_metadata.json"
+        if meta_file.exists():
+            try:
+                meta = json.loads(meta_file.read_text() or '{}')
+            except json.JSONDecodeError:
+                print(f"  {node_dir.name}: invalid JSON")
+                continue
+            print(f"  {node_dir.name} -> moniker={meta.get('moniker','')} website={meta.get('website','')} identity={meta.get('identity','')} security={meta.get('security','')} details={meta.get('details','')}")
+        else:
+            print(f"  {node_dir.name}: (no metadata file)")
+
 def prompt_int(prompt, default):
     raw = input(f"{prompt} [{default}]: ").strip()
     if not raw:
@@ -924,7 +978,8 @@ def main():
         "9": ("Promote node to validator", promote_node_to_validator),
         "10": ("Increase validator stake", increase_validator_stake),
         "11": ("Decrease validator stake", decrease_validator_stake),
-        "12": ("Exit", None),
+    "12": ("Show validator metadata", show_validator_metadata),
+    "13": ("Exit", None),
     }
 
     while True:
@@ -932,7 +987,7 @@ def main():
         for key, (desc, _) in actions.items():
             print(f"  {key}. {desc}")
         choice = input("Select option: ").strip()
-        if choice == "12":
+        if choice == "13":
             print("Goodbye.")
             return
         action = actions.get(choice)
