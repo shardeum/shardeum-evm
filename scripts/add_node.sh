@@ -10,6 +10,11 @@ SEED_NODE_RPC=""
 NETWORK="local"
 CUSTOM_CHAIN_ID=""
 NODE_TYPE="validator"
+MONIKER=""
+WEBSITE=""
+IDENTITY=""
+SECURITY=""
+DETAILS=""
 
 # Usage function
 usage() {
@@ -21,6 +26,11 @@ usage() {
   echo "  --network <name>     Network to use (mainnet, testnet, devnet, local)"
   echo "  --chain-id <id>      Override chain ID"
   echo "  --node-type <type>   Node type: validator or full-node (default: validator)"
+  echo "  --moniker <name>     Custom moniker for the node (default: <node_id>)"
+  echo "  --website <url>      Website URL for validator"
+  echo "  --identity <id>      Keybase identity for validator verification"
+  echo "  --security <email>   Security contact email"
+  echo "  --details <text>     Additional details/description for validator"
   echo "  --help               Show this help message"
   echo ""
   echo "Environment variables:"
@@ -33,6 +43,7 @@ usage() {
   echo "  $0 node4 --network testnet"
   echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
   echo "  $0 node6 --node-type full-node --network testnet"
+  echo "  $0 node7 --moniker 'My Validator' --website https://mysite.com --details 'Production validator'"
   echo "  SHARDEUM_CONFIG_DIR=/path/to/config SHARDEUM_NETWORK=testnet $0 node6"
   exit 1
 }
@@ -56,29 +67,28 @@ while [[ $# -gt 0 ]]; do
       NODE_TYPE="$2"
       shift 2
       ;;
+    --moniker)
+      MONIKER="$2"
+      shift 2
+      ;;
+    --website)
+      WEBSITE="$2"
+      shift 2
+      ;;
+    --identity)
+      IDENTITY="$2"
+      shift 2
+      ;;
+    --security)
+      SECURITY="$2"
+      shift 2
+      ;;
+    --details)
+      DETAILS="$2"
+      shift 2
+      ;;
     --help)
-      echo "Usage: $0 <node_id> [options]"
-      echo "  node_id: Unique identifier for the new node (e.g., node4, node5)"
-      echo ""
-      echo "Options:"
-      echo "  --seed-rpc <url>     RPC endpoint of seed node (default: http://localhost:26657)"
-      echo "  --network <name>     Network to use (mainnet, testnet, devnet, local)"
-      echo "  --chain-id <id>      Override chain ID"
-      echo "  --node-type <type>   Node type: validator or full-node (default: validator)"
-      echo "  --help               Show this help message"
-      echo ""
-      echo "Environment variables:"
-      echo "  SHARDEUM_NETWORK     Network to use (overrides --network)"
-      echo "  SHARDEUM_CHAIN_ID    Chain ID to use (overrides --chain-id)"
-      echo "  SHARDEUM_CONFIG_DIR  Absolute path to directory containing configs/*.json"
-      echo "  BINARY               Path to shardeumd binary"
-      echo ""
-      echo "Examples:"
-      echo "  $0 node4 --network testnet"
-      echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
-      echo "  $0 node6 --node-type full-node --network testnet"
-      echo "  SHARDEUM_CONFIG_DIR=path/to/config SHARDEUM_NETWORK=testnet $0 node6"
-      exit 0
+      usage
       ;;
     --*)
       echo "Unknown option: $1"
@@ -118,6 +128,7 @@ fi
 # Set defaults
 SEED_NODE_RPC="${SEED_NODE_RPC:-http://localhost:26657}"
 NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-testnet}}"
+MONIKER="${MONIKER:-$NODE_ID}"
 
 # Load network configuration
 CONFIG_FILE="$SHARDEUM_CONFIG_DIR/environments/$NETWORK.json"
@@ -222,8 +233,20 @@ if [ -d "$NODE_DIR" ]; then
 fi
 
 # Initialize new node
-echo -e "${YELLOW}Initializing new node: $NODE_ID${NC}"
-"$BINARY" init "$NODE_ID" --chain-id "$CHAINID" --home "$NODE_DIR" --overwrite > /dev/null 2>&1
+echo -e "${YELLOW}Initializing new node: $NODE_ID with moniker: $MONIKER${NC}"
+"$BINARY" init "$MONIKER" --chain-id "$CHAINID" --home "$NODE_DIR" --overwrite > /dev/null 2>&1
+
+# Save validator metadata for later use when creating validator
+echo -e "${YELLOW}Saving validator metadata...${NC}"
+cat > "$NODE_DIR/validator_metadata.json" << EOF
+{
+  "moniker": "$MONIKER",
+  "website": "$WEBSITE",
+  "identity": "$IDENTITY",
+  "security": "$SECURITY",
+  "details": "$DETAILS"
+}
+EOF
 
 # Get genesis from seed node
 echo -e "${YELLOW}Fetching genesis from seed node...${NC}"

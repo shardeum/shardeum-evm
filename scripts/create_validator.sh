@@ -9,6 +9,10 @@ NODE_ID=""
 VALIDATOR_KEY=""
 AMOUNT="1000000000000000000"
 MONIKER=""
+WEBSITE=""
+IDENTITY=""
+SECURITY=""
+DETAILS=""
 COMMISSION_RATE="0.10"
 COMMISSION_MAX_RATE="0.20"
 COMMISSION_MAX_CHANGE_RATE="0.01"
@@ -29,7 +33,11 @@ usage() {
   echo "Options:"
   echo "  --validator-key <name>   Name of validator key in keyring (default: validator-<node_id>)"
   echo "  --amount <amount>        Validator stake amount (default: 1000000000000000000)"
-  echo "  --moniker <name>         Validator moniker (default: <node_id>-validator)"
+  echo "  --moniker <name>         Validator moniker (default: from node metadata or <node_id>-validator)"
+  echo "  --website <url>          Website URL (default: from node metadata)"
+  echo "  --identity <id>          Keybase identity (default: from node metadata)"
+  echo "  --security <email>       Security contact (default: from node metadata)" 
+  echo "  --details <text>         Description details (default: from node metadata)"
   echo "  --commission-rate <rate> Commission rate (default: 0.10)"
   echo "  --network <name>         Network to use (mainnet, testnet, devnet, local) (default: local)"
   echo "  --help                   Show this help message"
@@ -42,6 +50,7 @@ usage() {
   echo "  $0 node5 --network testnet"
   echo "  $0 node5 --validator-key my-validator --amount 2000000000000000000"
   echo "  $0 node5 --moniker 'My Validator' --commission-rate 0.05 --network devnet"
+  echo "  $0 node5 --website https://mysite.com --identity keybase_id --details 'Production validator'"
   exit 1
 }
 
@@ -58,6 +67,22 @@ while [[ $# -gt 0 ]]; do
       ;;
     --moniker)
       MONIKER="$2"
+      shift 2
+      ;;
+    --website)
+      WEBSITE="$2"
+      shift 2
+      ;;
+    --identity)
+      IDENTITY="$2"
+      shift 2
+      ;;
+    --security)
+      SECURITY="$2"
+      shift 2
+      ;;
+    --details)
+      DETAILS="$2"
       shift 2
       ;;
     --commission-rate)
@@ -95,7 +120,6 @@ fi
 
 # Set defaults
 VALIDATOR_KEY="${VALIDATOR_KEY:-validator-$NODE_ID}"
-MONIKER="${MONIKER:-$NODE_ID-validator}"
 NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-local}}"
 
 # Paths
@@ -103,8 +127,29 @@ BASE_DIR="${HOME:-$CURRENT_DIR}/.$NETWORK"
 if [[ "$NETWORK" == "local" ]]; then
   BASE_DIR="$CURRENT_DIR/.$NETWORK"
 fi
-
 NODE_DIR="$BASE_DIR/$NODE_ID"
+
+# Load validator metadata if it exists (saved from add_node.sh)
+METADATA_FILE="$NODE_DIR/validator_metadata.json"
+if [[ -f "$METADATA_FILE" ]]; then
+  echo -e "${YELLOW}Loading validator metadata from $METADATA_FILE${NC}"
+  SAVED_MONIKER=$(jq -r '.moniker // empty' "$METADATA_FILE")
+  SAVED_WEBSITE=$(jq -r '.website // empty' "$METADATA_FILE")
+  SAVED_IDENTITY=$(jq -r '.identity // empty' "$METADATA_FILE")
+  SAVED_SECURITY=$(jq -r '.security // empty' "$METADATA_FILE")
+  SAVED_DETAILS=$(jq -r '.details // empty' "$METADATA_FILE")
+  
+  # Use saved values as defaults if not provided via command line
+  MONIKER="${MONIKER:-${SAVED_MONIKER:-$NODE_ID-validator}}"
+  WEBSITE="${WEBSITE:-$SAVED_WEBSITE}"
+  IDENTITY="${IDENTITY:-$SAVED_IDENTITY}"
+  SECURITY="${SECURITY:-$SAVED_SECURITY}"
+  DETAILS="${DETAILS:-$SAVED_DETAILS}"
+else
+  echo -e "${YELLOW}No validator metadata found, using defaults${NC}"
+  MONIKER="${MONIKER:-$NODE_ID-validator}"
+fi
+
 BINARY="${BINARY:-$(command -v shardeumd)}"
 
 # Verify binary exists (skip build if called from makefile)
@@ -143,6 +188,18 @@ echo -e "${YELLOW}Chain ID: $CHAINID${NC}"
 echo -e "${YELLOW}Validator Key: $VALIDATOR_KEY${NC}"
 echo -e "${YELLOW}Moniker: $MONIKER${NC}"
 echo -e "${YELLOW}Amount: $AMOUNT$BASE_DENOM${NC}"
+if [[ -n "$WEBSITE" ]]; then
+  echo -e "${YELLOW}Website: $WEBSITE${NC}"
+fi
+if [[ -n "$IDENTITY" ]]; then
+  echo -e "${YELLOW}Identity: $IDENTITY${NC}"
+fi
+if [[ -n "$SECURITY" ]]; then
+  echo -e "${YELLOW}Security Contact: $SECURITY${NC}"
+fi
+if [[ -n "$DETAILS" ]]; then
+  echo -e "${YELLOW}Details: $DETAILS${NC}"
+fi
 echo
 
 # Check if validator key exists
@@ -203,10 +260,10 @@ cat > "$VALIDATOR_JSON" << EOF
   "pubkey": $VALIDATOR_PUBKEY,
   "amount": "$AMOUNT$BASE_DENOM",
   "moniker": "$MONIKER",
-  "identity": "",
-  "website": "",
-  "security": "",
-  "details": "Validator for $NODE_ID",
+  "identity": "$IDENTITY",
+  "website": "$WEBSITE",
+  "security": "$SECURITY",
+  "details": "${DETAILS:-Validator for $NODE_ID}",
   "commission-rate": "$COMMISSION_RATE",
   "commission-max-rate": "$COMMISSION_MAX_RATE",
   "commission-max-change-rate": "$COMMISSION_MAX_CHANGE_RATE",
