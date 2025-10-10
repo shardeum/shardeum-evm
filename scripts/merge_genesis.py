@@ -10,6 +10,13 @@ Options:
   --balance-multiplier N    Multiply all balances by N (default: 1)
   --network NAME           Network name for split files (overrides auto-detection)
   --add-balance            Add balance to existing addresses in split files instead of skipping duplicates
+  --fix-supply             Recalculate and fix the total supply based on actual balances (only requires main_genesis_file.json)
+
+Fix Supply Mode:
+  python merge_genesis.py <main_genesis_file.json> --fix-supply [--network NAME]
+
+  This mode recalculates the total supply from all sources (main genesis + all split files)
+  and updates the supply in the main genesis file to match. Use this to fix supply mismatches.
 """
 
 import json
@@ -260,6 +267,46 @@ def update_balance_in_split_file(split_file_path: str, cosmos_address: str, bala
         print(f"Error updating balance in split file {split_file_path}: {e}", file=sys.stderr)
         return False
 
+def calculate_total_balance_from_all_sources(genesis_dir: str, base_name: str, main_genesis: Dict) -> int:
+    """Calculate total balance from main genesis and all split files
+
+    Returns:
+        int: Total balance in ashm across all sources
+    """
+    total_balance = 0
+
+    # Calculate from main genesis bank balances
+    bank_balances = main_genesis.get('app_state', {}).get('bank', {}).get('balances', [])
+    for balance_entry in bank_balances:
+        for coin in balance_entry.get('coins', []):
+            if coin.get('denom') == 'ashm':
+                total_balance += int(coin.get('amount', '0'))
+
+    print(f"Balance in main genesis: {total_balance:,} ashm")
+
+    # Calculate from all split files
+    pattern = os.path.join(genesis_dir, f"{base_name}.genesis.accounts.*.json")
+    split_files = glob.glob(pattern)
+
+    for split_file in split_files:
+        try:
+            with open(split_file, 'r') as f:
+                split_data = json.load(f)
+
+            split_balance = 0
+            for balance_entry in split_data.get('balances', []):
+                for coin in balance_entry.get('coins', []):
+                    if coin.get('denom') == 'ashm':
+                        split_balance += int(coin.get('amount', '0'))
+
+            print(f"Balance in {os.path.basename(split_file)}: {split_balance:,} ashm")
+            total_balance += split_balance
+
+        except Exception as e:
+            print(f"Warning: Could not read split file {split_file}: {e}", file=sys.stderr)
+
+    return total_balance
+
 def update_main_genesis_supply(main_genesis_path: str, added_balance: int) -> bool:
     """Update the total supply in the main genesis file"""
     try:
@@ -297,6 +344,81 @@ def update_main_genesis_supply(main_genesis_path: str, added_balance: int) -> bo
 
     except Exception as e:
         print(f"Error updating main genesis supply: {e}", file=sys.stderr)
+        return False
+
+def fix_genesis_supply(main_genesis_path: str, network: str = None) -> bool:
+    """Recalculate and fix the total supply in the main genesis file
+
+    This function calculates the actual total balance from all sources
+    (main genesis + split files) and updates the supply to match.
+    """
+    try:
+        print(f"Loading main genesis from {main_genesis_path}")
+        with open(main_genesis_path, 'r') as f:
+            genesis = json.load(f)
+
+        # Determine base name and directory for split files
+        genesis_path = Path(main_genesis_path)
+        genesis_dir = str(genesis_path.parent)
+
+        if network:
+            base_name = network
+            print(f"Using network override: {network}")
+        else:
+            base_name = genesis_path.stem.replace('.genesis', '')
+            if base_name == 'genesis':
+                base_name = 'network'
+            print(f"Auto-detected base name: {base_name}")
+
+        # Calculate total balance from all sources
+        print(f"\nCalculating total balance from all sources...")
+        total_balance = calculate_total_balance_from_all_sources(genesis_dir, base_name, genesis)
+
+        print(f"\nTotal balance across all sources: {total_balance:,} ashm")
+
+        # Get current supply
+        supply_section = genesis.get('app_state', {}).get('bank', {}).get('supply', [])
+
+        # Find ashm supply entry
+        ashm_supply = None
+        for supply_entry in supply_section:
+            if supply_entry.get('denom') == 'ashm':
+                ashm_supply = supply_entry
+                break
+
+        if ashm_supply:
+            current_supply = int(ashm_supply.get('amount', '0'))
+            print(f"Current supply in genesis: {current_supply:,} ashm")
+
+            if current_supply == total_balance:
+                print(f"\n✓ Supply is already correct! No changes needed.")
+                return True
+            else:
+                difference = total_balance - current_supply
+                print(f"Supply mismatch detected:")
+                print(f"  Expected: {total_balance:,} ashm")
+                print(f"  Current:  {current_supply:,} ashm")
+                print(f"  Difference: {difference:,} ashm")
+
+                # Update supply to match actual balances
+                ashm_supply['amount'] = str(total_balance)
+                print(f"\nUpdating supply from {current_supply:,} to {total_balance:,} ashm")
+        else:
+            print(f"No ashm supply entry found. Creating new entry with {total_balance:,} ashm")
+            supply_section.append({
+                'denom': 'ashm',
+                'amount': str(total_balance)
+            })
+
+        # Save updated genesis
+        with open(main_genesis_path, 'w') as f:
+            json.dump(genesis, f, indent=2)
+
+        print(f"\n✓ Successfully fixed supply in {main_genesis_path}")
+        return True
+
+    except Exception as e:
+        print(f"Error fixing genesis supply: {e}", file=sys.stderr)
         return False
 
 def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_multiplier: int = 1, network: str = None, add_balance: bool = False):
@@ -463,16 +585,37 @@ def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_mu
 
 def main():
     parser = argparse.ArgumentParser(description="Create split account file from old genesis addresses")
-    parser.add_argument("old_genesis", help="Path to old genesis file (simple format)")
-    parser.add_argument("main_genesis", help="Path to main genesis file (Cosmos SDK format)")
+    parser.add_argument("old_genesis", nargs='?', help="Path to old genesis file (simple format)")
+    parser.add_argument("main_genesis", nargs='?', help="Path to main genesis file (Cosmos SDK format)")
     parser.add_argument("--balance-multiplier", type=int, default=1,
                        help="Multiplier to apply to all balances (default: 1)")
     parser.add_argument("--network", type=str, default=None,
                        help="Network name to use for split files (overrides auto-detection)")
     parser.add_argument("--add-balance", action="store_true",
                        help="Add balance to existing addresses in split files instead of skipping duplicates")
+    parser.add_argument("--fix-supply", action="store_true",
+                       help="Recalculate and fix the total supply in the main genesis file based on actual balances")
 
     args = parser.parse_args()
+
+    # Fix supply mode - only requires main_genesis
+    if args.fix_supply:
+        # If only one argument provided with --fix-supply, treat it as main_genesis
+        main_genesis_path = args.main_genesis if args.main_genesis else args.old_genesis
+
+        if not main_genesis_path:
+            print("Error: --fix-supply requires a genesis file path", file=sys.stderr)
+            parser.print_help()
+            sys.exit(1)
+
+        success = fix_genesis_supply(main_genesis_path, args.network)
+        sys.exit(0 if success else 1)
+
+    # Regular merge mode - requires both old_genesis and main_genesis
+    if not args.old_genesis or not args.main_genesis:
+        print("Error: old_genesis and main_genesis are required (unless using --fix-supply)", file=sys.stderr)
+        parser.print_help()
+        sys.exit(1)
 
     merge_genesis_files(args.old_genesis, args.main_genesis, args.balance_multiplier, args.network, args.add_balance)
 
