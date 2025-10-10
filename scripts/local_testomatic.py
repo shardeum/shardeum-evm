@@ -26,7 +26,7 @@ MIN_GAS_PRICE = f"2048130280389041{BASE_DENOM}"
 DEFAULT_NODE_COUNT = 10
 DECIMAL_FACTOR = 10**18
 STAKE_AMOUNT = DECIMAL_FACTOR  # 1 SHM
-FUND_AMOUNT = 3000 * DECIMAL_FACTOR  # 3000 SHM to cover stake + fees
+FUND_AMOUNT = 10000 * DECIMAL_FACTOR  # 10000 SHM to cover stake + multiple high fees
 HIGH_FEE = 1024065140194520500000  # 1024.0651401945205 SHM global fee requirement
 BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 
@@ -762,20 +762,43 @@ def show_voting_power():
         print("No active validators reported.")
         return
 
+    # Build mapping of validator addresses to local node indices
+    local_nodes = {}
+    for node_dir in LOCAL_DIR.glob("node*"):
+        if node_dir.is_dir():
+            index = int(node_dir.name.replace("node", ""))
+            info = get_validator_addresses(index, create_key=False)
+            if info:
+                _, _, _, valoper_addr = info
+                local_nodes[valoper_addr] = index
+
     total_power = 0
     records = []
     for val in validators:
         power = int(val.get("tokens", "0"))
         moniker = val.get("description", {}).get("moniker", "")
         val_addr = val.get("operator_address", "")
-        records.append((moniker, val_addr, power))
+        
+        # Add node index if this is a local node
+        node_info = ""
+        if val_addr in local_nodes:
+            node_index = local_nodes[val_addr]
+            is_running = "running" if read_pid(node_index) else "stopped"
+            node_info = f" [node{node_index} - {is_running}]"
+        
+        records.append((moniker, val_addr, power, node_info))
         total_power += power
 
     records.sort(key=lambda item: item[2], reverse=True)
     print("Validators:")
-    for moniker, val_addr, power in records:
+    for moniker, val_addr, power, node_info in records:
         percent = (power / total_power * 100) if total_power else 0
-        print(f"  {moniker:20s} {val_addr} power={power} ({percent:.2f}% of total)")
+        if val_addr in local_nodes:
+            node_index = local_nodes[val_addr]
+            is_running = "running" if read_pid(node_index) else "stopped"
+            print(f"  node{node_index:2d} {moniker:15s} ({is_running}) power={power} ({percent:.2f}%)")
+        else:
+            print(f"  ----  {moniker:15s} (external)    power={power} ({percent:.2f}%)")
     print(f"Total voting power: {total_power}")
 
 
@@ -1183,6 +1206,848 @@ def random_edit_validator_metadata():
         print("Metadata update transaction submitted.")
     except RuntimeError as err:
         print(f"Failed to submit edit-validator tx: {err}")
+def get_validator_consensus_address(index):
+    """Get the consensus address for a validator node."""
+    node_dir = LOCAL_DIR / f"node{index}"
+    priv_validator_key = node_dir / "config" / "priv_validator_key.json"
+    
+    if not priv_validator_key.exists():
+        print(f"Validator key file not found: {priv_validator_key}")
+        return None
+    
+    try:
+        with open(priv_validator_key, 'r') as f:
+            key_data = json.load(f)
+        
+        # Extract the consensus address directly from the validator key file
+        # This is the hex-encoded consensus address
+        hex_address = key_data.get("address", "")
+        if not hex_address:
+            print("Consensus address not found in validator key file")
+            return None
+            
+        # Convert hex address to bech32 consensus address
+        output = run_capture([
+            str(BINARY_PATH.resolve()),
+            "debug",
+            "addr",
+            hex_address
+        ], cwd=REPO_ROOT)
+        
+        # Parse the output to extract the consensus address
+        for line in output.split('\n'):
+            if line.startswith('Bech32 Con:'):
+                return line.split(':', 1)[1].strip()
+        
+        print("Could not find consensus address in debug output")
+        return None
+    except Exception as e:
+        print(f"Error getting consensus address: {e}")
+        return None
+
+
+def get_signing_info(cons_address, rpc_port):
+    """Get signing info for a validator using the slashing query."""
+    try:
+        output = run_capture([
+            str(BINARY_PATH.resolve()),
+            "query",
+            "slashing",
+            "signing-info",
+            cons_address,
+            "--node",
+            f"tcp://127.0.0.1:{rpc_port}",
+            "-o",
+            "json"
+        ], cwd=REPO_ROOT)
+        
+        data = json.loads(output)
+        return data
+    except Exception as e:
+        print(f"Error querying signing info: {e}")
+        return None
+
+
+def is_node_validator(index):
+    """Check if a node is actually a validator by querying the validator set."""
+    if not read_pid(0):
+        return False
+    
+    info = get_validator_addresses(index, create_key=False)
+    if not info:
+        return False
+    
+    _, _, _, valoper_addr = info
+    rpc_port = node_ports(0)["rpc"]
+    
+    try:
+        # Check if validator exists in the validator set
+        output = run_capture([
+            str(BINARY_PATH.resolve()),
+            "query",
+            "staking",
+            "validator",
+            valoper_addr,
+            "--node",
+            f"tcp://127.0.0.1:{rpc_port}",
+            "-o",
+            "json"
+        ], cwd=REPO_ROOT)
+        
+        data = json.loads(output)
+        validator = data.get("validator", {})
+        status = validator.get("status", "")
+        
+        # Check if validator is bonded (active)
+        return status == "BOND_STATUS_BONDED"
+    except:
+        return False
+
+
+def test_slashing_double_sign():
+    """Test double-sign slashing by copying validator keys to create duplicate signing."""
+    ensure_binary()
+    if not read_pid(0):
+        print("node0 must be running to test double-sign slashing.")
+        return
+
+    # Find an active validator to use as source (exclude node0)
+    source_index = None
+    print("🔍 Searching for active validators...")
+    
+    for i in range(1, 10):  # Check nodes 1-9 (skip node0)
+        if is_node_validator(i):
+            source_index = i
+            print(f"✅ Found active validator: node{i}")
+            break
+    
+    if source_index is None:
+        print("❌ No active validators found (excluding node0).")
+        print("Use option 9 to promote some nodes to validators first.")
+        return
+    
+    index = source_index  # Use the found validator
+    
+    # Get source validator info
+    source_info = get_validator_addresses(index, create_key=False)
+    if not source_info:
+        print(f"❌ node{index} does not have validator keys configured.")
+        return
+
+    # Find an available target node (should be running but not a validator)
+    target_index = None
+    print("🔍 Searching for running non-validator nodes...")
+    
+    for i in range(10):  # Check nodes 0-9
+        if i == index or i == 0:  # Skip source node and bootstrap validator
+            continue
+        if read_pid(i):  # Node is running
+            if not is_node_validator(i):  # Not an active validator
+                target_index = i
+                print(f"✅ Found running non-validator: node{i}")
+                break
+            else:
+                print(f"⚠️  node{i} is running but already a validator (skipped)")
+        else:
+            print(f"📴 node{i} is not running (skipped)")
+    
+    if target_index is None:
+        print("❌ Could not find a suitable target node for double-sign test.")
+        print("Need a running non-validator node. Try starting more nodes first.")
+        print("💡 Tip: Use option 6 to start additional nodes")
+        return
+
+    source_node_dir = LOCAL_DIR / f"node{index}"
+    target_node_dir = LOCAL_DIR / f"node{target_index}"
+    
+    source_key_file = source_node_dir / "config" / "priv_validator_key.json"
+    target_key_file = target_node_dir / "config" / "priv_validator_key.json"
+    backup_key_file = target_node_dir / "config" / "priv_validator_key.json.backup"
+    
+    if not source_key_file.exists():
+        print(f"❌ Source validator key not found: {source_key_file}")
+        return
+    
+    print(f"🔥 Setting up double-sign scenario:")
+    print(f"   Source validator: node{index} (active validator)")
+    print(f"   Target node: node{target_index} (will copy keys to)")
+    print(f"   Expected penalty: 5% stake slash + permanent jailing")
+    
+    rpc_port = node_ports(0)["rpc"]
+    
+    # Get initial validator info
+    _, _, _, valoper_addr = source_info
+    cons_address = get_validator_consensus_address(index)
+    
+    if not cons_address:
+        print("❌ Failed to get consensus address")
+        return
+    
+    try:
+        # Get initial stake
+        output = run_capture([
+            str(BINARY_PATH.resolve()),
+            "query",
+            "staking",
+            "validator",
+            valoper_addr,
+            "--node",
+            f"tcp://127.0.0.1:{rpc_port}",
+            "-o",
+            "json"
+        ], cwd=REPO_ROOT)
+        
+        import json as json_lib
+        validator_data = json_lib.loads(output)
+        initial_tokens = int(validator_data.get("validator", {}).get("tokens", "0"))
+        
+        print(f"\nInitial validator state:")
+        print(f"  Operator: {valoper_addr}")
+        print(f"  Consensus: {cons_address}")
+        print(f"  Initial stake: {format_shm(initial_tokens)} SHM")
+        
+    except Exception as e:
+        print(f"❌ Error getting initial validator info: {e}")
+        return
+    
+    # Backup original target key if it exists
+    if target_key_file.exists():
+        print(f"\n📋 Backing up original key from node{target_index}...")
+        import shutil
+        shutil.copy2(target_key_file, backup_key_file)
+    
+    # Copy validator key to target node
+    print(f"🔑 Copying validator key from node{index} to node{target_index}...")
+    import shutil
+    shutil.copy2(source_key_file, target_key_file)
+    
+    print(f"✅ Key copied successfully!")
+    
+    # Restart target node to load the new key
+    print(f"🔄 Restarting node{target_index} to load the new validator key...")
+    stop_node(target_index, silent=True)
+    time.sleep(2)  # Brief pause between stop and start
+    start_node(target_index)
+    
+    # Wait for node to start and sync
+    print(f"⏳ Waiting for node{target_index} to restart and sync...")
+    time.sleep(5)
+    
+    print(f"\n⚠️  WARNING: Both node{index} and node{target_index} now have the same validator key!")
+    print(f"This will cause double-signing when both nodes attempt to sign blocks.")
+    
+    # Verify target node is syncing
+    target_rpc_port = node_ports(target_index)["rpc"]
+    print(f"\n🔄 Checking if node{target_index} is syncing...")
+    
+    target_height = None
+    for attempt in range(5):
+        target_height_info = fetch_height(target_rpc_port)
+        if target_height_info:
+            target_height = target_height_info[0]
+            print(f"✅ node{target_index} is syncing at height {target_height}")
+            break
+        else:
+            print(f"⏳ Waiting for node{target_index} to sync... (attempt {attempt + 1}/5)")
+            time.sleep(2)
+    
+    if target_height is None:
+        print(f"❌ node{target_index} is not responding or not syncing properly")
+        print(f"Double-sign test may not work correctly")
+    
+    # Get current height before starting double-sign
+    height_info = fetch_height(rpc_port)
+    start_height = height_info[0] if height_info else 0
+    
+    print(f"\nStarting double-sign monitoring at height {start_height}...")
+    print(f"Both nodes will now compete to sign the same blocks, triggering slashing.")
+    print(f"Expected result: Validator will be slashed 5% and permanently jailed.")
+    print(f"⚠️  Note: Double-signing detection may take several minutes due to:")
+    print(f"    - Evidence collection and ABCI processing delays")
+    print(f"    - Consensus layer needs to detect conflicting signatures")
+    print(f"    - Evidence submission can take up to the unbonding period")
+    print(f"\nPress Ctrl+C to stop monitoring and clean up.\n")
+    
+    try:
+        check_interval = 5
+        max_wait_time = 300  # 5 minutes maximum wait
+        start_time = time.time()
+        
+        while time.time() - start_time < max_wait_time:
+            # Get current height and validator status
+            height_info = fetch_height(rpc_port)
+            current_height = height_info[0] if height_info else "unknown"
+            
+            print(f"[{time.strftime('%H:%M:%S')}] Height: {current_height}")
+            
+            # Check validator status
+            try:
+                output = run_capture([
+                    str(BINARY_PATH.resolve()),
+                    "query",
+                    "staking",
+                    "validator",
+                    valoper_addr,
+                    "--node",
+                    f"tcp://127.0.0.1:{rpc_port}",
+                    "-o",
+                    "json"
+                ], cwd=REPO_ROOT)
+                
+                validator_data = json_lib.loads(output)
+                validator = validator_data.get("validator", {})
+                current_tokens = int(validator.get("tokens", "0"))
+                jailed = validator.get("jailed", False)
+                status = validator.get("status", "")
+                
+                # Check for slashing
+                if current_tokens < initial_tokens:
+                    slashed_amount = initial_tokens - current_tokens
+                    slash_percent = (slashed_amount / initial_tokens) * 100
+                    
+                    print(f"\n🔴 DOUBLE-SIGN SLASHING DETECTED! 🔴")
+                    print(f"Initial stake: {format_shm(initial_tokens)} SHM")
+                    print(f"Current stake: {format_shm(current_tokens)} SHM")
+                    print(f"Slashed amount: {format_shm(slashed_amount)} SHM ({slash_percent:.1f}%)")
+                    print(f"Jailed: {'YES' if jailed else 'NO'}")
+                    print(f"Status: {status}")
+                    
+                    # Check signing info for tombstone status
+                    signing_info = get_signing_info(cons_address, rpc_port)
+                    if signing_info:
+                        val_info = signing_info.get("val_signing_info", {})
+                        tombstoned = val_info.get("tombstoned", False)
+                        if tombstoned:
+                            print(f"🪦 TOMBSTONED: Validator permanently removed (cannot unjail)")
+                        else:
+                            print(f"⚠️  Jailed but not tombstoned")
+                    
+                    print(f"\n✅ Double-sign slashing test completed successfully!")
+                    break
+                else:
+                    print(f"  Stake: {format_shm(current_tokens)} SHM (no slashing yet)")
+                    print(f"  Jailed: {'YES' if jailed else 'NO'}")
+                    print(f"  Status: {status}")
+                    
+            except Exception as e:
+                print(f"  Error checking validator: {e}")
+            
+            time.sleep(check_interval)
+        
+        # If we reach here, the timeout was reached
+        elapsed_time = int(time.time() - start_time)
+        print(f"\n⏰ Timeout reached after {elapsed_time} seconds")
+        print(f"Double-signing evidence may still be pending in the consensus layer.")
+        print(f"Consider:")
+        print(f"  1. Checking logs for evidence submission")  
+        print(f"  2. Waiting longer (evidence can take up to unbonding period)")
+        print(f"  3. Trying with a more aggressive validator setup")
+            
+    except KeyboardInterrupt:
+        print(f"\n⏹️  Monitoring stopped by user.")
+    
+    finally:
+        # Clean up: restore original key
+        print(f"\n🧹 Cleaning up...")
+        if backup_key_file.exists():
+            print(f"Restoring original key to node{target_index}...")
+            shutil.copy2(backup_key_file, target_key_file)
+            backup_key_file.unlink()
+        else:
+            print(f"Removing copied key from node{target_index}...")
+            if target_key_file.exists():
+                target_key_file.unlink()
+        
+        print(f"✅ Cleanup completed. node{target_index} restored to non-validator state.")
+
+
+def test_slashing_downtime():
+    """Test downtime slashing by stopping a validator node and monitoring for jailing."""
+    ensure_binary()
+    if not read_pid(0):
+        print("node0 must be running to test slashing.")
+        return
+
+    index = prompt_int("Validator node index to test slashing", 1)
+    if index <= 0:
+        print("Cannot test slashing on node0 (bootstrap validator). Choose index >= 1.")
+        return
+    
+    if not read_pid(index):
+        print(f"node{index} is not running. Start it first.")
+        return
+
+    # Check if node is actually a validator
+    if not is_node_validator(index):
+        print(f"❌ node{index} is not an active validator!")
+        print(f"To promote node{index} to validator:")
+        print(f"  1. Use menu option 9 (Promote node to validator)")
+        print(f"  2. Select node index {index}")
+        print(f"  3. Wait for the promotion to complete")
+        print(f"  4. Then return here to test slashing")
+        return
+
+    # Get validator info
+    info = get_validator_addresses(index, create_key=False)
+    if not info:
+        return
+    
+    node_dir, validator_key, account_addr, valoper_addr = info
+    rpc_port = node_ports(0)["rpc"]
+    
+    # Get consensus address
+    cons_address = get_validator_consensus_address(index)
+    if not cons_address:
+        print("Failed to get consensus address for validator")
+        return
+    
+    print(f"✅ Testing downtime slashing for validator node{index}")
+    print(f"Validator operator: {valoper_addr}")
+    print(f"Consensus address: {cons_address}")
+    
+    # Get initial signing info
+    initial_info = get_signing_info(cons_address, rpc_port)
+    if not initial_info:
+        print("❌ Failed to get initial signing info")
+        print("This shouldn't happen for an active validator. The validator may have just been created.")
+        print("Wait a few blocks for the signing info to be initialized, then try again.")
+        return
+    
+    val_info = initial_info.get("val_signing_info", {})
+    print(f"Initial state:")
+    print(f"  Jailed until: {val_info.get('jailed_until', 'N/A')}")
+    print(f"  Missed blocks: {val_info.get('missed_blocks_counter', 0)}")
+    print(f"  Start height: {val_info.get('start_height', 0)}")
+    
+    # Stop the validator to trigger downtime
+    print(f"\nStopping node{index} to trigger downtime...")
+    stop_node(index, silent=False)
+    
+    # Monitor for slashing
+    print("\nMonitoring for downtime slashing (this may take several minutes)...")
+    print("The validator will be jailed when it misses enough blocks.")
+    print("Press Ctrl+C to stop monitoring and return to menu.\n")
+    
+    missed_blocks_threshold = 34560 * 0.95  # 95% of signed_blocks_window
+    check_interval = 10  # seconds
+    
+    try:
+        while True:
+            # Get current height and signing info
+            height_info = fetch_height(rpc_port)
+            if height_info:
+                current_height = height_info[0]
+                print(f"Current height: {current_height}")
+            
+            signing_info = get_signing_info(cons_address, rpc_port)
+            if signing_info:
+                val_info = signing_info.get("val_signing_info", {})
+                missed_blocks = val_info.get("missed_blocks_counter", 0)
+                jailed_until = val_info.get("jailed_until", "")
+                
+                print(f"Missed blocks: {missed_blocks}")
+                
+                # Check if validator is jailed
+                if jailed_until and jailed_until != "1970-01-01T00:00:00Z":
+                    print(f"\n🔴 VALIDATOR JAILED! 🔴")
+                    print(f"Jailed until: {jailed_until}")
+                    print(f"Missed blocks at jailing: {missed_blocks}")
+                    
+                    # Test unjailing after jail period
+                    print("\nWaiting for jail period to expire...")
+                    from datetime import datetime
+                    try:
+                        jail_time = datetime.fromisoformat(jailed_until.replace('Z', '+00:00'))
+                        current_time = datetime.now(jail_time.tzinfo)
+                        
+                        if current_time >= jail_time:
+                            print("Jail period has expired. Attempting to unjail...")
+                            test_unjail_validator(index, cons_address)
+                        else:
+                            wait_seconds = int((jail_time - current_time).total_seconds())
+                            print(f"Need to wait {wait_seconds} more seconds before unjailing")
+                    except Exception as e:
+                        print(f"Error parsing jail time: {e}")
+                    
+                    break
+                
+                missed_blocks_int = int(missed_blocks) if isinstance(missed_blocks, str) else missed_blocks
+                if missed_blocks_int > missed_blocks_threshold * 0.8:
+                    print(f"⚠️  Approaching slashing threshold (missed {missed_blocks_int} blocks)")
+            
+            time.sleep(check_interval)
+            
+    except KeyboardInterrupt:
+        print("\nMonitoring stopped by user.")
+    
+    print(f"\nRestart node{index} to resume validation:")
+    print(f"  python3 scripts/local_testomatic.py -> option 6 -> {index}")
+
+
+def test_unjail_validator(index, cons_address):
+    """Test unjailing a validator after downtime slashing."""
+    info = get_validator_addresses(index, create_key=False)
+    if not info:
+        return
+    
+    node_dir, validator_key, account_addr, valoper_addr = info
+    network_rpc = node_ports(0)["rpc"]
+    
+    print(f"Attempting to unjail validator node{index}...")
+    
+    try:
+        run([
+            str(BINARY_PATH.resolve()),
+            "tx",
+            "slashing",
+            "unjail",
+            "--from",
+            validator_key,
+            "--home",
+            str(node_dir),
+            "--keyring-backend",
+            "test",
+            "--node",
+            f"tcp://127.0.0.1:{network_rpc}",
+            "--chain-id",
+            CHAIN_ID,
+            "--gas",
+            "500000",
+            "--fees",
+            ashm(HIGH_FEE),
+            "--yes"
+        ], cwd=REPO_ROOT)
+        
+        print("✅ Unjail transaction submitted successfully!")
+        
+        # Verify unjailing after a few blocks
+        time.sleep(10)
+        signing_info = get_signing_info(cons_address, network_rpc)
+        if signing_info:
+            val_info = signing_info.get("val_signing_info", {})
+            jailed_until = val_info.get("jailed_until", "")
+            
+            if jailed_until == "1970-01-01T00:00:00Z":
+                print("✅ Validator successfully unjailed!")
+            else:
+                print(f"⚠️  Validator still appears jailed until: {jailed_until}")
+        
+    except Exception as e:
+        print(f"❌ Failed to unjail validator: {e}")
+
+
+def show_slashing_params():
+    """Display the current slashing parameters."""
+    ensure_binary()
+    if not read_pid(0):
+        print("node0 must be running to query slashing parameters.")
+        return
+    
+    rpc_port = node_ports(0)["rpc"]
+    
+    try:
+        output = run_capture([
+            str(BINARY_PATH.resolve()),
+            "query",
+            "slashing",
+            "params",
+            "--node",
+            f"tcp://127.0.0.1:{rpc_port}",
+            "-o",
+            "json"
+        ], cwd=REPO_ROOT)
+        
+        data = json.loads(output)
+        params = data.get("params", {})
+        
+        print("Current Slashing Parameters:")
+        print(f"  Signed blocks window: {params.get('signed_blocks_window', 'N/A')}")
+        print(f"  Min signed per window: {params.get('min_signed_per_window', 'N/A')}")
+        print(f"  Downtime jail duration: {params.get('downtime_jail_duration', 'N/A')}")
+        print(f"  Slash fraction (double sign): {params.get('slash_fraction_double_sign', 'N/A')}")
+        print(f"  Slash fraction (downtime): {params.get('slash_fraction_downtime', 'N/A')}")
+        
+        # Calculate practical thresholds
+        window = int(params.get('signed_blocks_window', 34560))
+        min_signed = float(params.get('min_signed_per_window', 0.05))
+        max_missed = int(window * (1 - min_signed))
+        
+        print(f"\nPractical Thresholds:")
+        print(f"  Max blocks that can be missed: {max_missed} out of {window}")
+        print(f"  Blocks needed to avoid jailing: {window - max_missed}")
+        
+    except Exception as e:
+        print(f"Error querying slashing parameters: {e}")
+
+
+
+def check_node_slashing_status():
+    """Check slashing status for a specific node."""
+    ensure_binary()
+    if not read_pid(0):
+        print("node0 must be running to query slashing status.")
+        return
+    
+    index = prompt_int("Node index to check", 1)
+    
+    # Check if node has validator keys (might be jailed, so don't check if active)
+    info = get_validator_addresses(index, create_key=False)
+    if not info:
+        print(f"❌ node{index} does not have validator keys configured.")
+        return
+    
+    rpc_port = node_ports(0)["rpc"]
+    
+    # Get consensus address and signing info
+    cons_address = get_validator_consensus_address(index)
+    if not cons_address:
+        print("Failed to get consensus address for validator")
+        return
+    
+    _, _, _, valoper_addr = info
+    
+    print(f"Slashing Status for node{index}")
+    print("=" * 50)
+    print(f"Consensus address: {cons_address}")
+    print(f"Validator operator: {valoper_addr}")
+    
+    # Get current height
+    height_info = fetch_height(rpc_port)
+    current_height = height_info[0] if height_info else "unknown"
+    print(f"Current block height: {current_height}")
+    
+    # Check validator status in staking module
+    try:
+        output = run_capture([
+            str(BINARY_PATH.resolve()),
+            "query",
+            "staking",
+            "validator",
+            valoper_addr,
+            "--node",
+            f"tcp://127.0.0.1:{rpc_port}",
+            "-o",
+            "json"
+        ], cwd=REPO_ROOT)
+        
+        import json as json_lib
+        validator_data = json_lib.loads(output)
+        validator = validator_data.get("validator", {})
+        status = validator.get("status", "")
+        tokens = validator.get("tokens", "0")
+        jailed = validator.get("jailed", False)
+        
+        print(f"\nValidator Status:")
+        if status == "BOND_STATUS_BONDED":
+            print(f"  🟢 BONDED (Active)")
+        elif status == "BOND_STATUS_UNBONDING":
+            print(f"  🟡 UNBONDING")
+        elif status == "BOND_STATUS_UNBONDED":
+            print(f"  🔴 UNBONDED")
+        else:
+            print(f"  ❓ {status}")
+        
+        print(f"  Jailed: {'🔴 YES' if jailed else '✅ NO'}")
+        print(f"  Tokens: {format_shm(int(tokens))} SHM")
+        
+    except Exception as e:
+        print(f"\nValidator Status: ❌ Could not query validator info")
+        print(f"  This might indicate the validator was never created or has been removed")
+    
+    # Get signing info
+    signing_info = get_signing_info(cons_address, rpc_port)
+    if not signing_info:
+        print("❌ Failed to get signing info")
+        return
+    
+    val_info = signing_info.get("val_signing_info", {})
+    missed_blocks = int(val_info.get("missed_blocks_counter", 0))
+    jailed_until = val_info.get("jailed_until", "")
+    start_height = val_info.get("start_height", 0)
+    
+    # Check if jailed
+    is_jailed = jailed_until and jailed_until != "1970-01-01T00:00:00Z"
+    
+    print(f"\nSigning Performance:")
+    print(f"  Start height: {start_height}")
+    print(f"  Missed blocks: {missed_blocks}")
+    
+    # Calculate thresholds
+    window = 34560  # signed_blocks_window
+    max_missed = int(window * 0.95)  # Can miss 95% of blocks
+    
+    print(f"  Max blocks can miss: {max_missed}")
+    print(f"  Blocks until jailing: {max_missed - missed_blocks}")
+    
+    # Progress bar
+    progress = missed_blocks / max_missed if max_missed > 0 else 0
+    progress_percent = progress * 100
+    
+    if progress < 0.5:
+        status = "✅ HEALTHY"
+    elif progress < 0.8:
+        status = "⚠️  APPROACHING THRESHOLD"
+    elif progress < 1.0:
+        status = "🔶 DANGER - CLOSE TO SLASHING"
+    else:
+        status = "🔴 SHOULD BE JAILED"
+    
+    print(f"  Progress to slashing: {progress_percent:.1f}%")
+    print(f"  Status: {status}")
+    
+    # Jail status
+    print(f"\nJail Status:")
+    if is_jailed:
+        print(f"  🔴 JAILED until: {jailed_until}")
+        
+        # Check if jail period has expired
+        from datetime import datetime
+        try:
+            jail_time = datetime.fromisoformat(jailed_until.replace('Z', '+00:00'))
+            current_time = datetime.now(jail_time.tzinfo)
+            
+            if current_time >= jail_time:
+                print("  ✅ Jail period has expired - can unjail now")
+            else:
+                wait_seconds = int((jail_time - current_time).total_seconds())
+                print(f"  ⏰ Must wait {wait_seconds} more seconds before unjailing")
+        except Exception as e:
+            print(f"  ❓ Error parsing jail time: {e}")
+    else:
+        print("  ✅ Not jailed")
+    
+    # Node status
+    is_running = read_pid(index)
+    print(f"\nNode Status:")
+    print(f"  Process: {'🟢 Running' if is_running else '🔴 Stopped'}")
+    
+    if not is_running:
+        print(f"  💡 Tip: While stopped, this validator will continue missing blocks")
+        print(f"       and approach the slashing threshold.")
+
+
+def monitor_validator_signing():
+    """Monitor signing info for all validators showing slashing-relevant metrics."""
+    ensure_binary()
+    if not read_pid(0):
+        print("node0 must be running to monitor validators.")
+        return
+    
+    duration = prompt_int("Monitor duration (seconds)", 60)
+    rpc_port = node_ports(0)["rpc"]
+    
+    print(f"Monitoring validator signing for {duration} seconds...")
+    print("Shows: Height | Missed Blocks | Jail Status | Node Status")
+    print("Press Ctrl+C to stop early.\n")
+    
+    # Build mapping of validator addresses to local node indices
+    local_nodes = {}
+    for node_dir in LOCAL_DIR.glob("node*"):
+        if node_dir.is_dir():
+            index = int(node_dir.name.replace("node", ""))
+            info = get_validator_addresses(index, create_key=False)
+            if info:
+                _, _, _, valoper_addr = info
+                local_nodes[valoper_addr] = index
+    
+    end_time = time.time() + duration
+    
+    try:
+        while time.time() < end_time:
+            # Get current block height
+            height_info = fetch_height(rpc_port)
+            current_height = height_info[0] if height_info else "unknown"
+            
+            print(f"[{time.strftime('%H:%M:%S')}] Block Height: {current_height}")
+            
+            # Get all validators
+            try:
+                output = run_capture([
+                    str(BINARY_PATH.resolve()),
+                    "query",
+                    "staking",
+                    "validators",
+                    "--node",
+                    f"tcp://127.0.0.1:{rpc_port}",
+                    "-o",
+                    "json"
+                ], cwd=REPO_ROOT)
+                
+                data = json.loads(output)
+                validators = data.get("validators", [])
+                
+                for val in validators:
+                    moniker = val.get("description", {}).get("moniker", "unknown")
+                    operator_addr = val.get("operator_address", "")
+                    
+                    # Get node index if this is a local validator
+                    node_index = local_nodes.get(operator_addr)
+                    node_status = ""
+                    if node_index is not None:
+                        is_running = read_pid(node_index)
+                        node_status = f"node{node_index}:{'ON' if is_running else 'OFF'}"
+                    else:
+                        node_status = "external"
+                    
+                    # Get consensus address and signing info
+                    try:
+                        if node_index is not None:
+                            cons_address = get_validator_consensus_address(node_index)
+                            if cons_address:
+                                signing_info = get_signing_info(cons_address, rpc_port)
+                                if signing_info:
+                                    val_info = signing_info.get("val_signing_info", {})
+                                    missed_blocks = val_info.get("missed_blocks_counter", 0)
+                                    jailed_until = val_info.get("jailed_until", "")
+                                    
+                                    # Ensure missed_blocks is an integer
+                                    missed_blocks_int = int(missed_blocks) if isinstance(missed_blocks, str) else missed_blocks
+                                    
+                                    # Check if jailed
+                                    is_jailed = jailed_until and jailed_until != "1970-01-01T00:00:00Z"
+                                    jail_status = "JAILED" if is_jailed else "active"
+                                    
+                                    # Calculate approach to slashing threshold
+                                    threshold = 34560 * 0.95  # 95% of signed_blocks_window
+                                    if missed_blocks_int > threshold * 0.5:
+                                        status_icon = "⚠️"
+                                    elif missed_blocks_int > threshold * 0.8:
+                                        status_icon = "🔶"
+                                    elif is_jailed:
+                                        status_icon = "🔴"
+                                    else:
+                                        status_icon = "✅"
+                                    
+                                    print(f"  {status_icon} {moniker:15s} | missed:{missed_blocks_int:5d} | {jail_status:6s} | {node_status}")
+                                else:
+                                    print(f"  ❓ {moniker:15s} | missed:  N/A | no info | {node_status}")
+                            else:
+                                print(f"  ❓ {moniker:15s} | missed:  N/A | no cons | {node_status}")
+                        else:
+                            print(f"  ⚫ {moniker:15s} | missed:  N/A | external | {node_status}")
+                            
+                    except Exception as e:
+                        print(f"  ❌ {moniker:15s} | missed:  ERR | error   | {node_status}")
+                
+                print()
+                
+            except Exception as e:
+                print(f"Error monitoring validators: {e}")
+            
+            time.sleep(5)
+            
+    except KeyboardInterrupt:
+        print("\nMonitoring stopped by user.")
+    
+    print("\nLegend:")
+    print("  ✅ = Healthy validator")
+    print("  ⚠️  = Approaching slashing threshold (>50% of max missed blocks)")
+    print("  🔶 = Close to slashing threshold (>80% of max missed blocks)")
+    print("  🔴 = Validator is jailed")
+    print("  ❓ = Unable to get signing info")
+    print("  ⚫ = External validator")
+    print("  ❌ = Error querying validator")
+    print("\nReturning to menu.")
 
 def prompt_int(prompt, default):
     raw = input(f"{prompt} [{default}]: ").strip()
@@ -1208,9 +2073,14 @@ def main():
         "9": ("Promote node to validator", promote_node_to_validator),
         "10": ("Increase validator stake", increase_validator_stake),
         "11": ("Decrease validator stake", decrease_validator_stake),
-    "12": ("Show validator metadata", show_validator_metadata),
-    "13": ("Random edit validator metadata", random_edit_validator_metadata),
-    "14": ("Exit", None),
+        "12": ("Show validator metadata", show_validator_metadata),
+        "13": ("Random edit validator metadata", random_edit_validator_metadata),
+        "14": ("Test downtime slashing", test_slashing_downtime),
+        "15": ("Test double-sign slashing", test_slashing_double_sign),
+        "16": ("Check node slashing status", check_node_slashing_status),
+        "17": ("Show slashing parameters", show_slashing_params),
+        "18": ("Monitor validator signing", monitor_validator_signing),
+        "19": ("Exit", None),
     }
 
     while True:
@@ -1218,7 +2088,7 @@ def main():
         for key, (desc, _) in actions.items():
             print(f"  {key}. {desc}")
         choice = input("Select option: ").strip()
-        if choice == "14":
+        if choice == "19":
             print("Goodbye.")
             return
         action = actions.get(choice)
