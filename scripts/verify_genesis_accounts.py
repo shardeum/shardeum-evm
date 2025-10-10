@@ -74,29 +74,34 @@ def fast_bech32_encode(eth_addr_hex: str) -> Optional[str]:
         print(f"Error encoding address {eth_addr_hex}: {e}", file=sys.stderr)
         return None
 
-def extract_shardeum_accounts(db_path: str, min_balance: int = 0, max_accounts: int = 0, 
-                             include_nonce: bool = False, balance_multiplier: int = 1) -> List[Tuple[str, int, int, str]]:
+def extract_shardeum_accounts(db_path: str, min_balance: int = 0, max_accounts: int = 0,
+                             include_nonce: bool = False, balance_multiplier: int = 1,
+                             add_zero_balance: bool = False) -> List[Tuple[str, int, int, str]]:
     """
     Extract accounts from Shardeum database with balances, nonces, and unique IDs
     Returns: List of tuples (cosmos_address, balance, nonce, unique_id)
     """
     print(f"Extracting accounts from {db_path}...")
-    print(f"Options: include_nonce={include_nonce}, balance_multiplier={balance_multiplier}")
-    
+    print(f"Options: include_nonce={include_nonce}, balance_multiplier={balance_multiplier}, add_zero_balance={add_zero_balance}")
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+
     # Build base WHERE conditions
     base_conditions = "json_extract(data, '$.accountType') = 0"
-    
+
     # When using balance_multiplier, we can't filter by min_balance at SQL level since
     # the multiplier is applied in Python. Always include accounts and filter in Python.
     # Only exclude accounts with missing balance data
     base_conditions += " AND json_extract(data, '$.account.balance.value') IS NOT NULL"
-    
+
     # Only apply SQL-level balance filtering if no multiplier is used and min_balance > 0
-    if balance_multiplier == 1 and min_balance > 0:
+    # Also respect the add_zero_balance flag
+    if balance_multiplier == 1 and min_balance > 0 and not add_zero_balance:
         # Safe to filter at SQL level when no multiplier is applied
+        base_conditions += " AND json_extract(data, '$.account.balance.value') <> '0'"
+    elif not add_zero_balance:
+        # Filter out zero balances if add_zero_balance is False
         base_conditions += " AND json_extract(data, '$.account.balance.value') <> '0'"
     
     if include_nonce:
@@ -808,6 +813,8 @@ Examples:
                        help='Maximum number of accounts to verify (0 for unlimited)')
     parser.add_argument('--balance-multiplier', type=int, default=1,
                        help='Multiplier applied to Shardeum balances for verification (default: 1)')
+    parser.add_argument('--add-zero-balance', action='store_true', default=False,
+                       help='Include accounts with 0 balance for verification (default: False)')
     parser.add_argument('--check-nonce', action='store_true', default=False,
                        help='Also verify nonces/sequences (default: False)')
     parser.add_argument('--secure-accounts',
@@ -822,11 +829,12 @@ Examples:
     try:
         # Extract accounts from Shardeum database
         shardeum_accounts = extract_shardeum_accounts(
-            args.db_path, 
-            args.min_balance, 
+            args.db_path,
+            args.min_balance,
             args.max_accounts,
             args.check_nonce,
-            args.balance_multiplier
+            args.balance_multiplier,
+            args.add_zero_balance
         )
         
         # Load genesis accounts
