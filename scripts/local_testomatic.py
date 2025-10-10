@@ -123,7 +123,20 @@ def apply_genesis_validator_metadata():
             break
         time.sleep(1)
     fee_amount = ashm(HIGH_FEE)
-    base_cmd = [
+
+    # Detect if --moniker flag is supported (older Cosmos SDK variants omit it for edit-validator)
+    supports_moniker = False
+    try:
+        help_text = run_capture([
+            str(BINARY_PATH.resolve()),
+            "tx", "staking", "edit-validator", "--help"
+        ], cwd=REPO_ROOT)
+        if "--moniker" in help_text:
+            supports_moniker = True
+    except Exception:  # pylint: disable=broad-except
+        pass
+
+    cmd = [
         str(BINARY_PATH.resolve()),
         "tx", "staking", "edit-validator",
         "--from", "validator",
@@ -139,12 +152,15 @@ def apply_genesis_validator_metadata():
         "--details", metadata["details"],
         "--yes",
     ]
-    # Some SDK builds accept --moniker to update moniker; attempt and fall back silently
-    try_cmd = base_cmd + ["--moniker", metadata["moniker"]]
+    if supports_moniker:
+        cmd.extend(["--moniker", metadata["moniker"]])
+    else:
+        print("(edit-validator --moniker not supported; leaving moniker as node0)")
     try:
-        run(try_cmd, cwd=REPO_ROOT)
-    except RuntimeError:
-        run(base_cmd, cwd=REPO_ROOT)
+        run(cmd, cwd=REPO_ROOT)
+    except RuntimeError as err:
+        # If it fails for some transient reason, we won't block the rest of the flow.
+        print(f"Warning: edit-validator tx failed: {err}")
     print("Genesis validator metadata applied.")
 
 
@@ -575,8 +591,11 @@ def get_validator_addresses(index, create_key=False):
     if not node_dir.exists():
         print(f"node{index} directory not found at {node_dir}.")
         return None
-
-    validator_key = f"validator-node{index}"
+    # Special-case node0: its genesis validator key is named 'validator'
+    if index == 0:
+        validator_key = "validator"
+    else:
+        validator_key = f"validator-node{index}"
     try:
         run_capture(
             [
@@ -1008,6 +1027,163 @@ def show_validator_metadata():
         else:
             print(f"  {node_dir.name}: (no metadata file)")
 
+
+def random_edit_validator_metadata():
+    """Interactively choose a validator node and edit one or several metadata fields via edit-validator.
+    'ALL' option updates all non-moniker fields; moniker can be updated separately if supported."""
+    ensure_binary()
+    if not read_pid(0):
+        print("node0 must be running.")
+        return
+    # Query current validators
+    rpc_port = node_ports(0)["rpc"]
+    try:
+        output = run_capture([
+            str(BINARY_PATH.resolve()),
+            "query", "staking", "validators",
+            "--node", f"tcp://127.0.0.1:{rpc_port}",
+            "-o", "json",
+        ], cwd=REPO_ROOT)
+    except RuntimeError as err:
+        print(f"Failed to query validators: {err}")
+        return
+    try:
+        validators = json.loads(output).get("validators", [])
+    except json.JSONDecodeError:
+        print("Could not parse validators JSON")
+        return
+    if not validators:
+        print("No validators on-chain.")
+        return
+    # Build map of node index -> (validator_key, valoper_addr)
+    valoper_set = {v.get("operator_address"): v for v in validators if v.get("operator_address")}
+    validator_nodes = {}
+    for node_dir in sorted(LOCAL_DIR.glob("node*")):
+        try:
+            idx = int(node_dir.name.replace("node", ""))
+        except ValueError:
+            continue
+        info = get_validator_addresses(idx, create_key=False)
+        if not info:
+            continue
+        _, validator_key, _, valoper_addr = info
+        if valoper_addr in valoper_set:
+            validator_nodes[idx] = (validator_key, valoper_addr)
+    if not validator_nodes:
+        print("No local validator nodes found on-chain.")
+        return
+    print("Available validator nodes:")
+    for idx, (vkey, _) in sorted(validator_nodes.items()):
+        print(f"  node{idx} (key {vkey})")
+    raw_idx = input("Enter node index to edit (blank to cancel): ").strip()
+    if not raw_idx:
+        print("Cancelled.")
+        return
+    try:
+        idx = int(raw_idx)
+    except ValueError:
+        print("Invalid index.")
+        return
+    if idx not in validator_nodes:
+        print(f"node{idx} is not recognized as an active validator.")
+        return
+    validator_key, _valoper_addr = validator_nodes[idx]
+    node_dir = LOCAL_DIR / f"node{idx}"
+    print(f"Editing validator node{idx} (key {validator_key})")
+    # Determine supported flags
+    supports_moniker = False
+    try:
+        help_text = run_capture([
+            str(BINARY_PATH.resolve()),
+            "tx", "staking", "edit-validator", "--help"
+        ], cwd=REPO_ROOT)
+        if "--moniker" in help_text:
+            supports_moniker = True
+    except Exception:  # pylint: disable=broad-except
+        pass
+    # Prompt for field choice
+    print("Choose metadata field to randomize (node{idx}):")
+    print("  1. moniker" + (" (supported)" if supports_moniker else " (unsupported in this build)"))
+    print("  2. website")
+    print("  3. identity")
+    print("  4. security contact")
+    print("  5. details")
+    print("  6. ALL (website, identity, security, details — excludes moniker)")
+    print("  7. Cancel")
+    choice = input("Select: ").strip()
+    if choice == "7" or choice == "":
+        print("Cancelled.")
+        return
+    new_meta = generate_validator_metadata(idx)
+    # Load existing file (if any) so we only overwrite chosen fields
+    meta_path = node_dir / "validator_metadata.json"
+    if meta_path.exists():
+        try:
+            current_meta = json.loads(meta_path.read_text() or '{}')
+        except json.JSONDecodeError:
+            current_meta = {}
+    else:
+        current_meta = {}
+    # Determine fields to update
+    fields = []
+    if choice == "1":
+        if not supports_moniker:
+            print("Moniker update not supported by this binary.")
+            return
+        fields = ["moniker"]
+    elif choice == "2":
+        fields = ["website"]
+    elif choice == "3":
+        fields = ["identity"]
+    elif choice == "4":
+        fields = ["security"]
+    elif choice == "5":
+        fields = ["details"]
+    elif choice == "6":
+        fields = ["website", "identity", "security", "details"]
+    else:
+        print("Unknown selection.")
+        return
+    for f in fields:
+        current_meta[f] = new_meta[f]
+    # Write back metadata file
+    try:
+        meta_path.write_text(json.dumps(current_meta, indent=2))
+    except Exception as err:  # pylint: disable=broad-except
+        print(f"Warning: could not update metadata file: {err}")
+    rpc_port = node_ports(0)["rpc"]  # use node0 RPC for tx broadcast
+    fee_amount = ashm(HIGH_FEE)
+    cmd = [
+        str(BINARY_PATH.resolve()),
+        "tx", "staking", "edit-validator",
+        "--from", validator_key if idx != 0 else "validator",
+        "--home", str(node_dir),
+        "--keyring-backend", "test",
+        "--node", f"tcp://127.0.0.1:{rpc_port}",
+        "--chain-id", CHAIN_ID,
+        "--gas", "500000",
+        "--fees", fee_amount,
+        "--yes",
+    ]
+    # Append field flags
+    flag_map = {
+        "website": ("--website", current_meta.get("website", "")),
+        "identity": ("--identity", current_meta.get("identity", "")),
+        "security": ("--security-contact", current_meta.get("security", "")),
+        "details": ("--details", current_meta.get("details", "")),
+        "moniker": ("--moniker", current_meta.get("moniker", "")),
+    }
+    for f in fields:
+        flag, val = flag_map[f]
+        cmd.extend([flag, val])
+    # If moniker not being updated, we still must include at least one other flag (already ensured)
+    try:
+        print("Submitting edit-validator tx with fields:", ", ".join(fields))
+        run(cmd, cwd=REPO_ROOT)
+        print("Metadata update transaction submitted.")
+    except RuntimeError as err:
+        print(f"Failed to submit edit-validator tx: {err}")
+
 def prompt_int(prompt, default):
     raw = input(f"{prompt} [{default}]: ").strip()
     if not raw:
@@ -1033,7 +1209,8 @@ def main():
         "10": ("Increase validator stake", increase_validator_stake),
         "11": ("Decrease validator stake", decrease_validator_stake),
     "12": ("Show validator metadata", show_validator_metadata),
-    "13": ("Exit", None),
+    "13": ("Random edit validator metadata", random_edit_validator_metadata),
+    "14": ("Exit", None),
     }
 
     while True:
@@ -1041,7 +1218,7 @@ def main():
         for key, (desc, _) in actions.items():
             print(f"  {key}. {desc}")
         choice = input("Select option: ").strip()
-        if choice == "13":
+        if choice == "14":
             print("Goodbye.")
             return
         action = actions.get(choice)
