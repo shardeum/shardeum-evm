@@ -75,46 +75,48 @@ def fast_bech32_encode(eth_addr_hex: str) -> Optional[str]:
         print(f"Error encoding address {eth_addr_hex}: {e}", file=sys.stderr)
         return None
 
-def extract_shardeum_accounts(db_path: str, 
-                             min_balance: int = 0, 
+def extract_shardeum_accounts(db_path: str,
+                             min_balance: int = 0,
                              max_accounts: int = 0,
                              include_nonce: bool = False,
-                             balance_multiplier: int = 1) -> Tuple[List[Dict], int]:
+                             balance_multiplier: int = 1,
+                             add_zero_balance: bool = False) -> Tuple[List[Dict], int]:
     """
     Extract accounts from Shardeum database
     Returns: (accounts_list, total_supply)
     """
     print(f"Extracting accounts from {db_path}...")
-    print(f"Options: include_nonce={include_nonce}, min_balance={min_balance}, max_accounts={max_accounts}, balance_multiplier={balance_multiplier}")
-    
+    print(f"Options: include_nonce={include_nonce}, min_balance={min_balance}, max_accounts={max_accounts}, balance_multiplier={balance_multiplier}, add_zero_balance={add_zero_balance}")
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+
+    # Build the WHERE clause based on add_zero_balance flag
+    where_clause = "json_extract(data, '$.accountType') = 0 AND json_extract(data, '$.account.balance.value') IS NOT NULL"
+    if not add_zero_balance:
+        where_clause += " AND json_extract(data, '$.account.balance.value') <> '0'"
+
     # Build the query to extract accounts with balance, unique ID and optionally nonce
     if include_nonce:
-        query = """
-            SELECT 
+        query = f"""
+            SELECT
               accountId as unique_id,
               substr(accountId, 1, 40) as eth_addr,
               json_extract(data, '$.account.balance.value') as balance_hex,
               json_extract(data, '$.account.nonce.value') as nonce_hex
-            FROM accounts 
-            WHERE json_extract(data, '$.accountType') = 0 
-              AND json_extract(data, '$.account.balance.value') IS NOT NULL
-              AND json_extract(data, '$.account.balance.value') <> '0'
+            FROM accounts
+            WHERE {where_clause}
             ORDER BY length(json_extract(data, '$.account.balance.value')) DESC
         """
     else:
-        query = """
-            SELECT 
+        query = f"""
+            SELECT
               accountId as unique_id,
               substr(accountId, 1, 40) as eth_addr,
               json_extract(data, '$.account.balance.value') as balance_hex,
               '0' as nonce_hex
-            FROM accounts 
-            WHERE json_extract(data, '$.accountType') = 0 
-              AND json_extract(data, '$.account.balance.value') IS NOT NULL
-              AND json_extract(data, '$.account.balance.value') <> '0'
+            FROM accounts
+            WHERE {where_clause}
             ORDER BY length(json_extract(data, '$.account.balance.value')) DESC
         """
     
@@ -144,9 +146,11 @@ def extract_shardeum_accounts(db_path: str,
         except ValueError:
             print(f"Warning: Invalid balance hex {balance_hex} for address {eth_addr}", file=sys.stderr)
             continue
-        
-        # Apply balance multiplier
-        balance_dec = balance_dec * balance_multiplier
+
+        # Apply balance multiplier only to non-zero balances
+        # Zero balance accounts should remain zero regardless of multiplier
+        if balance_dec > 0:
+            balance_dec = balance_dec * balance_multiplier
         
         # Check minimum balance threshold
         if balance_dec < min_balance:
@@ -236,8 +240,9 @@ def load_secure_accounts(secure_accounts_path: str, balance_multiplier: int = 1)
             balance_str = acc.get('SourceFundsBalance', '0')
             try:
                 balance = int(balance_str)
-                # Apply balance multiplier
-                balance = balance * balance_multiplier
+                # Apply balance multiplier only to non-zero balances
+                if balance > 0:
+                    balance = balance * balance_multiplier
             except ValueError:
                 print(f"Warning: Invalid balance {balance_str} for account {acc.get('Name', 'Unknown')}", file=sys.stderr)
                 balance = 0
@@ -418,24 +423,31 @@ def update_genesis_with_accounts(genesis_path: str,
                     for i, bal in enumerate(genesis['app_state']['bank']['balances'])
                 }
 
-                if target_address not in existing_balance_entries:
-                    # Add new balance entry
-                    new_balance = {
-                        "address": target_address,
-                        "coins": [{"denom": "ashm", "amount": str(balance)}]
-                    }
-                    genesis['app_state']['bank']['balances'].append(new_balance)
-                    new_balance_entries += 1
-                    print(f"    Added new balance entry for {target_address}: {balance:,} ashm", file=sys.stderr)
-                else:
-                    # Update existing balance (override)
-                    balance_index = existing_balance_entries[target_address]
-                    balance_entry = genesis['app_state']['bank']['balances'][balance_index]
-                    for coin in balance_entry['coins']:
-                        if coin['denom'] == 'ashm':
-                            coin['amount'] = str(balance)
-                            break
-                    print(f"    Updated balance for {target_address}: {balance:,} ashm", file=sys.stderr)
+                if balance > 0:
+                    if target_address not in existing_balance_entries:
+                        # Add new balance entry
+                        new_balance = {
+                            "address": target_address,
+                            "coins": [{"denom": "ashm", "amount": str(balance)}]
+                        }
+                        genesis['app_state']['bank']['balances'].append(new_balance)
+                        new_balance_entries += 1
+                        print(f"    Added new balance entry for {target_address}: {balance:,} ashm", file=sys.stderr)
+                    else:
+                        # Update existing balance (override)
+                        balance_index = existing_balance_entries[target_address]
+                        balance_entry = genesis['app_state']['bank']['balances'][balance_index]
+                        for coin in balance_entry['coins']:
+                            if coin['denom'] == 'ashm':
+                                coin['amount'] = str(balance)
+                                break
+                        print(f"    Updated balance for {target_address}: {balance:,} ashm", file=sys.stderr)
+                elif balance == 0:
+                    # Remove zero-balance entry if it exists
+                    if target_address in existing_balance_entries:
+                        balance_index = existing_balance_entries[target_address]
+                        del genesis['app_state']['bank']['balances'][balance_index]
+                        print(f"    Removed zero-balance entry for {target_address} from bank.balances", file=sys.stderr)
     
     # Process each account from Shardeum (skip if it's a secure account or was replaced)
     for account_data in accounts_data:
@@ -469,7 +481,8 @@ def update_genesis_with_accounts(genesis_path: str,
             next_account_number += 1
         
         # Update bank balances if include_balance is True
-        if include_balance:
+        # Zero-balance accounts should only exist in auth.accounts, not in bank.balances
+        if include_balance and balance > 0:
             if address not in existing_balances:
                 # Add new balance entry
                 new_balance = {
@@ -486,6 +499,17 @@ def update_genesis_with_accounts(genesis_path: str,
                     if coin['denom'] == 'ashm':
                         coin['amount'] = str(balance)
                         break
+        elif include_balance and balance == 0:
+            # Remove zero-balance entry from bank.balances if it exists
+            if address in existing_balance_entries:
+                balance_index = existing_balance_entries[address]
+                del genesis['app_state']['bank']['balances'][balance_index]
+                # Rebuild the index after deletion
+                existing_balance_entries = {
+                    bal['address']: i
+                    for i, bal in enumerate(genesis['app_state']['bank']['balances'])
+                }
+                existing_balances.pop(address, None)
     
     # Update total supply if balances were included
     # IMPORTANT: The supply must exactly match the sum of all balances in the final genesis
@@ -520,6 +544,61 @@ def update_genesis_with_accounts(genesis_path: str,
     if include_balance:
         print(f"  New balance entries: {new_balance_entries:,}", file=sys.stderr)
     print(f"  Genesis file saved to: {output_path}", file=sys.stderr)
+
+def write_accounts_by_nonce(accounts_data: List[Dict],
+                           output_even_path: str = None,
+                           output_odd_path: str = None,
+                           balance_multiplier: int = 1) -> None:
+    """
+    Write accounts segregated by even/odd nonce to separate files
+    Each file contains: address, eth_address, balance (exact), nonce
+    """
+    if not output_even_path and not output_odd_path:
+        return
+
+    even_nonce_accounts = []
+    odd_nonce_accounts = []
+
+    for account in accounts_data:
+        nonce = account.get('nonce', 0)
+        account_info = {
+            'cosmos_address': account['address'],
+            'eth_address': account.get('eth_address', ''),
+            'balance_wei': account['balance'],
+            'balance_shm': account['balance'] / (10**18),  # Convert from wei to SHM
+            'nonce': nonce
+        }
+
+        if nonce % 2 == 0:
+            even_nonce_accounts.append(account_info)
+        else:
+            odd_nonce_accounts.append(account_info)
+
+    # Write even nonce accounts
+    if output_even_path:
+        with open(output_even_path, 'w') as f:
+            f.write("# Accounts with EVEN nonce values\n")
+            f.write(f"# Total accounts: {len(even_nonce_accounts):,}\n")
+            f.write(f"# Balance multiplier applied: {balance_multiplier}\n")
+            f.write("# Format: cosmos_address | eth_address | balance_wei | balance_shm | nonce\n\n")
+
+            for acc in even_nonce_accounts:
+                f.write(f"{acc['cosmos_address']} | {acc['eth_address']} | {acc['balance_wei']} | {acc['balance_shm']:.18f} | {acc['nonce']}\n")
+
+        print(f"Wrote {len(even_nonce_accounts):,} even-nonce accounts to: {output_even_path}", file=sys.stderr)
+
+    # Write odd nonce accounts
+    if output_odd_path:
+        with open(output_odd_path, 'w') as f:
+            f.write("# Accounts with ODD nonce values\n")
+            f.write(f"# Total accounts: {len(odd_nonce_accounts):,}\n")
+            f.write(f"# Balance multiplier applied: {balance_multiplier}\n")
+            f.write("# Format: cosmos_address | eth_address | balance_wei | balance_shm | nonce\n\n")
+
+            for acc in odd_nonce_accounts:
+                f.write(f"{acc['cosmos_address']} | {acc['eth_address']} | {acc['balance_wei']} | {acc['balance_shm']:.18f} | {acc['nonce']}\n")
+
+        print(f"Wrote {len(odd_nonce_accounts):,} odd-nonce accounts to: {output_odd_path}", file=sys.stderr)
 
 def validate_genesis(genesis_path: str) -> bool:
     """
@@ -578,6 +657,9 @@ Examples:
   # Generate with all accounts and balances (default)
   %(prog)s --input-genesis original.json --output new_genesis.json
 
+  # Include accounts with zero balance
+  %(prog)s --input-genesis original.json --output new_genesis.json --add-zero-balance
+
   # Include nonces (sequences) from Shardeum
   %(prog)s --input-genesis original.json --output new_genesis.json --include-nonce
 
@@ -589,6 +671,16 @@ Examples:
 
   # Apply balance multiplier (e.g., multiply all balances by 250)
   %(prog)s --input-genesis original.json --output new_genesis.json --balance-multiplier 250
+
+  # Output accounts segregated by even/odd nonce to separate files
+  %(prog)s --input-genesis original.json --output new_genesis.json --include-nonce \\
+    --output-even-nonce even_nonce_accounts.txt --output-odd-nonce odd_nonce_accounts.txt
+
+  # Complete example with all features
+  %(prog)s --db-path helper/accounts.sqlite3 \\
+    --input-genesis original.json --output new_genesis.json \\
+    --add-zero-balance --include-nonce --balance-multiplier 1 \\
+    --output-even-nonce accounts_even.txt --output-odd-nonce accounts_odd.txt
         """
     )
     
@@ -610,21 +702,29 @@ Examples:
                        help='Maximum number of accounts to import (0 for unlimited)')
     parser.add_argument('--balance-multiplier', type=int, default=1,
                        help='Multiplier to apply to all balances (default: 1)')
-    
+    parser.add_argument('--add-zero-balance', action='store_true', default=False,
+                       help='Include accounts with 0 balance or very tiny balances (default: False)')
+
     # Import options
     parser.add_argument('--include-balance', action='store_true', default=True,
                        help='Include balances from Shardeum (default: True)')
     parser.add_argument('--no-include-balance', dest='include_balance', action='store_false',
                        help='Do not include balances from Shardeum')
-    
+
     parser.add_argument('--include-nonce', action='store_true', default=False,
                        help='Include nonces as sequence numbers (default: False)')
     parser.add_argument('--no-include-nonce', dest='include_nonce', action='store_false',
                        help='Do not include nonces (default behavior)')
-    
+
     # Secure accounts option
     parser.add_argument('--secure-accounts',
                        help='Path to JSON file containing secure accounts to preserve')
+
+    # Nonce segregation output options
+    parser.add_argument('--output-even-nonce',
+                       help='Path to output file for accounts with even nonce values')
+    parser.add_argument('--output-odd-nonce',
+                       help='Path to output file for accounts with odd nonce values')
     
     # Other options
     parser.add_argument('--backup', action='store_true',
@@ -659,18 +759,29 @@ Examples:
             args.min_balance,
             args.max_accounts,
             args.include_nonce,
-            args.balance_multiplier
+            args.balance_multiplier,
+            args.add_zero_balance
         )
-        
+
         if not accounts_data:
             print("Warning: No accounts found to import", file=sys.stderr)
             sys.exit(1)
-        
+
+        # Write accounts segregated by nonce if output paths are provided
+        if args.output_even_nonce or args.output_odd_nonce:
+            print(f"\nWriting accounts segregated by nonce...", file=sys.stderr)
+            write_accounts_by_nonce(
+                accounts_data,
+                args.output_even_nonce,
+                args.output_odd_nonce,
+                args.balance_multiplier
+            )
+
         # Load secure accounts if specified
         secure_accounts = []
         if args.secure_accounts:
             secure_accounts = load_secure_accounts(args.secure_accounts, args.balance_multiplier)
-        
+
         # Update genesis with accounts
         update_genesis_with_accounts(
             args.input_genesis,
