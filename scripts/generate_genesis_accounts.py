@@ -545,19 +545,17 @@ def update_genesis_with_accounts(genesis_path: str,
         print(f"  New balance entries: {new_balance_entries:,}", file=sys.stderr)
     print(f"  Genesis file saved to: {output_path}", file=sys.stderr)
 
-def write_accounts_by_nonce(accounts_data: List[Dict],
-                           output_even_path: str = None,
-                           output_odd_path: str = None,
-                           balance_multiplier: int = 1) -> None:
+def write_accounts_to_file(accounts_data: List[Dict],
+                          output_path: str = None,
+                          balance_multiplier: int = 1) -> None:
     """
-    Write accounts segregated by even/odd nonce to separate files
+    Write all accounts to a single file
     Each file contains: address, eth_address, balance (exact), nonce
     """
-    if not output_even_path and not output_odd_path:
+    if not output_path:
         return
 
-    even_nonce_accounts = []
-    odd_nonce_accounts = []
+    all_accounts = []
 
     for account in accounts_data:
         nonce = account.get('nonce', 0)
@@ -568,37 +566,19 @@ def write_accounts_by_nonce(accounts_data: List[Dict],
             'balance_shm': account['balance'] / (10**18),  # Convert from wei to SHM
             'nonce': nonce
         }
+        all_accounts.append(account_info)
 
-        if nonce % 2 == 0:
-            even_nonce_accounts.append(account_info)
-        else:
-            odd_nonce_accounts.append(account_info)
+    # Write all accounts to single file
+    with open(output_path, 'w') as f:
+        f.write("# All accounts\n")
+        f.write(f"# Total accounts: {len(all_accounts):,}\n")
+        f.write(f"# Balance multiplier applied: {balance_multiplier}\n")
+        f.write("# Format: cosmos_address | eth_address | balance_wei | balance_shm | nonce\n\n")
 
-    # Write even nonce accounts
-    if output_even_path:
-        with open(output_even_path, 'w') as f:
-            f.write("# Accounts with EVEN nonce values\n")
-            f.write(f"# Total accounts: {len(even_nonce_accounts):,}\n")
-            f.write(f"# Balance multiplier applied: {balance_multiplier}\n")
-            f.write("# Format: cosmos_address | eth_address | balance_wei | balance_shm | nonce\n\n")
+        for acc in all_accounts:
+            f.write(f"{acc['cosmos_address']} | {acc['eth_address']} | {acc['balance_wei']} | {acc['balance_shm']:.18f} | {acc['nonce']}\n")
 
-            for acc in even_nonce_accounts:
-                f.write(f"{acc['cosmos_address']} | {acc['eth_address']} | {acc['balance_wei']} | {acc['balance_shm']:.18f} | {acc['nonce']}\n")
-
-        print(f"Wrote {len(even_nonce_accounts):,} even-nonce accounts to: {output_even_path}", file=sys.stderr)
-
-    # Write odd nonce accounts
-    if output_odd_path:
-        with open(output_odd_path, 'w') as f:
-            f.write("# Accounts with ODD nonce values\n")
-            f.write(f"# Total accounts: {len(odd_nonce_accounts):,}\n")
-            f.write(f"# Balance multiplier applied: {balance_multiplier}\n")
-            f.write("# Format: cosmos_address | eth_address | balance_wei | balance_shm | nonce\n\n")
-
-            for acc in odd_nonce_accounts:
-                f.write(f"{acc['cosmos_address']} | {acc['eth_address']} | {acc['balance_wei']} | {acc['balance_shm']:.18f} | {acc['nonce']}\n")
-
-        print(f"Wrote {len(odd_nonce_accounts):,} odd-nonce accounts to: {output_odd_path}", file=sys.stderr)
+    print(f"Wrote {len(all_accounts):,} accounts to: {output_path}", file=sys.stderr)
 
 def validate_genesis(genesis_path: str) -> bool:
     """
@@ -672,15 +652,15 @@ Examples:
   # Apply balance multiplier (e.g., multiply all balances by 250)
   %(prog)s --input-genesis original.json --output new_genesis.json --balance-multiplier 250
 
-  # Output accounts segregated by even/odd nonce to separate files
+  # Output all accounts to a single file
   %(prog)s --input-genesis original.json --output new_genesis.json --include-nonce \\
-    --output-even-nonce even_nonce_accounts.txt --output-odd-nonce odd_nonce_accounts.txt
+    --output-accounts all_accounts.txt
 
   # Complete example with all features
   %(prog)s --db-path helper/accounts.sqlite3 \\
     --input-genesis original.json --output new_genesis.json \\
     --add-zero-balance --include-nonce --balance-multiplier 1 \\
-    --output-even-nonce accounts_even.txt --output-odd-nonce accounts_odd.txt
+    --output-accounts all_accounts.txt
         """
     )
     
@@ -720,11 +700,9 @@ Examples:
     parser.add_argument('--secure-accounts',
                        help='Path to JSON file containing secure accounts to preserve')
 
-    # Nonce segregation output options
-    parser.add_argument('--output-even-nonce',
-                       help='Path to output file for accounts with even nonce values')
-    parser.add_argument('--output-odd-nonce',
-                       help='Path to output file for accounts with odd nonce values')
+    # Account output options
+    parser.add_argument('--output-accounts',
+                       help='Path to output file for all accounts (cosmos_address, eth_address, balance, nonce)')
     
     # Other options
     parser.add_argument('--backup', action='store_true',
@@ -767,13 +745,12 @@ Examples:
             print("Warning: No accounts found to import", file=sys.stderr)
             sys.exit(1)
 
-        # Write accounts segregated by nonce if output paths are provided
-        if args.output_even_nonce or args.output_odd_nonce:
-            print(f"\nWriting accounts segregated by nonce...", file=sys.stderr)
-            write_accounts_by_nonce(
+        # Write accounts to file if output path is provided
+        if args.output_accounts:
+            print(f"\nWriting all accounts to file...", file=sys.stderr)
+            write_accounts_to_file(
                 accounts_data,
-                args.output_even_nonce,
-                args.output_odd_nonce,
+                args.output_accounts,
                 args.balance_multiplier
             )
 
