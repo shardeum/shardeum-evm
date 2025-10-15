@@ -184,14 +184,16 @@ def find_next_split_number(genesis_dir: str, base_name: str) -> int:
 
     return max(numbers) + 1 if numbers else 1
 
-def get_existing_addresses_from_all_sources(genesis_dir: str, base_name: str, main_genesis: Dict) -> tuple[Set[str], Set[str], Dict[str, str]]:
+def get_existing_addresses_from_all_sources(genesis_dir: str, base_name: str, main_genesis: Dict) -> tuple[Set[str], Set[str], Set[str], Dict[str, str]]:
     """Get existing addresses from main genesis and all split files
 
     Returns:
-        tuple: (existing_eth_addresses, existing_cosmos_addresses, cosmos_to_split_file_map)
+        tuple: (existing_eth_addresses, accounts_with_balances, accounts_without_balances, cosmos_to_split_file_map)
     """
     existing_eth_addresses, existing_cosmos_addresses = get_existing_addresses(main_genesis)
     cosmos_to_split_file_map = {}  # Maps cosmos address -> split file path
+    cosmos_addresses_in_accounts = set()  # All addresses in accounts sections
+    cosmos_addresses_in_balances = set()  # All addresses in balances sections
 
     # Also check split files for existing addresses
     pattern = os.path.join(genesis_dir, f"{base_name}.genesis.accounts.*.json")
@@ -206,6 +208,7 @@ def get_existing_addresses_from_all_sources(genesis_dir: str, base_name: str, ma
             for account in split_data.get('accounts', []):
                 cosmos_addr = account.get('address', '')
                 if cosmos_addr and cosmos_addr.startswith('shardeum'):
+                    cosmos_addresses_in_accounts.add(cosmos_addr)
                     existing_cosmos_addresses.add(cosmos_addr)
                     cosmos_to_split_file_map[cosmos_addr] = split_file
 
@@ -213,22 +216,28 @@ def get_existing_addresses_from_all_sources(genesis_dir: str, base_name: str, ma
             for balance in split_data.get('balances', []):
                 cosmos_addr = balance.get('address', '')
                 if cosmos_addr and cosmos_addr.startswith('shardeum'):
+                    cosmos_addresses_in_balances.add(cosmos_addr)
                     existing_cosmos_addresses.add(cosmos_addr)
-                    cosmos_to_split_file_map[cosmos_addr] = split_file
 
         except Exception as e:
             print(f"Warning: Could not read split file {split_file}: {e}", file=sys.stderr)
 
-    print(f"Found {len(existing_eth_addresses)} existing Ethereum addresses and {len(existing_cosmos_addresses)} existing Cosmos addresses")
-    return existing_eth_addresses, existing_cosmos_addresses, cosmos_to_split_file_map
+    # Find accounts without balances
+    accounts_without_balances = cosmos_addresses_in_accounts - cosmos_addresses_in_balances
+    accounts_with_balances = cosmos_addresses_in_balances
 
-def update_balance_in_split_file(split_file_path: str, cosmos_address: str, balance_to_add: int) -> bool:
+    print(f"Found {len(existing_eth_addresses)} existing Ethereum addresses")
+    print(f"Found {len(existing_cosmos_addresses)} existing Cosmos addresses ({len(accounts_without_balances)} without balances)")
+    return existing_eth_addresses, accounts_with_balances, accounts_without_balances, cosmos_to_split_file_map
+
+def update_balance_in_split_file(split_file_path: str, cosmos_address: str, balance_to_add: int, add_if_missing: bool = False) -> bool:
     """Update balance in an existing split file by adding to existing balance
 
     Args:
         split_file_path: Path to the split file
         cosmos_address: Cosmos address to update
-        balance_to_add: Amount to add to existing balance
+        balance_to_add: Amount to add to existing balance (or new balance if add_if_missing=True)
+        add_if_missing: If True, creates new balance entry if not found (when account exists but balance doesn't)
 
     Returns:
         bool: True if successful, False otherwise
@@ -247,15 +256,29 @@ def update_balance_in_split_file(split_file_path: str, cosmos_address: str, bala
                         old_amount = int(coin.get('amount', '0'))
                         new_amount = old_amount + balance_to_add
                         coin['amount'] = str(new_amount)
-                        print(f"Updated balance in {split_file_path}: {cosmos_address} from {old_amount:,} to {new_amount:,} ashm (+{balance_to_add:,})")
+                        print(f"Updated balance in {os.path.basename(split_file_path)}: {cosmos_address} from {old_amount:,} to {new_amount:,} ashm (+{balance_to_add:,})")
                         balance_updated = True
                         break
             if balance_updated:
                 break
 
         if not balance_updated:
-            print(f"Warning: Could not find balance entry for {cosmos_address} in {split_file_path}", file=sys.stderr)
-            return False
+            if add_if_missing:
+                # Account exists but balance is missing - add new balance entry if balance > 0
+                if balance_to_add <= 0:
+                    print(f"Skipping zero balance for {cosmos_address}")
+                    return False
+
+                balance_entry = create_bank_balance(cosmos_address, str(balance_to_add))
+                if 'balances' not in split_data:
+                    split_data['balances'] = []
+                split_data['balances'].append(balance_entry)
+                split_data['balances'].sort(key=lambda x: x['address'])
+                print(f"Added missing balance to {os.path.basename(split_file_path)}: {cosmos_address} = {balance_to_add:,} ashm")
+                balance_updated = True
+            else:
+                print(f"Warning: Could not find balance entry for {cosmos_address} in {split_file_path}", file=sys.stderr)
+                return False
 
         # Save the updated split file
         with open(split_file_path, 'w') as f:
@@ -449,7 +472,7 @@ def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_mu
         print(f"Auto-detected base name: {base_name}")
 
     # Get existing addresses from ALL sources (main genesis + split files)
-    existing_eth_addresses, existing_cosmos_addresses, cosmos_to_split_file_map = get_existing_addresses_from_all_sources(genesis_dir, base_name, main_genesis)
+    existing_eth_addresses, accounts_with_balances, accounts_without_balances, cosmos_to_split_file_map = get_existing_addresses_from_all_sources(genesis_dir, base_name, main_genesis)
 
     # Prepare data for new split file
     new_accounts = []
@@ -457,6 +480,7 @@ def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_mu
     added_count = 0
     skipped_count = 0
     updated_count = 0
+    balance_added_count = 0
     total_added_balance = 0
 
     print(f"Processing {len(old_genesis)} addresses from old genesis")
@@ -480,24 +504,25 @@ def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_mu
         balance_int = balance_int * balance_multiplier
         balance_wei = str(balance_int)
 
-        # Skip addresses with 0 balance
-        if balance_int == 0:
-            print(f"Skipping address with 0 balance: {eth_address}")
-            skipped_count += 1
-            continue
-
         # Check if either ethereum or cosmos address already exists
         if eth_addr_normalized in existing_eth_addresses:
             print(f"Skipping duplicate Ethereum address in main genesis: {eth_address}")
             skipped_count += 1
             continue
 
-        if cosmos_address in existing_cosmos_addresses:
-            # Address exists - check if we should add to existing balance or skip
+        # Handle accounts with balances
+        if cosmos_address in accounts_with_balances:
+            # Both account and balance exist - check if we should add to existing balance
             if add_balance and cosmos_address in cosmos_to_split_file_map:
+                # Skip if balance to add is 0
+                if balance_int == 0:
+                    print(f"Skipping zero balance update for: {eth_address}")
+                    skipped_count += 1
+                    continue
+
                 # Add balance mode: update the existing balance in the split file
                 split_file = cosmos_to_split_file_map[cosmos_address]
-                if update_balance_in_split_file(split_file, cosmos_address, balance_int):
+                if update_balance_in_split_file(split_file, cosmos_address, balance_int, add_if_missing=False):
                     total_added_balance += balance_int
                     updated_count += 1
                 else:
@@ -505,13 +530,38 @@ def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_mu
                     skipped_count += 1
                 continue
             else:
-                # Normal mode: skip duplicates
-                if cosmos_address in cosmos_to_split_file_map:
-                    print(f"Skipping duplicate Cosmos address in split file: {cosmos_address} (from Ethereum {eth_address})")
-                else:
-                    print(f"Skipping duplicate Cosmos address in main genesis: {cosmos_address} (from Ethereum {eth_address})")
+                # Normal mode: skip complete duplicates
+                print(f"Skipping complete duplicate: {cosmos_address} (from Ethereum {eth_address})")
                 skipped_count += 1
                 continue
+
+        # Handle accounts without balances (account exists but balance is missing)
+        elif cosmos_address in accounts_without_balances:
+            # Skip if balance is 0 - don't add to balances array
+            if balance_int == 0:
+                print(f"Skipping zero balance for account-only entry: {eth_address}")
+                skipped_count += 1
+                continue
+
+            # Add balance entry to the existing split file (where account is)
+            if cosmos_address in cosmos_to_split_file_map:
+                split_file = cosmos_to_split_file_map[cosmos_address]
+                if update_balance_in_split_file(split_file, cosmos_address, balance_int, add_if_missing=True):
+                    total_added_balance += balance_int
+                    balance_added_count += 1
+                    # Move from without balances to with balances
+                    accounts_without_balances.remove(cosmos_address)
+                    accounts_with_balances.add(cosmos_address)
+                else:
+                    print(f"Failed to add balance for {cosmos_address} (from Ethereum {eth_address})")
+                    skipped_count += 1
+                continue
+
+        # New address - skip if balance is 0
+        if balance_int == 0:
+            print(f"Skipping address with 0 balance: {eth_address}")
+            skipped_count += 1
+            continue
 
         # Create auth account and bank balance for the split file
         auth_account = create_auth_account(cosmos_address)
@@ -523,7 +573,7 @@ def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_mu
 
         # Update existing addresses sets
         existing_eth_addresses.add(eth_addr_normalized)
-        existing_cosmos_addresses.add(cosmos_address)
+        accounts_with_balances.add(cosmos_address)
         total_added_balance += balance_int
         added_count += 1
 
@@ -532,12 +582,13 @@ def merge_genesis_files(old_genesis_path: str, new_genesis_path: str, balance_mu
             print(f"Will add address: {eth_address} -> {cosmos_address} (balance: {original_balance} -> {balance_wei} wei, multiplier: {balance_multiplier})")
         else:
             print(f"Will add address: {eth_address} -> {cosmos_address} (balance: {balance_wei} wei)")
-    
+
     # Print summary
     print(f"\nProcessing summary:")
     print(f"  New addresses added: {added_count}")
-    print(f"  Existing addresses updated: {updated_count}")
-    print(f"  Skipped: {skipped_count} addresses (duplicates or conversion errors)")
+    print(f"  Missing balances added: {balance_added_count}")
+    print(f"  Existing balances updated: {updated_count}")
+    print(f"  Skipped: {skipped_count} addresses (duplicates, zero balances, or conversion errors)")
     if balance_multiplier != 1:
         print(f"  Balance multiplier: {balance_multiplier}")
     print(f"  Total balance added to genesis: {total_added_balance:,} ashm")
