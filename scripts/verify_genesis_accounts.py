@@ -293,7 +293,7 @@ def load_genesis_accounts(genesis_path: str, include_nonce: bool = False, balanc
 def load_secure_accounts_for_verification(secure_accounts_path: str, balance_multiplier: int = 1) -> List[Dict]:
     """
     Load secure accounts from JSON file for verification (simple array format)
-    Supports PriveVaultAddress replacement verification
+    Supports PriveVaultAddress migration verification (no replacement)
     """
     if not secure_accounts_path:
         return []
@@ -324,10 +324,14 @@ def load_secure_accounts_for_verification(secure_accounts_path: str, balance_mul
             # Get prime vault address if provided
             prime_vault_eth_addr = acc.get('PriveVaultAddress', '').lower().replace('0x', '')
             prime_vault_cosmos_addr = None
+            has_migration = False
+
             if prime_vault_eth_addr and prime_vault_eth_addr != source_eth_addr:
                 prime_vault_cosmos_addr = fast_bech32_encode(prime_vault_eth_addr)
                 if not prime_vault_cosmos_addr:
                     print(f"Warning: Failed to encode PriveVaultAddress {acc.get('PriveVaultAddress')}", file=sys.stderr)
+                else:
+                    has_migration = True
 
             # Get balance from SourceFundsBalance field
             balance_str = acc.get('SourceFundsBalance', '0')
@@ -339,34 +343,45 @@ def load_secure_accounts_for_verification(secure_accounts_path: str, balance_mul
                 print(f"Warning: Invalid balance {balance_str} for account {acc.get('Name', 'Unknown')}", file=sys.stderr)
                 balance = 0
 
-            # Get nonce from SourceFundsNonce field (or default to 0)
-            nonce_str = acc.get('SourceFundsNonce', '0')
+            # Get source nonce from SourceFundsNonce field (or default to 0)
+            source_nonce_str = acc.get('SourceFundsNonce', '0')
             try:
-                nonce = int(nonce_str)
+                source_nonce = int(source_nonce_str)
             except ValueError:
-                print(f"Warning: Invalid nonce {nonce_str} for account {acc.get('Name', 'Unknown')}, using 0", file=sys.stderr)
-                nonce = 0
+                print(f"Warning: Invalid source nonce {source_nonce_str} for account {acc.get('Name', 'Unknown')}, using 0", file=sys.stderr)
+                source_nonce = 0
 
             account_info = {
                 'source_address': source_cosmos_addr,
                 'source_eth_address': source_eth_addr,
-                'expected_balance': balance,
-                'expected_nonce': nonce,
+                'source_nonce': source_nonce,
                 'name': acc.get('Name', ''),
+                'is_migration': has_migration,
             }
 
-            # If replacement is happening, we should verify the prime vault address
-            if prime_vault_cosmos_addr:
-                account_info['address'] = prime_vault_cosmos_addr
-                account_info['prime_vault_eth_address'] = prime_vault_eth_addr
-                account_info['is_replacement'] = True
-                # Prime vault replacements always start at nonce 0
-                account_info['expected_nonce'] = 0
-                print(f"  Will verify replacement: {acc.get('Name')} at {prime_vault_cosmos_addr} (nonce expected: 0)", file=sys.stderr)
+            # If migration is happening, we need to verify both source (0 balance) and vault (with balance)
+            if has_migration:
+                # Get prime vault nonce (should be in a separate field or queried from snapshot)
+                # For verification, we assume it was set correctly during generation
+                # The vault nonce would need to be stored or re-queried from snapshot
+                # For now, we'll use 0 as default but this should be enhanced
+                vault_nonce_str = acc.get('PrimeVaultNonce', '0')
+                try:
+                    vault_nonce = int(vault_nonce_str)
+                except ValueError:
+                    vault_nonce = 0
+
+                account_info['vault_address'] = prime_vault_cosmos_addr
+                account_info['vault_eth_address'] = prime_vault_eth_addr
+                account_info['prime_vault_balance'] = balance
+                account_info['prime_vault_nonce'] = vault_nonce
+                print(f"  Will verify migration: {acc.get('Name')}", file=sys.stderr)
+                print(f"    Source: {source_cosmos_addr} (nonce={source_nonce}, balance=0)", file=sys.stderr)
+                print(f"    Vault:  {prime_vault_cosmos_addr} (nonce={vault_nonce}, balance={balance:,})", file=sys.stderr)
             else:
-                account_info['address'] = source_cosmos_addr
-                account_info['is_replacement'] = False
-                print(f"  Will verify: {acc.get('Name')} at {source_cosmos_addr} (nonce expected: {nonce})", file=sys.stderr)
+                # No migration - source account should have the balance
+                account_info['expected_balance'] = balance
+                print(f"  Will verify: {acc.get('Name')} at {source_cosmos_addr} (nonce={source_nonce}, balance={balance:,})", file=sys.stderr)
 
             accounts.append(account_info)
 
@@ -379,81 +394,110 @@ def load_secure_accounts_for_verification(secure_accounts_path: str, balance_mul
 def verify_secure_accounts(secure_accounts: List[Dict], genesis_data: Dict[str, Dict], check_nonce: bool = False) -> Tuple[bool, Dict]:
     """
     Verify that all secure accounts are present in genesis with correct balances and nonces
-    Supports verification of PriveVaultAddress replacements
+    Supports verification of PriveVaultAddress migrations (no replacement)
     """
     print("Verifying secure accounts...")
 
     results = {
         'total_secure': len(secure_accounts),
-        'missing_secure': [],
+        'missing_secure_sources': [],  # Secure source accounts missing from genesis
+        'source_balance_errors': [],  # Secure sources with non-zero balance
+        'missing_prime_vaults': [],  # Prime vault accounts missing from genesis
         'balance_mismatches': [],
         'nonce_mismatches': [],
-        'source_still_present': [],  # Old addresses that should have been removed
-        'matched_secure': 0,
-        'total_expected_balance': sum(acc['expected_balance'] for acc in secure_accounts)
+        'matched_secure_sources': 0,
+        'matched_prime_vaults': 0,
+        'total_expected_balance': sum(acc.get('prime_vault_balance', acc.get('expected_balance', 0)) for acc in secure_accounts)
     }
 
     for acc in secure_accounts:
-        target_address = acc['address']  # This is either source or prime vault
-        expected_balance = acc['expected_balance']
-        expected_nonce = acc.get('expected_nonce', 0)
+        source_address = acc['source_address']
+        source_nonce = acc['source_nonce']
         name = acc['name']
-        is_replacement = acc.get('is_replacement', False)
-        source_address = acc.get('source_address')
+        is_migration = acc.get('is_migration', False)
 
-        # If this is a replacement, verify old address was removed
-        if is_replacement and source_address:
-            if source_address in genesis_data:
-                results['source_still_present'].append({
-                    'address': source_address,
-                    'name': name,
-                    'note': f'Old source address should have been replaced with {target_address}'
-                })
-
-        # Verify the target address (either prime vault or source) is present
-        if target_address not in genesis_data:
-            results['missing_secure'].append({
-                'address': target_address,
+        # 1. Verify secure source account (should always be present with 0 balance)
+        if source_address not in genesis_data:
+            results['missing_secure_sources'].append({
+                'address': source_address,
                 'name': name,
-                'expected_balance': expected_balance,
-                'expected_nonce': expected_nonce if check_nonce else None,
-                'is_replacement': is_replacement
+                'expected_nonce': source_nonce if check_nonce else None
             })
         else:
-            # Verify balance
-            genesis_balance = genesis_data[target_address].get('balance', 0)
-            balance_match = genesis_balance == expected_balance
-
-            # Verify nonce if requested
-            genesis_nonce = genesis_data[target_address].get('sequence', 0)
-            nonce_match = genesis_nonce == expected_nonce if check_nonce else True
-
-            if not balance_match:
-                results['balance_mismatches'].append({
-                    'address': target_address,
+            # Verify source has 0 balance
+            genesis_balance = genesis_data[source_address].get('balance', 0)
+            if genesis_balance != 0:
+                results['source_balance_errors'].append({
+                    'address': source_address,
                     'name': name,
-                    'expected_balance': expected_balance,
+                    'expected_balance': 0,
                     'genesis_balance': genesis_balance,
-                    'difference': genesis_balance - expected_balance,
-                    'is_replacement': is_replacement
+                    'note': 'Secure source should have 0 balance'
                 })
 
-            if check_nonce and not nonce_match:
+            # Verify source nonce if requested
+            genesis_nonce = genesis_data[source_address].get('sequence', 0)
+            if check_nonce and genesis_nonce != source_nonce:
                 results['nonce_mismatches'].append({
-                    'address': target_address,
+                    'address': source_address,
                     'name': name,
-                    'expected_nonce': expected_nonce,
+                    'expected_nonce': source_nonce,
                     'genesis_nonce': genesis_nonce,
-                    'difference': genesis_nonce - expected_nonce,
-                    'is_replacement': is_replacement
+                    'difference': genesis_nonce - source_nonce,
+                    'type': 'source'
                 })
+            elif genesis_balance == 0 and (not check_nonce or genesis_nonce == source_nonce):
+                results['matched_secure_sources'] += 1
 
-            if balance_match and nonce_match:
-                results['matched_secure'] += 1
+        # 2. If this is a migration, verify prime vault account
+        if is_migration:
+            vault_address = acc.get('vault_address')
+            vault_balance = acc.get('prime_vault_balance', 0)
+            vault_nonce = acc.get('prime_vault_nonce', 0)
 
-    is_valid = (len(results['missing_secure']) == 0 and
+            if vault_address not in genesis_data:
+                results['missing_prime_vaults'].append({
+                    'address': vault_address,
+                    'name': name,
+                    'expected_balance': vault_balance,
+                    'expected_nonce': vault_nonce if check_nonce else None
+                })
+            else:
+                # Verify vault balance
+                genesis_balance = genesis_data[vault_address].get('balance', 0)
+                balance_match = genesis_balance == vault_balance
+
+                # Verify vault nonce if requested
+                genesis_nonce = genesis_data[vault_address].get('sequence', 0)
+                nonce_match = genesis_nonce == vault_nonce if check_nonce else True
+
+                if not balance_match:
+                    results['balance_mismatches'].append({
+                        'address': vault_address,
+                        'name': name,
+                        'expected_balance': vault_balance,
+                        'genesis_balance': genesis_balance,
+                        'difference': genesis_balance - vault_balance,
+                        'type': 'vault'
+                    })
+
+                if check_nonce and not nonce_match:
+                    results['nonce_mismatches'].append({
+                        'address': vault_address,
+                        'name': name,
+                        'expected_nonce': vault_nonce,
+                        'genesis_nonce': genesis_nonce,
+                        'difference': genesis_nonce - vault_nonce,
+                        'type': 'vault'
+                    })
+
+                if balance_match and nonce_match:
+                    results['matched_prime_vaults'] += 1
+
+    is_valid = (len(results['missing_secure_sources']) == 0 and
+                len(results['source_balance_errors']) == 0 and
+                len(results['missing_prime_vaults']) == 0 and
                 len(results['balance_mismatches']) == 0 and
-                len(results['source_still_present']) == 0 and
                 (not check_nonce or len(results['nonce_mismatches']) == 0))
 
     return is_valid, results
@@ -466,41 +510,35 @@ def verify_accounts(shardeum_accounts: List[Tuple[str, int, int, str]],
     print("Verifying accounts...")
     print(f"Options: check_nonce={check_nonce}, balance_multiplier={balance_multiplier}")
 
-    # Build sets of addresses to skip (source addresses that were replaced)
-    replaced_source_addresses = set()
-    secure_target_addresses = {}  # Maps target address -> secure account data
+    # Build sets of addresses that should be verified separately (secure sources and prime vaults)
+    secure_source_addresses = set()
+    prime_vault_addresses = {}  # Maps vault address -> vault account data
 
     if secure_accounts:
         for acc in secure_accounts:
-            if acc.get('is_replacement'):
-                # This is a replacement - skip the old source address
-                replaced_source_addresses.add(acc['source_address'])
-                # Store the target address with its expected values
-                secure_target_addresses[acc['address']] = {
-                    'balance': acc['expected_balance'],
-                    'nonce': acc['expected_nonce'],
-                    'name': acc['name']
-                }
-            else:
-                # No replacement - target is same as source
-                secure_target_addresses[acc['address']] = {
-                    'balance': acc['expected_balance'],
-                    'nonce': acc['expected_nonce'],
-                    'name': acc['name']
-                }
+            # Always track secure source addresses (they have 0 balance)
+            secure_source_addresses.add(acc['source_address'])
 
-    # Calculate total Shardeum accounts excluding replaced source addresses
-    # and add any new secure target addresses not in Shardeum DB
-    total_shardeum_count = len(shardeum_accounts) - len(replaced_source_addresses)
+            # If this is a migration, track the prime vault address
+            if acc.get('is_migration'):
+                vault_address = acc.get('vault_address')
+                if vault_address:
+                    prime_vault_addresses[vault_address] = {
+                        'balance': acc.get('prime_vault_balance', 0),
+                        'nonce': acc.get('prime_vault_nonce', 0),
+                        'name': acc['name']
+                    }
+
+    # Calculate total Shardeum accounts excluding secure/vault addresses already processed
+    # (they will be verified separately as part of secure accounts)
+    secure_addresses_to_skip = secure_source_addresses | set(prime_vault_addresses.keys())
+    total_shardeum_count = len(shardeum_accounts) - len([a for a in shardeum_accounts if a[0] in secure_addresses_to_skip])
     total_shardeum_supply = sum(balance for addr, balance, _, _ in shardeum_accounts
-                                 if addr not in replaced_source_addresses)
+                                 if addr not in secure_addresses_to_skip)
 
-    # Add new secure target addresses (not in Shardeum DB)
-    for target_address, secure_data in secure_target_addresses.items():
-        shardeum_addrs_set = {addr for addr, _, _, _ in shardeum_accounts}
-        if target_address not in shardeum_addrs_set:
-            total_shardeum_count += 1
-            total_shardeum_supply += secure_data['balance']
+    # Add secure source addresses (with 0 balance) and prime vault addresses
+    total_shardeum_count += len(secure_source_addresses)
+    total_shardeum_supply += sum(data['balance'] for data in prime_vault_addresses.values())
 
     results = {
         'total_shardeum': total_shardeum_count,
@@ -519,16 +557,10 @@ def verify_accounts(shardeum_accounts: List[Tuple[str, int, int, str]],
                      for addr, balance, nonce, _ in shardeum_accounts}
 
     for address, expected_balance, expected_nonce, expected_unique_id in shardeum_accounts:
-        # Skip if this address was replaced by a secure account
-        if address in replaced_source_addresses:
-            print(f"  Skipping replaced source address {address} from verification", file=sys.stderr)
+        # Skip if this is a secure source or prime vault (verified separately)
+        if address in secure_addresses_to_skip:
+            print(f"  Skipping secure/vault address {address} (verified separately)", file=sys.stderr)
             continue
-
-        # If this address is a secure target address, use the secure account values
-        if address in secure_target_addresses:
-            expected_balance = secure_target_addresses[address]['balance']
-            expected_nonce = secure_target_addresses[address]['nonce']
-            print(f"  Using secure account values for {address}: balance={expected_balance}, nonce={expected_nonce}", file=sys.stderr)
         if address not in genesis_data:
             results['missing_accounts'].append({
                 'address': address,
@@ -562,57 +594,16 @@ def verify_accounts(shardeum_accounts: List[Tuple[str, int, int, str]],
                 results['matched_accounts'] += 1
                 results['matched_supply'] += expected_balance
     
-    # Check for secure target addresses that aren't in Shardeum DB (new addresses)
-    # These need to be verified separately
-    for target_address, secure_data in secure_target_addresses.items():
-        if target_address not in shardeum_dict:
-            # This is a new address not in Shardeum DB (e.g., new prime vault)
-            # Verify it in genesis
-            expected_balance = secure_data['balance']
-            expected_nonce = secure_data['nonce']
-
-            print(f"  Verifying new secure target address {target_address} (not in Shardeum DB)", file=sys.stderr)
-
-            if target_address not in genesis_data:
-                results['missing_accounts'].append({
-                    'address': target_address,
-                    'expected_balance': expected_balance,
-                    'expected_nonce': expected_nonce if check_nonce else None,
-                    'expected_unique_id': 'N/A (secure account)'
-                })
-            else:
-                genesis_balance = genesis_data[target_address].get('balance', 0)
-                genesis_sequence = genesis_data[target_address].get('sequence', 0)
-                balance_match = genesis_balance == expected_balance
-                nonce_match = genesis_sequence == expected_nonce if check_nonce else True
-
-                if not balance_match:
-                    results['balance_mismatches'].append({
-                        'address': target_address,
-                        'expected_balance': expected_balance,
-                        'genesis_balance': genesis_balance,
-                        'difference': genesis_balance - expected_balance
-                    })
-
-                if check_nonce and not nonce_match:
-                    results['nonce_mismatches'].append({
-                        'address': target_address,
-                        'expected_nonce': expected_nonce,
-                        'genesis_sequence': genesis_sequence,
-                        'difference': genesis_sequence - expected_nonce
-                    })
-
-                if balance_match and nonce_match:
-                    results['matched_accounts'] += 1
-                    results['matched_supply'] += expected_balance
+    # Note: Secure accounts and prime vaults are verified separately by verify_secure_accounts
+    # so we don't need to check them here
 
     # Check for extra accounts in genesis (not from Shardeum and not secure accounts)
     extra_accounts = []
     validator_accounts = []
 
     for address, data in genesis_data.items():
-        # Skip if it's in Shardeum or is a secure target address
-        if address not in shardeum_dict and address not in secure_target_addresses:
+        # Skip if it's in Shardeum or is a secure/vault address (verified separately)
+        if address not in shardeum_dict and address not in secure_addresses_to_skip:
             balance = data.get('balance', 0)
             # These could be validator accounts or dev accounts
             if balance >= 1000000000000000000000:  # >= 1000 SHM (likely validator/dev account)
@@ -707,45 +698,55 @@ def print_report(results: Dict, genesis_path: str = ''):
     if 'secure_accounts_results' in results:
         secure_results = results['secure_accounts_results']
         print(f"\n" + "-"*80)
-        print("SECURE ACCOUNTS VERIFICATION")
+        print("SECURE ACCOUNTS VERIFICATION (MIGRATION MODE)")
         print("-"*80)
-        print(f"Total secure accounts:         {secure_results['total_secure']}")
-        print(f"Matched secure accounts:       {secure_results['matched_secure']}")
-        print(f"Missing secure accounts:       {len(secure_results['missing_secure'])}")
-        print(f"Balance mismatches:            {len(secure_results['balance_mismatches'])}")
+        print(f"Total secure accounts:           {secure_results['total_secure']}")
+        print(f"Matched secure sources (0 bal):  {secure_results['matched_secure_sources']}")
+        print(f"Matched prime vaults (w/ bal):   {secure_results['matched_prime_vaults']}")
+        print(f"Missing secure sources:          {len(secure_results['missing_secure_sources'])}")
+        print(f"Source balance errors:           {len(secure_results['source_balance_errors'])}")
+        print(f"Missing prime vaults:            {len(secure_results['missing_prime_vaults'])}")
+        print(f"Vault balance mismatches:        {len(secure_results['balance_mismatches'])}")
         if results.get('check_nonce'):
-            print(f"Nonce mismatches:              {len(secure_results.get('nonce_mismatches', []))}")
-        print(f"Old addresses still present:   {len(secure_results.get('source_still_present', []))}")
+            print(f"Nonce mismatches:                {len(secure_results.get('nonce_mismatches', []))}")
 
-        if secure_results.get('source_still_present'):
-            print(f"\n❌ OLD SOURCE ADDRESSES STILL PRESENT (should have been replaced):")
-            for acc in secure_results['source_still_present']:
+        if secure_results['missing_secure_sources']:
+            print(f"\n❌ MISSING SECURE SOURCE ACCOUNTS:")
+            for acc in secure_results['missing_secure_sources']:
                 print(f"  - {acc['name']}: {acc['address']}")
+                if results.get('check_nonce') and acc.get('expected_nonce') is not None:
+                    print(f"    Expected nonce: {acc['expected_nonce']}")
+
+        if secure_results['source_balance_errors']:
+            print(f"\n❌ SECURE SOURCE BALANCE ERRORS (should be 0):")
+            for acc in secure_results['source_balance_errors']:
+                print(f"  - {acc['name']}: {acc['address']}")
+                print(f"    Expected: 0 wei")
+                print(f"    Genesis:  {acc['genesis_balance']:,} wei")
                 print(f"    Note: {acc['note']}")
 
-        if secure_results['missing_secure']:
-            print(f"\n❌ MISSING SECURE ACCOUNTS:")
-            for acc in secure_results['missing_secure']:
-                replacement_note = " (REPLACEMENT)" if acc.get('is_replacement') else ""
-                print(f"  - {acc['name']}: {acc['address']}{replacement_note}")
+        if secure_results['missing_prime_vaults']:
+            print(f"\n❌ MISSING PRIME VAULT ACCOUNTS:")
+            for acc in secure_results['missing_prime_vaults']:
+                print(f"  - {acc['name']}: {acc['address']}")
                 print(f"    Expected balance: {acc['expected_balance']:,} wei")
                 if results.get('check_nonce') and acc.get('expected_nonce') is not None:
                     print(f"    Expected nonce: {acc['expected_nonce']}")
 
         if secure_results['balance_mismatches']:
-            print(f"\n❌ SECURE ACCOUNT BALANCE MISMATCHES:")
+            print(f"\n❌ PRIME VAULT BALANCE MISMATCHES:")
             for mismatch in secure_results['balance_mismatches']:
-                replacement_note = " (REPLACEMENT)" if mismatch.get('is_replacement') else ""
-                print(f"  - {mismatch['name']}: {mismatch['address']}{replacement_note}")
+                account_type = f" ({mismatch.get('type', 'unknown')})"
+                print(f"  - {mismatch['name']}: {mismatch['address']}{account_type}")
                 print(f"    Expected: {mismatch['expected_balance']:,}")
                 print(f"    Genesis:  {mismatch['genesis_balance']:,}")
                 print(f"    Diff:     {mismatch['difference']:+,}")
 
         if results.get('check_nonce') and secure_results.get('nonce_mismatches'):
-            print(f"\n❌ SECURE ACCOUNT NONCE MISMATCHES:")
+            print(f"\n❌ NONCE MISMATCHES:")
             for mismatch in secure_results['nonce_mismatches']:
-                replacement_note = " (REPLACEMENT)" if mismatch.get('is_replacement') else ""
-                print(f"  - {mismatch['name']}: {mismatch['address']}{replacement_note}")
+                account_type = f" ({mismatch.get('type', 'unknown')})"
+                print(f"  - {mismatch['name']}: {mismatch['address']}{account_type}")
                 print(f"    Expected nonce: {mismatch['expected_nonce']}")
                 print(f"    Genesis nonce:  {mismatch['genesis_nonce']}")
                 print(f"    Diff:           {mismatch['difference']:+}")
@@ -763,9 +764,10 @@ def print_report(results: Dict, genesis_path: str = ''):
     secure_valid = True
     if has_secure_accounts:
         secure_results = results['secure_accounts_results']
-        secure_valid = (len(secure_results['missing_secure']) == 0 and
+        secure_valid = (len(secure_results['missing_secure_sources']) == 0 and
+                       len(secure_results['source_balance_errors']) == 0 and
+                       len(secure_results['missing_prime_vaults']) == 0 and
                        len(secure_results['balance_mismatches']) == 0 and
-                       len(secure_results.get('source_still_present', [])) == 0 and
                        (not check_nonce or len(secure_results.get('nonce_mismatches', [])) == 0))
     
     if basic_valid and secure_valid:
