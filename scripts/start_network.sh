@@ -296,7 +296,7 @@ fi
 # Fund accounts in genesis
 # -----------------------------
 echo -e "${YELLOW}Adding validator account to genesis${NC}"
-"$BINARY" genesis add-genesis-account "validator" 100000000000000000000000000${BASE_DENOM} \
+"$BINARY" genesis add-genesis-account "validator" 10000000000000000000000${BASE_DENOM} \
   --keyring-backend test --home "$NODE0_DIR" > /dev/null 2>&1
 
 # -----------------------------
