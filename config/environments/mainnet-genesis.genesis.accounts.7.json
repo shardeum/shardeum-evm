@@ -26602,7 +26602,7 @@
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
       "address": "shardeum1wuf5e0qxevqtvm6v0e3r6h7m7emhvd0v67qdmk",
       "pub_key": null,
-      "sequence": "226"
+      "sequence": "228"
     },
     {
       "@type": "/cosmos.auth.v1beta1.BaseAccount",
@@ -82516,7 +82516,7 @@
       "coins": [
         {
           "denom": "ashm",
-          "amount": "643037599999999999999680"
+          "amount": "653117599999999999999680"
         }
       ]
     },
@@ -86503,7 +86503,7 @@
       "coins": [
         {
           "denom": "ashm",
-          "amount": "138702718470736699277760000"
+          "amount": "138266954095170801041280000"
         }
       ]
     },
@@ -102496,7 +102496,7 @@
       "coins": [
         {
           "denom": "ashm",
-          "amount": "586478625017050881759840"
+          "amount": "596638625017050881759760"
         }
       ]
     },
@@ -104935,7 +104935,7 @@
       "coins": [
         {
           "denom": "ashm",
-          "amount": "576238625017050881760000"
+          "amount": "586438625017050881760000"
         }
       ]
     },
