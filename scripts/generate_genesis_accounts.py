@@ -195,10 +195,11 @@ def extract_shardeum_accounts(db_path: str,
     
     return accounts_data, total_supply
 
-def load_secure_accounts(secure_accounts_path: str, balance_multiplier: int = 1) -> List[Dict]:
+def load_secure_accounts(secure_accounts_path: str, balance_multiplier: int = 1, db_path: str = None) -> List[Dict]:
     """
     Load secure accounts from JSON file (simple array format)
-    Supports account replacement with Prime Vault Address
+    Supports Prime Vault Address migration (no replacement)
+    Fetches prime vault nonce from database if it exists
     """
     if not secure_accounts_path:
         return []
@@ -212,6 +213,16 @@ def load_secure_accounts(secure_accounts_path: str, balance_multiplier: int = 1)
         if not isinstance(secure_accounts_list, list):
             print(f"Error: Secure accounts file must contain a JSON array", file=sys.stderr)
             return []
+
+        # Connect to database if provided to fetch prime vault nonces
+        conn = None
+        if db_path:
+            try:
+                conn = sqlite3.connect(db_path)
+                print(f"Connected to database to fetch prime vault nonces", file=sys.stderr)
+            except Exception as e:
+                print(f"Warning: Could not connect to database for prime vault nonces: {e}", file=sys.stderr)
+                conn = None
 
         accounts = []
         for acc in secure_accounts_list:
@@ -227,14 +238,42 @@ def load_secure_accounts(secure_accounts_path: str, balance_multiplier: int = 1)
                 print(f"Warning: Failed to encode secure account {acc.get('SourceFundsAddress')}", file=sys.stderr)
                 continue
 
-            # Get the prime vault address if provided (for replacement)
+            # Get the prime vault address if provided (for migration)
             prime_vault_eth_addr = acc.get('PriveVaultAddress', '').lower().replace('0x', '')
             prime_vault_cosmos_addr = None
+            prime_vault_nonce = 0
+
             if prime_vault_eth_addr and prime_vault_eth_addr != source_eth_addr:
                 prime_vault_cosmos_addr = fast_bech32_encode(prime_vault_eth_addr)
                 if not prime_vault_cosmos_addr:
                     print(f"Warning: Failed to encode PriveVaultAddress {acc.get('PriveVaultAddress')}", file=sys.stderr)
                     prime_vault_cosmos_addr = None
+                else:
+                    # Try to fetch prime vault nonce from database
+                    if conn:
+                        try:
+                            cursor = conn.cursor()
+                            query = """
+                                SELECT json_extract(data, '$.account.nonce.value') as nonce_hex
+                                FROM accounts
+                                WHERE substr(accountId, 1, 40) = ?
+                                  AND json_extract(data, '$.accountType') = 0
+                                LIMIT 1
+                            """
+                            cursor.execute(query, (prime_vault_eth_addr,))
+                            row = cursor.fetchone()
+                            if row and row[0]:
+                                nonce_hex = row[0]
+                                try:
+                                    prime_vault_nonce = int(nonce_hex, 16) if nonce_hex and nonce_hex != '0' else 0
+                                    print(f"  Found prime vault {prime_vault_eth_addr} in snapshot with nonce {prime_vault_nonce}", file=sys.stderr)
+                                except ValueError:
+                                    prime_vault_nonce = 0
+                                    print(f"  Warning: Invalid nonce for prime vault {prime_vault_eth_addr}, using 0", file=sys.stderr)
+                            else:
+                                print(f"  Prime vault {prime_vault_eth_addr} not in snapshot, will use nonce 0", file=sys.stderr)
+                        except Exception as e:
+                            print(f"  Warning: Error fetching prime vault nonce: {e}", file=sys.stderr)
 
             # Get balance from SourceFundsBalance field
             balance_str = acc.get('SourceFundsBalance', '0')
@@ -264,17 +303,19 @@ def load_secure_accounts(secure_accounts_path: str, balance_multiplier: int = 1)
                 'is_secure': True
             }
 
-            # If PriveVaultAddress is provided and different, include it
+            # If PriveVaultAddress is provided and different, include it for migration
             if prime_vault_cosmos_addr:
                 account_info['prime_vault_address'] = prime_vault_cosmos_addr
                 account_info['prime_vault_eth_address'] = prime_vault_eth_addr
-                # Prime vault replacements always start at nonce 0
-                account_info['prime_vault_nonce'] = 0
-                print(f"Secure account {acc.get('Name')}: {source_cosmos_addr} -> {prime_vault_cosmos_addr} (REPLACEMENT, nonce=0)")
+                account_info['prime_vault_nonce'] = prime_vault_nonce
+                print(f"Secure account {acc.get('Name')}: source={source_cosmos_addr} (nonce={nonce}, balance=0), vault={prime_vault_cosmos_addr} (nonce={prime_vault_nonce}, balance={balance})")
             else:
-                print(f"Secure account {acc.get('Name')}: {source_cosmos_addr} (NO REPLACEMENT, nonce={nonce})")
+                print(f"Secure account {acc.get('Name')}: {source_cosmos_addr} (no vault, nonce={nonce}, balance={balance})")
 
             accounts.append(account_info)
+
+        if conn:
+            conn.close()
 
         print(f"Loaded {len(accounts)} secure accounts", file=sys.stderr)
         return accounts
@@ -331,9 +372,9 @@ def update_genesis_with_accounts(genesis_path: str,
     
     next_account_number = max_account_number + 1
     
-    # First, process secure accounts if provided (with replacement support)
-    secure_addresses = set()  # Tracks all secure account addresses (new or old)
-    replaced_addresses = set()  # Tracks addresses that were replaced
+    # First, process secure accounts if provided (with migration support - no replacement)
+    secure_source_addresses = set()  # Tracks all secure source addresses (with 0 balance)
+    prime_vault_addresses = set()  # Tracks all prime vault addresses (with migrated balance)
 
     if secure_accounts:
         for account_data in secure_accounts:
@@ -341,122 +382,179 @@ def update_genesis_with_accounts(genesis_path: str,
             prime_vault_address = account_data.get('prime_vault_address')
             balance = account_data['balance']
             nonce = account_data['nonce']
-            prime_vault_nonce = account_data.get('prime_vault_nonce', 0)  # Default to 0 for replacements
+            prime_vault_nonce = account_data.get('prime_vault_nonce', 0)
             name = account_data.get('name', 'Unknown')
 
-            # Determine if this is a replacement operation
-            is_replacement = prime_vault_address and prime_vault_address != source_address
+            # Determine if this is a migration (has prime vault)
+            has_prime_vault = prime_vault_address and prime_vault_address != source_address
 
-            if is_replacement:
-                # REPLACEMENT MODE: Replace source_address with prime_vault_address
-                target_address = prime_vault_address
-                target_nonce = prime_vault_nonce  # Use prime vault nonce (always 0)
-                secure_addresses.add(prime_vault_address)
-                replaced_addresses.add(source_address)
+            if has_prime_vault:
+                # MIGRATION MODE: Add both source (with 0 balance) and prime vault (with balance)
+                secure_source_addresses.add(source_address)
+                prime_vault_addresses.add(prime_vault_address)
 
-                print(f"  Replacing {name}: {source_address} -> {prime_vault_address}", file=sys.stderr)
+                print(f"  Migrating {name}:", file=sys.stderr)
+                print(f"    Source: {source_address} (nonce={nonce}, balance=0)", file=sys.stderr)
+                print(f"    Vault:  {prime_vault_address} (nonce={prime_vault_nonce}, balance={balance:,})", file=sys.stderr)
 
-                # Remove old source account from auth.accounts if it exists
-                old_account_count = len(genesis['app_state']['auth']['accounts'])
-                genesis['app_state']['auth']['accounts'] = [
-                    acc for acc in genesis['app_state']['auth']['accounts']
-                    if acc['address'] != source_address
-                ]
-                new_account_count = len(genesis['app_state']['auth']['accounts'])
-
-                if old_account_count > new_account_count:
-                    print(f"    ✓ Removed old account {source_address} from auth.accounts", file=sys.stderr)
-                    # Remove from tracking dict
-                    if source_address in existing_accounts:
-                        del existing_accounts[source_address]
+                # 1. Add/update source account with correct nonce but 0 balance
+                if source_address not in existing_accounts:
+                    source_account = {
+                        "@type": "/cosmos.auth.v1beta1.BaseAccount",
+                        "address": source_address,
+                        "pub_key": None,
+                        "sequence": str(nonce) if include_nonce else "0"
+                    }
+                    genesis['app_state']['auth']['accounts'].append(source_account)
+                    new_accounts += 1
+                    next_account_number += 1
+                    print(f"      ✓ Added source account to auth.accounts", file=sys.stderr)
                 else:
-                    print(f"    ℹ Old account {source_address} not in genesis (will be skipped if in Shardeum DB)", file=sys.stderr)
+                    # Update existing account's sequence if needed
+                    if include_nonce:
+                        for acc in genesis['app_state']['auth']['accounts']:
+                            if acc['address'] == source_address:
+                                acc['sequence'] = str(nonce)
+                                break
+                    print(f"      ✓ Updated source account sequence", file=sys.stderr)
 
-                # Remove old source balance from bank.balances if it exists
-                old_balance_count = len(genesis['app_state']['bank']['balances'])
-                genesis['app_state']['bank']['balances'] = [
-                    bal for bal in genesis['app_state']['bank']['balances']
-                    if bal['address'] != source_address
-                ]
-                new_balance_count = len(genesis['app_state']['bank']['balances'])
-
-                if old_balance_count > new_balance_count:
-                    print(f"    ✓ Removed old balance {source_address} from bank.balances", file=sys.stderr)
-                    # Remove from tracking dicts
+                # Source account should NOT be in balances (balance = 0)
+                # Remove from balances if it exists
+                if include_balance and source_address in existing_balance_entries:
+                    balance_index = existing_balance_entries[source_address]
+                    del genesis['app_state']['bank']['balances'][balance_index]
+                    # Rebuild index
+                    existing_balance_entries = {
+                        bal['address']: i
+                        for i, bal in enumerate(genesis['app_state']['bank']['balances'])
+                    }
                     if source_address in existing_balances:
                         del existing_balances[source_address]
-                    if source_address in existing_balance_entries:
-                        del existing_balance_entries[source_address]
-            else:
-                # NO REPLACEMENT: Just use source_address
-                target_address = source_address
-                target_nonce = nonce  # Use original nonce for non-replacements
-                secure_addresses.add(source_address)
-                print(f"  Processing {name}: {source_address} (no replacement)", file=sys.stderr)
+                    print(f"      ✓ Removed source from bank.balances (0 balance)", file=sys.stderr)
 
-            # Add/update the target account in auth.accounts
-            if target_address not in existing_accounts:
-                new_account = {
-                    "@type": "/cosmos.auth.v1beta1.BaseAccount",
-                    "address": target_address,
-                    "pub_key": None,
-                    "sequence": str(target_nonce) if include_nonce else "0"
-                }
-                genesis['app_state']['auth']['accounts'].append(new_account)
-                new_accounts += 1
-                next_account_number += 1
-                print(f"    Added new account {target_address} (nonce={target_nonce if include_nonce else 0})", file=sys.stderr)
-            else:
-                # Update existing account's sequence if needed
-                if include_nonce:
-                    for acc in genesis['app_state']['auth']['accounts']:
-                        if acc['address'] == target_address:
-                            acc['sequence'] = str(target_nonce)
-                            break
-                print(f"    Updated existing account {target_address} (nonce={target_nonce if include_nonce else 0})", file=sys.stderr)
+                # 2. Add/update prime vault account with its nonce and balance
+                if prime_vault_address not in existing_accounts:
+                    vault_account = {
+                        "@type": "/cosmos.auth.v1beta1.BaseAccount",
+                        "address": prime_vault_address,
+                        "pub_key": None,
+                        "sequence": str(prime_vault_nonce) if include_nonce else "0"
+                    }
+                    genesis['app_state']['auth']['accounts'].append(vault_account)
+                    new_accounts += 1
+                    next_account_number += 1
+                    print(f"      ✓ Added vault account to auth.accounts", file=sys.stderr)
+                else:
+                    # Update existing account's sequence if needed
+                    if include_nonce:
+                        for acc in genesis['app_state']['auth']['accounts']:
+                            if acc['address'] == prime_vault_address:
+                                acc['sequence'] = str(prime_vault_nonce)
+                                break
+                    print(f"      ✓ Updated vault account sequence", file=sys.stderr)
 
-            # Set balance if include_balance is True
-            if include_balance:
-                # Need to rebuild balance entries index since we may have removed entries
-                existing_balance_entries = {
-                    bal['address']: i
-                    for i, bal in enumerate(genesis['app_state']['bank']['balances'])
-                }
+                # Add balance to prime vault
+                if include_balance and balance > 0:
+                    # Rebuild balance entries index
+                    existing_balance_entries = {
+                        bal['address']: i
+                        for i, bal in enumerate(genesis['app_state']['bank']['balances'])
+                    }
 
-                if balance > 0:
-                    if target_address not in existing_balance_entries:
+                    if prime_vault_address not in existing_balance_entries:
                         # Add new balance entry
-                        new_balance = {
-                            "address": target_address,
+                        vault_balance = {
+                            "address": prime_vault_address,
                             "coins": [{"denom": "ashm", "amount": str(balance)}]
                         }
-                        genesis['app_state']['bank']['balances'].append(new_balance)
+                        genesis['app_state']['bank']['balances'].append(vault_balance)
                         new_balance_entries += 1
-                        print(f"    Added new balance entry for {target_address}: {balance:,} ashm", file=sys.stderr)
+                        print(f"      ✓ Added vault balance: {balance:,} ashm", file=sys.stderr)
                     else:
-                        # Update existing balance (override)
-                        balance_index = existing_balance_entries[target_address]
+                        # Update existing balance
+                        balance_index = existing_balance_entries[prime_vault_address]
                         balance_entry = genesis['app_state']['bank']['balances'][balance_index]
                         for coin in balance_entry['coins']:
                             if coin['denom'] == 'ashm':
+                                old_balance = int(coin['amount'])
                                 coin['amount'] = str(balance)
+                                print(f"      ✓ Updated vault balance from {old_balance:,} to {balance:,} ashm", file=sys.stderr)
                                 break
-                        print(f"    Updated balance for {target_address}: {balance:,} ashm", file=sys.stderr)
-                elif balance == 0:
+
+            else:
+                # NO MIGRATION: Just use source_address with its nonce and balance
+                secure_source_addresses.add(source_address)
+                print(f"  Processing {name}: {source_address} (no vault, nonce={nonce}, balance={balance:,})", file=sys.stderr)
+
+                # Add/update account
+                if source_address not in existing_accounts:
+                    account = {
+                        "@type": "/cosmos.auth.v1beta1.BaseAccount",
+                        "address": source_address,
+                        "pub_key": None,
+                        "sequence": str(nonce) if include_nonce else "0"
+                    }
+                    genesis['app_state']['auth']['accounts'].append(account)
+                    new_accounts += 1
+                    next_account_number += 1
+                    print(f"    ✓ Added account to auth.accounts", file=sys.stderr)
+                else:
+                    # Update existing account's sequence if needed
+                    if include_nonce:
+                        for acc in genesis['app_state']['auth']['accounts']:
+                            if acc['address'] == source_address:
+                                acc['sequence'] = str(nonce)
+                                break
+                    print(f"    ✓ Updated account sequence", file=sys.stderr)
+
+                # Add balance if needed
+                if include_balance and balance > 0:
+                    # Rebuild balance entries index
+                    existing_balance_entries = {
+                        bal['address']: i
+                        for i, bal in enumerate(genesis['app_state']['bank']['balances'])
+                    }
+
+                    if source_address not in existing_balance_entries:
+                        # Add new balance entry
+                        balance_entry = {
+                            "address": source_address,
+                            "coins": [{"denom": "ashm", "amount": str(balance)}]
+                        }
+                        genesis['app_state']['bank']['balances'].append(balance_entry)
+                        new_balance_entries += 1
+                        print(f"    ✓ Added balance: {balance:,} ashm", file=sys.stderr)
+                    else:
+                        # Update existing balance
+                        balance_index = existing_balance_entries[source_address]
+                        balance_entry = genesis['app_state']['bank']['balances'][balance_index]
+                        for coin in balance_entry['coins']:
+                            if coin['denom'] == 'ashm':
+                                old_balance = int(coin['amount'])
+                                coin['amount'] = str(balance)
+                                print(f"    ✓ Updated balance from {old_balance:,} to {balance:,} ashm", file=sys.stderr)
+                                break
+                elif include_balance and balance == 0:
                     # Remove zero-balance entry if it exists
-                    if target_address in existing_balance_entries:
-                        balance_index = existing_balance_entries[target_address]
+                    if source_address in existing_balance_entries:
+                        balance_index = existing_balance_entries[source_address]
                         del genesis['app_state']['bank']['balances'][balance_index]
-                        print(f"    Removed zero-balance entry for {target_address} from bank.balances", file=sys.stderr)
+                        # Rebuild index
+                        existing_balance_entries = {
+                            bal['address']: i
+                            for i, bal in enumerate(genesis['app_state']['bank']['balances'])
+                        }
+                        if source_address in existing_balances:
+                            del existing_balances[source_address]
+                        print(f"    ✓ Removed from bank.balances (0 balance)", file=sys.stderr)
     
-    # Process each account from Shardeum (skip if it's a secure account or was replaced)
+    # Process each account from Shardeum (skip if it's a secure account or prime vault already processed)
     for account_data in accounts_data:
         address = account_data['address']
 
-        # Skip if this is a secure account (already processed) or was replaced
-        if address in secure_addresses or address in replaced_addresses:
-            if address in replaced_addresses:
-                print(f"  Skipping replaced address {address} from Shardeum data", file=sys.stderr)
+        # Skip if this is a secure source or prime vault address (already processed)
+        if address in secure_source_addresses or address in prime_vault_addresses:
+            print(f"  Skipping secure/vault address {address} (already processed)", file=sys.stderr)
             continue
             
         balance = account_data['balance']
@@ -540,7 +638,8 @@ def update_genesis_with_accounts(genesis_path: str,
     print(f"  New accounts added: {new_accounts:,}", file=sys.stderr)
     print(f"  Existing accounts updated: {updated_accounts:,}", file=sys.stderr)
     if secure_accounts:
-        print(f"  Secure account replacements: {len(replaced_addresses):,}", file=sys.stderr)
+        print(f"  Secure source accounts (0 balance): {len(secure_source_addresses):,}", file=sys.stderr)
+        print(f"  Prime vault accounts (with balance): {len(prime_vault_addresses):,}", file=sys.stderr)
     if include_balance:
         print(f"  New balance entries: {new_balance_entries:,}", file=sys.stderr)
     print(f"  Genesis file saved to: {output_path}", file=sys.stderr)
@@ -757,7 +856,7 @@ Examples:
         # Load secure accounts if specified
         secure_accounts = []
         if args.secure_accounts:
-            secure_accounts = load_secure_accounts(args.secure_accounts, args.balance_multiplier)
+            secure_accounts = load_secure_accounts(args.secure_accounts, args.balance_multiplier, args.db_path)
 
         # Update genesis with accounts
         update_genesis_with_accounts(
