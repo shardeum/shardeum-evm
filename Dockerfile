@@ -24,6 +24,7 @@ RUN chown -R shardeum:shardeum /app
 
 COPY --from=builder --chown=shardeum:shardeum /app/build/shardeumd .
 COPY --from=builder --chown=shardeum:shardeum /app/config/environments config/environments
+COPY --from=builder --chown=shardeum:shardeum /app/config/testnet-genesis.json config/
 COPY --from=builder --chown=shardeum:shardeum --chmod=0755 /app/scripts/entrypoint.sh .
 
 USER shardeum
