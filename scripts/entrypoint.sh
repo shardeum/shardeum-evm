@@ -12,14 +12,15 @@ done
 
 if [ $missing ]; then exit 1; fi
 
-if [ ! -f "/app/data/state.db/LOCK" ]; then
-  if [ -z "$GENESIS_SOURCE" ]; then
-    echo "Uninitialized nodes require a GENESIS_SOURCE"
-    exit 1
-  fi
-  /app/shardeumd init docker --home /app/data
-  curl -s http://$GENESIS_SOURCE/genesis | jq -r '.result.genesis' > "/app/config/genesis.json"
+if [ ! -e "/app/data/state.db" ]; then
+  /app/shardeumd init docker --home /app
 fi
+
+case $SHARDEUM_NETWORK in
+  testnet)
+    cp /app/config/testnet-genesis.json /app/config/genesis.json
+    ;;
+esac
 
 case $NODE_TYPE in
   RPC)
@@ -33,4 +34,4 @@ case $NODE_TYPE in
     ;;
 esac
 
-/app/shardeumd start --home /app/data --chain-id shardeum-testnet --p2p.seeds "$PEERS" --p2p.persistent_peers "$PEERS" $OPTIONS
+/app/shardeumd start --home /app --chain-id shardeum-testnet --p2p.seeds "$PEERS" --p2p.persistent_peers "$PEERS" $OPTIONS
