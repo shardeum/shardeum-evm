@@ -3,6 +3,10 @@
 set -e
 
 CURRENT_DIR="$(pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Source genesis utilities from unified script
+source "$SCRIPT_DIR/genesis_account_split.sh"
 
 # Parse command line arguments
 NODE_ID=""
@@ -175,6 +179,87 @@ cleanup() {
 # Trap signals for graceful shutdown
 trap cleanup SIGINT SIGTERM
 
+# Function to fetch genesis using chunked API
+fetch_genesis_chunked() {
+  local RPC_URL="$1"
+  local OUTPUT_FILE="$2"
+
+  echo -e "${YELLOW}Fetching genesis metadata...${NC}"
+
+  # Get total number of chunks
+  local RESPONSE=$(curl -s "$RPC_URL/genesis_chunked?chunk=0")
+  local TOTAL_CHUNKS=$(echo "$RESPONSE" | jq -r '.result.total // empty')
+
+  if [ -z "$TOTAL_CHUNKS" ]; then
+    # Try regular genesis endpoint as fallback
+    echo -e "${YELLOW}No chunked response, trying regular genesis endpoint...${NC}"
+    if curl -s "$RPC_URL/genesis" | jq -r '.result.genesis // empty' > "$OUTPUT_FILE" 2>/dev/null; then
+      # Check if the result is valid
+      if [ -s "$OUTPUT_FILE" ] && [ "$(cat "$OUTPUT_FILE")" != "null" ] && [ "$(cat "$OUTPUT_FILE")" != "" ]; then
+        return 0
+      fi
+    fi
+    return 1
+  fi
+
+  echo -e "${YELLOW}Fetching $TOTAL_CHUNKS genesis chunks...${NC}"
+
+  # Create temporary file to store combined chunks
+  local TEMP_COMBINED="/tmp/genesis_combined_$$.txt"
+  rm -f "$TEMP_COMBINED"  # Ensure clean start
+
+  # Fetch all chunks and combine them
+  for i in $(seq 0 $((TOTAL_CHUNKS - 1))); do
+    echo -e "${YELLOW}Fetching chunk $((i + 1))/$TOTAL_CHUNKS...${NC}"
+
+    # Write chunk directly to file without shell variables (avoids issues)
+    if [ $i -eq 0 ]; then
+      curl -s "$RPC_URL/genesis_chunked?chunk=$i" | jq -r '.result.data // empty' > "$TEMP_COMBINED"
+    else
+      curl -s "$RPC_URL/genesis_chunked?chunk=$i" | jq -r '.result.data // empty' >> "$TEMP_COMBINED"
+    fi
+
+    # Verify chunk was written
+    if [ ! -s "$TEMP_COMBINED" ]; then
+      echo -e "${RED}Error: Failed to fetch chunk $i${NC}"
+      rm -f "$TEMP_COMBINED"
+      return 1
+    fi
+  done
+
+  # Verify we have data
+  if [ ! -s "$TEMP_COMBINED" ]; then
+    echo -e "${RED}Error: No genesis data received${NC}"
+    rm -f "$TEMP_COMBINED"
+    return 1
+  fi
+
+  # Decode base64 and save to file
+  # Use -D flag for macOS base64 compatibility
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    cat "$TEMP_COMBINED" | base64 -D > "$OUTPUT_FILE"
+  else
+    base64 -d "$TEMP_COMBINED" > "$OUTPUT_FILE"
+  fi
+
+  local DECODE_STATUS=$?
+  rm -f "$TEMP_COMBINED"
+
+  if [ $DECODE_STATUS -ne 0 ]; then
+    echo -e "${RED}Error: Failed to decode genesis data${NC}"
+    return 1
+  fi
+
+  # Validate JSON
+  if ! jq empty "$OUTPUT_FILE" 2>/dev/null; then
+    echo -e "${RED}Error: Invalid JSON in genesis file${NC}"
+    return 1
+  fi
+
+  echo -e "${GREEN}Successfully fetched and assembled genesis${NC}"
+  return 0
+}
+
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -250,10 +335,32 @@ EOF
 
 # Get genesis from seed node
 echo -e "${YELLOW}Fetching genesis from seed node...${NC}"
-GENESIS_URL="$SEED_NODE_RPC/genesis"
-if ! curl -s "$GENESIS_URL" | jq -r '.result.genesis' > "$NODE_DIR/config/genesis.json"; then
-  echo -e "${RED}Error: Failed to fetch genesis from $GENESIS_URL${NC}"
+if ! fetch_genesis_chunked "$SEED_NODE_RPC" "$NODE_DIR/config/genesis.json"; then
+  echo -e "${RED}Error: Failed to fetch genesis from $SEED_NODE_RPC${NC}"
   exit 1
+fi
+
+# Validate the genesis file
+echo -e "${YELLOW}Validating genesis file...${NC}"
+if [ ! -s "$NODE_DIR/config/genesis.json" ]; then
+  echo -e "${RED}Error: Genesis file is empty${NC}"
+  exit 1
+fi
+
+# Check if genesis has required fields
+if ! jq -e '.chain_id' "$NODE_DIR/config/genesis.json" > /dev/null 2>&1; then
+  echo -e "${RED}Error: Genesis file is missing required fields${NC}"
+  exit 1
+fi
+
+GENESIS_CHAIN_ID=$(jq -r '.chain_id' "$NODE_DIR/config/genesis.json")
+echo -e "${GREEN}Genesis validated - Chain ID: $GENESIS_CHAIN_ID${NC}"
+
+# Verify chain ID matches
+if [ "$GENESIS_CHAIN_ID" != "$CHAINID" ]; then
+  echo -e "${YELLOW}Warning: Genesis chain ID ($GENESIS_CHAIN_ID) doesn't match expected ($CHAINID)${NC}"
+  echo -e "${YELLOW}Using chain ID from genesis: $GENESIS_CHAIN_ID${NC}"
+  CHAINID="$GENESIS_CHAIN_ID"
 fi
 
 # Find next available ports
