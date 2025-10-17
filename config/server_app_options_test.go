@@ -41,86 +41,57 @@ func TestGetBlockGasLimit(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
-		setupFn  func() servertypes.AppOptions
-		expected uint64
+		name        string
+		setupFn     func() servertypes.AppOptions
+		expected    uint64
+		expectPanic bool
 	}{
 		{
-			name: "empty home directory returns max uint64",
+			name: "empty home directory panics",
 			setupFn: func() servertypes.AppOptions {
 				opts := newMockAppOptions()
 				return opts
 			},
-			expected: math.MaxUint64,
+			expectPanic: true,
 		},
 		{
-			name: "genesis file not found returns max uint64",
+			name: "genesis file not found panics",
 			setupFn: func() servertypes.AppOptions {
 				opts := newMockAppOptions()
 				opts.Set(flags.FlagHome, "/non/existent/directory")
 				return opts
 			},
-			expected: math.MaxUint64,
+			expectPanic: true,
 		},
 		{
-			name: "valid genesis with max_gas = -1 returns max uint64",
-			setupFn: func() servertypes.AppOptions {
-				homeDir := createGenesisWithMaxGas(t, -1)
-				opts := newMockAppOptions()
-				opts.Set(flags.FlagHome, homeDir)
-				return opts
-			},
-			expected: math.MaxUint64,
-		},
-		{
-			name: "valid genesis with max_gas < -1 returns max uint64",
-			setupFn: func() servertypes.AppOptions {
-				homeDir := createGenesisWithMaxGas(t, -5)
-				opts := newMockAppOptions()
-				opts.Set(flags.FlagHome, homeDir)
-				return opts
-			},
-			expected: math.MaxUint64,
-		},
-		{
-			name: "valid genesis without network env returns max uint64",
-			setupFn: func() servertypes.AppOptions {
-				homeDir := createGenesisWithMaxGas(t, 0)
-				opts := newMockAppOptions()
-				opts.Set(flags.FlagHome, homeDir)
-				return opts
-			},
-			expected: math.MaxUint64,
-		},
-		{
-			name: "valid genesis without network env returns max uint64 (case 2)",
-			setupFn: func() servertypes.AppOptions {
-				homeDir := createGenesisWithMaxGas(t, 1000000)
-				opts := newMockAppOptions()
-				opts.Set(flags.FlagHome, homeDir)
-				return opts
-			},
-			expected: math.MaxUint64,
-		},
-		{
-			name: "genesis without consensus params returns max uint64",
+			name: "genesis without consensus params panics",
 			setupFn: func() servertypes.AppOptions {
 				homeDir := createGenesisWithoutConsensusParams(t)
 				opts := newMockAppOptions()
 				opts.Set(flags.FlagHome, homeDir)
 				return opts
 			},
-			expected: math.MaxUint64,
+			expectPanic: true,
 		},
 		{
-			name: "invalid genesis JSON returns max uint64",
+			name: "invalid genesis JSON panics",
 			setupFn: func() servertypes.AppOptions {
 				homeDir := createInvalidGenesis(t)
 				opts := newMockAppOptions()
 				opts.Set(flags.FlagHome, homeDir)
 				return opts
 			},
-			expected: math.MaxUint64,
+			expectPanic: true,
+		},
+		{
+			name: "valid genesis without network env panics",
+			setupFn: func() servertypes.AppOptions {
+				homeDir := createGenesisWithMaxGas(t, 0)
+				opts := newMockAppOptions()
+				opts.Set(flags.FlagHome, homeDir)
+				return opts
+			},
+			expectPanic: true,
 		},
 	}
 
@@ -129,8 +100,14 @@ func TestGetBlockGasLimit(t *testing.T) {
 			appOpts := tc.setupFn()
 			logger := log.NewNopLogger()
 
-			result := GetBlockGasLimit(appOpts, logger)
-			require.Equal(t, tc.expected, result, "GetBlockGasLimit returned unexpected value")
+			if tc.expectPanic {
+				require.Panics(func() {
+					GetBlockGasLimit(appOpts, logger)
+				}, "GetBlockGasLimit should panic")
+			} else {
+				result := GetBlockGasLimit(appOpts, logger)
+				require.Equal(t, tc.expected, result, "GetBlockGasLimit returned unexpected value")
+			}
 		})
 	}
 }

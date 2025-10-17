@@ -27,8 +27,8 @@ func TestRequireSameTestBech32Prefix(t *testing.T) {
 
 func TestRequireSameWEVMOSMainnet(t *testing.T) {
 	require.Equal(t,
-		constants.ShardeumChainID,
+		constants.ShardeumChainID.EVMChainID,
 		config.ShardeumChainID,
-		"wevmos contract addresses should be the same across the repo",
+		"EVM chain IDs should be the same across the repo",
 	)
 }
