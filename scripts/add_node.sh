@@ -3,6 +3,10 @@
 set -e
 
 CURRENT_DIR="$(pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Source genesis utilities from unified script
+source "$SCRIPT_DIR/genesis_account_split.sh"
 
 # Parse command line arguments
 NODE_ID=""
@@ -16,6 +20,7 @@ IDENTITY=""
 SECURITY=""
 DETAILS=""
 API_ENABLE="false"
+ONLY_FETCH=false
 
 # Usage function
 usage() {
@@ -28,6 +33,7 @@ usage() {
   echo "  --chain-id <id>      Override chain ID"
   echo "  --node-type <type>   Node type: validator or full-node (default: validator)"
   echo "  --api-enable         Enable Cosmos API server (default: false)"
+  echo "  --only-fetch         Only download genesis to ./genesis.json, print chain-id and raw SHA256, then exit"
   echo "  --help               Show this help message"
   echo ""
   echo "Environment variables:"
@@ -84,6 +90,10 @@ while [[ $# -gt 0 ]]; do
       DETAILS="$2"
       shift 2
       ;;
+    --only-fetch)
+      ONLY_FETCH=true
+      shift 1
+      ;;
     --api-enable)
       API_ENABLE="true"
       shift
@@ -130,8 +140,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 # config dir is compulsory - can't start network without it
-if [[ -z "$SHARDEUM_CONFIG_DIR" ]]; then
-  echo "Error: SHARDEUM_CONFIG_DIR is required"
+if [[ -z "$SHARDEUM_CONFIG_DIR" && "$ONLY_FETCH" != "true" ]]; then
+  echo "Error: SHARDEUM_CONFIG_DIR is required (omit for --only-fetch)"
   usage
 fi
 
@@ -153,25 +163,27 @@ SEED_NODE_RPC="${SEED_NODE_RPC:-http://localhost:26657}"
 NETWORK="${SHARDEUM_NETWORK:-${NETWORK:-testnet}}"
 MONIKER="${MONIKER:-$NODE_ID}"
 
-# Load network configuration
-CONFIG_FILE="$SHARDEUM_CONFIG_DIR/environments/$NETWORK.json"
-if [ ! -f "$CONFIG_FILE" ]; then
-  echo -e "${RED}Error: Network configuration file not found: $CONFIG_FILE${NC}"
-  echo "Available networks:"
-  ls -1 "$SHARDEUM_CONFIG_DIR/environments"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
-  exit 1
-fi
+if [[ "$ONLY_FETCH" != "true" ]]; then
+  # Load network configuration
+  CONFIG_FILE="$SHARDEUM_CONFIG_DIR/environments/$NETWORK.json"
+  if [ ! -f "$CONFIG_FILE" ]; then
+    echo -e "${RED}Error: Network configuration file not found: $CONFIG_FILE${NC}"
+    echo "Available networks:"
+    ls -1 "$SHARDEUM_CONFIG_DIR/environments"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
+    exit 1
+  fi
 
-# Read network configuration
-CHAINID=$(jq -r '.chain_id' "$CONFIG_FILE")
-EVM_CHAIN_ID=$(jq -r '.evm_chain_id' "$CONFIG_FILE")
-BASE_DENOM=$(jq -r '.base_denom' "$CONFIG_FILE")
+  # Read network configuration
+  CHAINID=$(jq -r '.chain_id' "$CONFIG_FILE")
+  EVM_CHAIN_ID=$(jq -r '.evm_chain_id' "$CONFIG_FILE")
+  BASE_DENOM=$(jq -r '.base_denom' "$CONFIG_FILE")
 
-# Override chain ID if provided
-if [[ -n "$CUSTOM_CHAIN_ID" ]]; then
-  CHAINID="$CUSTOM_CHAIN_ID"
-elif [[ -n "$SHARDEUM_CHAIN_ID" ]]; then
-  CHAINID="$SHARDEUM_CHAIN_ID"
+  # Override chain ID if provided
+  if [[ -n "$CUSTOM_CHAIN_ID" ]]; then
+    CHAINID="$CUSTOM_CHAIN_ID"
+  elif [[ -n "$SHARDEUM_CHAIN_ID" ]]; then
+    CHAINID="$SHARDEUM_CHAIN_ID"
+  fi
 fi
 
 BINARY="${BINARY:-$(command -v shardeumd)}"
@@ -197,6 +209,155 @@ cleanup() {
 
 # Trap signals for graceful shutdown
 trap cleanup SIGINT SIGTERM
+
+# Function to fetch genesis using chunked API
+fetch_genesis_chunked() {
+  local RPC_URL="$1"
+  local OUTPUT_FILE="$2"
+
+  echo -e "${YELLOW}Fetching genesis metadata and chunk 0...${NC}"
+
+  # Create temporary file to store combined chunks
+  local TEMP_COMBINED="/tmp/genesis_combined_$$.txt"
+  rm -f "$TEMP_COMBINED"  # Ensure clean start
+
+  # Fetch chunk 0 to get total count AND the first chunk data with retry
+  local TEMP_CHUNK_0="/tmp/chunk_0_$$.json"
+  local CHUNK_0_RETRIES=3
+  local CHUNK_0_ATTEMPT=0
+  local CHUNK_0_SUCCESS=false
+
+  while [ $CHUNK_0_ATTEMPT -lt $CHUNK_0_RETRIES ] && [ "$CHUNK_0_SUCCESS" = false ]; do
+    CHUNK_0_ATTEMPT=$((CHUNK_0_ATTEMPT + 1))
+    echo -e "${YELLOW}Fetching chunk 0 (attempt $CHUNK_0_ATTEMPT/$CHUNK_0_RETRIES)...${NC}"
+
+    # Use -C - to enable resume on partial transfers
+    curl -s --max-time 600 --connect-timeout 30 -C - "$RPC_URL/genesis_chunked?chunk=0" -o "$TEMP_CHUNK_0"
+    local CURL_EXIT=$?
+
+    if [ $CURL_EXIT -eq 0 ] && [ -s "$TEMP_CHUNK_0" ]; then
+      # Verify we can parse it
+      if jq -r '.result.total' "$TEMP_CHUNK_0" > /dev/null 2>&1; then
+        CHUNK_0_SUCCESS=true
+        echo -e "${GREEN}Chunk 0 fetched successfully ($(stat -f%z "$TEMP_CHUNK_0" 2>/dev/null || stat -c%s "$TEMP_CHUNK_0") bytes)${NC}"
+      else
+        echo -e "${YELLOW}Warning: Chunk 0 downloaded but invalid JSON (attempt $CHUNK_0_ATTEMPT)${NC}"
+        rm -f "$TEMP_CHUNK_0"
+      fi
+    else
+      echo -e "${YELLOW}Warning: Failed to fetch chunk 0 (curl exit: $CURL_EXIT, attempt $CHUNK_0_ATTEMPT)${NC}"
+      rm -f "$TEMP_CHUNK_0"
+
+      if [ $CHUNK_0_ATTEMPT -lt $CHUNK_0_RETRIES ]; then
+        echo -e "${YELLOW}Retrying in 3 seconds...${NC}"
+        sleep 3
+      fi
+    fi
+  done
+
+  if [ "$CHUNK_0_SUCCESS" = false ]; then
+    echo -e "${RED}Error: Failed to fetch chunk 0 after $CHUNK_0_RETRIES attempts${NC}"
+
+    # Try regular genesis endpoint as fallback
+    echo -e "${YELLOW}Trying regular genesis endpoint...${NC}"
+    local TEMP_GENESIS="/tmp/genesis_full_$$.json"
+
+    if curl -s --max-time 300 --connect-timeout 30 "$RPC_URL/genesis" 2>/dev/null | jq -r '.result.genesis // empty' > "$TEMP_GENESIS" 2>/dev/null; then
+      # Check if the result is valid
+      if [ -s "$TEMP_GENESIS" ] && [ "$(head -c 10 "$TEMP_GENESIS")" != "null" ] && [ "$(head -c 1 "$TEMP_GENESIS")" = "{" ]; then
+        mv "$TEMP_GENESIS" "$OUTPUT_FILE"
+        echo -e "${GREEN}Successfully fetched genesis from regular endpoint${NC}"
+        return 0
+      fi
+    fi
+
+    rm -f "$TEMP_GENESIS"
+    echo -e "${RED}Error: Could not fetch genesis from either endpoint${NC}"
+    return 1
+  fi
+
+  # Extract total chunks count
+  local TOTAL_CHUNKS=$(jq -r '.result.total // empty' "$TEMP_CHUNK_0" 2>/dev/null)
+
+  if [ -z "$TOTAL_CHUNKS" ] || ! [[ "$TOTAL_CHUNKS" =~ ^[0-9]+$ ]]; then
+    echo -e "${RED}Error: Could not parse total chunks from response${NC}"
+    rm -f "$TEMP_CHUNK_0" "$TEMP_COMBINED"
+    return 1
+  fi
+
+  echo -e "${GREEN}Total chunks: $TOTAL_CHUNKS${NC}"
+
+  # Extract data from chunk 0
+  local CHUNK_0_DATA=$(jq -r '.result.data // empty' "$TEMP_CHUNK_0" 2>/dev/null)
+  if [ -z "$CHUNK_0_DATA" ] || [ "$CHUNK_0_DATA" = "null" ]; then
+    echo -e "${RED}Error: Could not extract data from chunk 0${NC}"
+    rm -f "$TEMP_CHUNK_0" "$TEMP_COMBINED"
+    return 1
+  fi
+
+  # We will decode each chunk individually to avoid padding conflicts.
+  : > "$OUTPUT_FILE"
+
+  # Decode and append chunk 0 first
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    printf '%s' "$CHUNK_0_DATA" | base64 -D >> "$OUTPUT_FILE" || { echo -e "${RED}Decode failed (chunk 0)${NC}"; rm -f "$TEMP_COMBINED"; return 1; }
+  else
+    printf '%s' "$CHUNK_0_DATA" | base64 -d >> "$OUTPUT_FILE" || { echo -e "${RED}Decode failed (chunk 0)${NC}"; rm -f "$TEMP_COMBINED"; return 1; }
+  fi
+  echo -e "${GREEN}Chunk 1/$TOTAL_CHUNKS decoded${NC}"
+  rm -f "$TEMP_CHUNK_0"
+
+  # Fetch and decode remaining chunks
+  for i in $(seq 1 $((TOTAL_CHUNKS - 1))); do
+    echo -e "${YELLOW}Fetching chunk $((i + 1))/$TOTAL_CHUNKS...${NC}"
+    local TEMP_CHUNK="/tmp/chunk_${i}_$$.json"
+    local MAX_RETRIES=3
+    local RETRIES=0
+    local OK=false
+    while [ $RETRIES -lt $MAX_RETRIES ] && [ "$OK" = false ]; do
+      curl -s --max-time 600 --connect-timeout 30 "$RPC_URL/genesis_chunked?chunk=$i" -o "$TEMP_CHUNK"
+      local CE=$?
+      if [ $CE -eq 0 ] && [ -s "$TEMP_CHUNK" ]; then
+        local DATA=$(jq -r '.result.data // empty' "$TEMP_CHUNK" 2>/dev/null)
+        if [ -n "$DATA" ] && [ "$DATA" != "null" ]; then
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            if printf '%s' "$DATA" | base64 -D >> "$OUTPUT_FILE" 2>/dev/null; then OK=true; fi
+          else
+            if printf '%s' "$DATA" | base64 -d >> "$OUTPUT_FILE" 2>/dev/null; then OK=true; fi
+          fi
+        fi
+      fi
+      if [ "$OK" = false ]; then
+        RETRIES=$((RETRIES + 1))
+        if [ $RETRIES -lt $MAX_RETRIES ]; then
+          echo -e "${YELLOW}Retry chunk $i in 2s (attempt $((RETRIES+1))/$MAX_RETRIES)${NC}"
+          sleep 2
+        fi
+      fi
+      rm -f "$TEMP_CHUNK"
+    done
+    if [ "$OK" = false ]; then
+      echo -e "${RED}Error: Failed to fetch/decode chunk $i${NC}"
+      rm -f "$TEMP_COMBINED"
+      return 1
+    fi
+    echo -e "${GREEN}Chunk $((i + 1))/$TOTAL_CHUNKS decoded${NC}"
+  done
+
+  # Basic sanity
+  if [ ! -s "$OUTPUT_FILE" ]; then
+    echo -e "${RED}Error: Decoded genesis file empty${NC}"; rm -f "$TEMP_COMBINED"; return 1; fi
+  rm -f "$TEMP_COMBINED"
+
+  # Validate JSON
+  if ! jq empty "$OUTPUT_FILE" 2>/dev/null; then
+    echo -e "${RED}Error: Invalid JSON in genesis file${NC}"
+    return 1
+  fi
+
+  echo -e "${GREEN}Successfully fetched and assembled genesis${NC}"
+  return 0
+}
 
 # Colors
 GREEN='\033[0;32m'
@@ -226,11 +387,13 @@ echo -e "${GREEN}Adding new node '$NODE_ID' using seed-based discovery${NC}"
 echo -e "${YELLOW}Using seed node: $SEED_NODE_RPC${NC}"
 echo -e "${YELLOW}Node type: $NODE_TYPE${NC}"
 
-# Verify binary exists (skip build if called from makefile)
-if [ ! -f "$BINARY" ]; then
-  echo -e "${RED}Error: Failed to find binary at $BINARY${NC}"
-  echo -e "${RED}Tip:${NC} Make sure shardeumd binary is set in PATH or set BINARY=/absolute/path/to/shardeumd"
-  exit 1
+if [[ "$ONLY_FETCH" != "true" ]]; then
+  # Verify binary exists (skip build if called from makefile)
+  if [ ! -f "$BINARY" ]; then
+    echo -e "${RED}Error: Failed to find binary at $BINARY${NC}"
+    echo -e "${RED}Tip:${NC} Make sure shardeumd binary is set in PATH or set BINARY=/absolute/path/to/shardeumd"
+    exit 1
+  fi
 fi
 
 # Verify we can connect to seed node
@@ -239,6 +402,25 @@ if ! curl -s "$SEED_NODE_RPC/status" > /dev/null; then
   echo -e "${RED}Error: Cannot connect to seed node at $SEED_NODE_RPC${NC}"
   echo "Make sure the seed node is running"
   exit 1
+fi
+
+if [[ "$ONLY_FETCH" == "true" ]]; then
+  echo -e "${YELLOW}--only-fetch mode: downloading genesis to ./genesis.json${NC}"
+  if ! fetch_genesis_chunked "$SEED_NODE_RPC" "./genesis.json"; then
+    echo -e "${RED}Error: Failed to fetch genesis${NC}"
+    exit 1
+  fi
+  if ! jq -e '.chain_id' ./genesis.json >/dev/null 2>&1; then
+    echo -e "${RED}Error: Downloaded genesis missing chain_id${NC}"
+    exit 1
+  fi
+  GENESIS_CHAIN_ID=$(jq -r '.chain_id' ./genesis.json)
+  RAW_HASH=$(sha256sum ./genesis.json | awk '{print $1}')
+  echo -e "${GREEN}Genesis fetched successfully${NC}"
+  echo -e "${YELLOW}Chain ID: $GENESIS_CHAIN_ID${NC}"
+  echo -e "${YELLOW}Raw SHA256: $RAW_HASH  genesis.json${NC}"
+  echo -e "${GREEN}Done (--only-fetch)${NC}"
+  exit 0
 fi
 
 # Find next available node number if NODE_ID is just a number
@@ -273,10 +455,32 @@ EOF
 
 # Get genesis from seed node
 echo -e "${YELLOW}Fetching genesis from seed node...${NC}"
-GENESIS_URL="$SEED_NODE_RPC/genesis"
-if ! curl -s "$GENESIS_URL" | jq -r '.result.genesis' > "$NODE_DIR/config/genesis.json"; then
-  echo -e "${RED}Error: Failed to fetch genesis from $GENESIS_URL${NC}"
+if ! fetch_genesis_chunked "$SEED_NODE_RPC" "$NODE_DIR/config/genesis.json"; then
+  echo -e "${RED}Error: Failed to fetch genesis from $SEED_NODE_RPC${NC}"
   exit 1
+fi
+
+# Validate the genesis file
+echo -e "${YELLOW}Validating genesis file...${NC}"
+if [ ! -s "$NODE_DIR/config/genesis.json" ]; then
+  echo -e "${RED}Error: Genesis file is empty${NC}"
+  exit 1
+fi
+
+# Check if genesis has required fields
+if ! jq -e '.chain_id' "$NODE_DIR/config/genesis.json" > /dev/null 2>&1; then
+  echo -e "${RED}Error: Genesis file is missing required fields${NC}"
+  exit 1
+fi
+
+GENESIS_CHAIN_ID=$(jq -r '.chain_id' "$NODE_DIR/config/genesis.json")
+echo -e "${GREEN}Genesis validated - Chain ID: $GENESIS_CHAIN_ID${NC}"
+
+# Verify chain ID matches
+if [ "$GENESIS_CHAIN_ID" != "$CHAINID" ]; then
+  echo -e "${YELLOW}Warning: Genesis chain ID ($GENESIS_CHAIN_ID) doesn't match expected ($CHAINID)${NC}"
+  echo -e "${YELLOW}Using chain ID from genesis: $GENESIS_CHAIN_ID${NC}"
+  CHAINID="$GENESIS_CHAIN_ID"
 fi
 
 # Find next available ports
