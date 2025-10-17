@@ -1,0 +1,8 @@
+# Requirements for verify-network.py
+# Network data verification tool for Shardeum blockchain
+
+# Async HTTP client for RPC queries
+aiohttp>=3.9.1
+
+# Bech32 address encoding/decoding for Cosmos address conversion
+bech32>=1.2.0
