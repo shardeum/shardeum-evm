@@ -3,7 +3,7 @@
   "app_version": "0.5.0-rc.0-26-ge71fb08",
   "genesis_time": "2025-09-16T16:00:00Z",
   "chain_id": "shardeum-testnet",
-  "initial_height": 2000000,
+  "initial_height": 2330530,
   "app_hash": null,
   "app_state": {
     "auth": {
@@ -24,7 +24,7 @@
       "supply": [
         {
           "denom": "ashm",
-          "amount": "59806651666024447092649257440"
+          "amount": "59876125431708266494852773120"
         }
       ],
       "denom_metadata": [
