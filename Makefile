@@ -390,17 +390,16 @@ create-validator: build
 
 .PHONY: start-network add-node create-validator
 
-test-system: build-v04 build
+test-system: build
 	mkdir -p ./tests/systemtests/binaries/
 	cp $(BUILDDIR)/shardeumd ./tests/systemtests/binaries/
 	$(MAKE) -C tests/systemtests test
 
+# build-v04: Disabled - upgrade tests need to be adapted for Shardeum version history
+# The v0.4.1 tag is from the upstream cosmos/evm fork and doesn't exist in Shardeum
 build-v04:
-	mkdir -p ./tests/systemtests/binaries/v0.4
-	git checkout v0.4.1
-	make build
-	cp $(BUILDDIR)/shardeumd ./tests/systemtests/binaries/v0.4
-	git checkout -
+	@echo "Skipping v0.4 build - upgrade tests not yet adapted for Shardeum fork"
+	@echo "TODO: Re-enable once Shardeum has versioned releases to test upgrades between"
 
 mocks:
 	@echo "--> generating mocks"
