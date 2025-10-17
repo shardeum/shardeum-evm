@@ -96,7 +96,7 @@ func (s *KeeperTestSuite) TestGetERC20PrecompileInstance() {
 func (s *KeeperTestSuite) TestGetNativePrecompiles() {
 	var ctx sdk.Context
 	testAddr := utiltx.GenerateAddress()
-	defaultWEVMOSAddr := common.HexToAddress(testconstants.ShardeumChainID)
+	defaultWEVMOSAddr := common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517")
 
 	testCases := []struct {
 		name     string
@@ -139,7 +139,7 @@ func (s *KeeperTestSuite) TestGetNativePrecompiles() {
 func (s *KeeperTestSuite) TestSetNativePrecompile() {
 	var ctx sdk.Context
 	testAddr := utiltx.GenerateAddress()
-	defaultWEVMOSAddr := common.HexToAddress(testconstants.ShardeumChainID)
+	defaultWEVMOSAddr := common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517")
 
 	testCases := []struct {
 		name     string
@@ -192,7 +192,7 @@ func (s *KeeperTestSuite) TestSetNativePrecompile() {
 func (s *KeeperTestSuite) TestDeleteNativePrecompile() {
 	var ctx sdk.Context
 	testAddr := utiltx.GenerateAddress()
-	defaultWEVMOSAddr := common.HexToAddress(testconstants.ShardeumChainID)
+	defaultWEVMOSAddr := common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517")
 	unavailableAddr := common.HexToAddress("unavailable")
 
 	testCases := []struct {
@@ -285,7 +285,7 @@ func (s *KeeperTestSuite) TestDeleteNativePrecompile() {
 func (s *KeeperTestSuite) TestIsNativePrecompileAvailable() {
 	var ctx sdk.Context
 	testAddr := utiltx.GenerateAddress()
-	defaultWEVMOSAddr := common.HexToAddress(testconstants.ShardeumChainID)
+	defaultWEVMOSAddr := common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517")
 	unavailableAddr := common.HexToAddress("unavailable")
 
 	testCases := []struct {

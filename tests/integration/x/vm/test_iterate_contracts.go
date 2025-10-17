@@ -57,7 +57,7 @@ func TestIterateContracts(t *testing.T, create network.CreateEvmApp, options ...
 
 	network.App.GetEVMKeeper().IterateContracts(network.GetContext(), func(addr common.Address, codeHash common.Hash) bool {
 		// NOTE: we only care about the 2 contracts deployed above, not the ERC20 native precompile for the aatom denomination
-		if bytes.Equal(addr.Bytes(), common.HexToAddress(testconstants.ShardeumChainID).Bytes()) {
+		if bytes.Equal(addr.Bytes(), common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517").Bytes()) {
 			return false
 		}
 
