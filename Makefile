@@ -393,10 +393,12 @@ create-validator: build
 
 .PHONY: start-network add-node create-validator
 
-test-system: build
-	mkdir -p ./tests/systemtests/binaries/
-	cp $(BUILDDIR)/shardeumd ./tests/systemtests/binaries/
-	$(MAKE) -C tests/systemtests test
+# test-system: Disabled - upgrade tests need to be adapted for Shardeum version history
+# TODO: Re-enable once Shardeum has versioned releases to test upgrades between
+test-system:
+	@echo "System tests are currently disabled - upgrade tests need Shardeum versioned releases"
+	@echo "TODO: Adapt tests/systemtests/upgrade_test.go for Shardeum version history"
+	@exit 1
 
 # build-v04: Disabled - upgrade tests need to be adapted for Shardeum version history
 # The v0.4.1 tag is from the upstream cosmos/evm fork and doesn't exist in Shardeum
