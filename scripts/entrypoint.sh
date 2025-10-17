@@ -76,6 +76,45 @@ EOF
   
   fi
 
+  if [ "$NODE_TYPE" = "SENTRY" ]; then
+    ###
+    # set max_num_inbound_peers to 80
+    # ---
+    sed -i 's/^max_num_inbound_peers = .*/max_num_inbound_peers = 80/' "$NODE_HOME/config/config.toml"
+    cat $NODE_HOME/config/config.toml | grep max_num_inbound_peers
+
+    ###
+    # set max_num_outbound_peers to 30
+    # ---
+    sed -i 's/^max_num_outbound_peers = .*/max_num_outbound_peers = 30/' "$NODE_HOME/config/config.toml"
+    cat $NODE_HOME/config/config.toml | grep max_num_outbound_peers
+
+    ###
+    # set send_rate to 10 MB
+    # ---
+    sed -i 's/^send_rate = .*/send_rate = 10240000/' "$NODE_HOME/config/config.toml"
+    cat $NODE_HOME/config/config.toml | grep send_rate
+
+    ###
+    # set recv_rate to 10 MB
+    # ---
+    sed -i 's/^recv_rate = .*/recv_rate = 10240000/' "$NODE_HOME/config/config.toml"
+    cat $NODE_HOME/config/config.toml | grep recv_rate
+
+    ###
+    # set size to 10000 (Larger for relay)
+    # ---
+    sed -i 's/^size = .*/size = 10000/' "$NODE_HOME/config/config.toml"
+    cat $NODE_HOME/config/config.toml | grep size
+
+    ###
+    # set broadcast to true, by default it's true probably (Must broadcast)
+    # ---
+    sed -i 's/^broadcast = .*/broadcast = true/' "$NODE_HOME/config/config.toml"
+    cat $NODE_HOME/config/config.toml | grep broadcast
+
+  fi
+
   if [ "$NODE_TYPE" = "VALIDATOR" ]; then
     ###
     # set rpc.laddr as ""
@@ -143,7 +182,11 @@ if [ "$NODE_TYPE" = "VALIDATOR" ]; then
   --pruning nothing
 fi
 
-if [ "$NODE_TYPE" = "RPC" ]; then
+# Comma separated list of peer IDs to keep private (will not be gossiped to other peers, we've to add this in below sentry start command flags)
+# Example ID: 3e16af0cead27979e1fc3dac57d03df3c7a77acc@3.87.179.235:26656
+# ---
+# --p2p.private_peer_ids string
+if [ "$NODE_TYPE" = "SENTRY" ]; then
   /app/shardeumd start \
   --home $NODE_HOME \
   --chain-id $CHAIN_ID \
