@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -96,17 +95,17 @@ func TestGetBlockGasLimit(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(_ *testing.T) {
+		t.Run(tc.name, func(subT *testing.T) {
 			appOpts := tc.setupFn()
 			logger := log.NewNopLogger()
 
 			if tc.expectPanic {
-				require.Panics(func() {
+				require.Panics(subT, func() {
 					GetBlockGasLimit(appOpts, logger)
 				}, "GetBlockGasLimit should panic")
 			} else {
 				result := GetBlockGasLimit(appOpts, logger)
-				require.Equal(t, tc.expected, result, "GetBlockGasLimit returned unexpected value")
+				require.Equal(subT, tc.expected, result, "GetBlockGasLimit returned unexpected value")
 			}
 		})
 	}
