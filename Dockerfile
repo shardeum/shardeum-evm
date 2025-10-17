@@ -27,6 +27,11 @@ COPY --from=builder --chown=shardeum:shardeum /app/config/environments config/en
 COPY --from=builder --chown=shardeum:shardeum /app/config/testnet-genesis.json config/
 COPY --from=builder --chown=shardeum:shardeum --chmod=0755 /app/scripts/entrypoint.sh .
 
+# Create required directories with proper ownership
+RUN mkdir -p /app/.shardeumd && \
+    chmod 750 /app/.shardeumd && \
+    chown shardeum:shardeum /app/.shardeumd
+
 USER shardeum
 
 CMD ["/app/entrypoint.sh"]

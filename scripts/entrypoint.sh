@@ -12,7 +12,7 @@ done
 
 if [ $missing ]; then exit 1; fi
 
-if [ ! -e "$NODE_HOME/data/state.db" ]; then
+if [ ! -e "$NODE_HOME/data/state.db" ] && [ ! -e "$NODE_HOME/config/genesis.json" ]; then
   if [ -z "$GENESIS_SOURCE" ]; then
     echo "Uninitialized nodes require a GENESIS_SOURCE env var"
     exit 1
