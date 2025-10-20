@@ -200,7 +200,7 @@ curl -s http://localhost:26657/status | jq '.result.sync_info.latest_block_heigh
 ### Stop the Network
 ```bash
 # Stop all nodes
-pkill -f "shardeumd.*shardeum-local"
+pkill -f "shardeumd.*shardeum_8119-1"
 
 # Or stop individual node (if you know the PID)
 kill $(cat .local/node1/node.pid)

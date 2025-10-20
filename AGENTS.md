@@ -7,7 +7,7 @@
 
 ## Build, Test, and Development Commands
 - `make build` compiles `shardeumd` into `build/shardeumd`; enable `COSMOS_BUILD_OPTIONS=nooptimization` when you need debuggable binaries.
-- `make start-network [NODES=4]` boots a local validator set; extend it with `./scripts/add_node.sh node4` and stop it via `pkill -f 'shardeumd.*shardeum-testnet'`.
+- `make start-network [NODES=4]` boots a local validator set; extend it with `./scripts/add_node.sh node4` and stop it via `pkill -f 'shardeumd.*shardeum_8119-1'`.
 - `make lint` runs `golangci-lint`, `pylint`, and Solidity checks; `make lint-fix` applies Go formatting and import cleanups.
 - `make proto-all` formats, lints, and regenerates protobuf stubs in `proto/` and `shardeumd/proto`.
 - `make install` drops the CLI into `$GOPATH/bin`; confirm with `go run ./shardeumd/cmd/shardeumd version`.

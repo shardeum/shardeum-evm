@@ -1,6 +1,6 @@
 {
   "name": "devnet",
-  "chain_id": "shardeum-devnet",
+  "chain_id": "shardeum_8119-3",
   "evm_chain_id": 8119,
   "base_denom": "ashm",
   "display_denom": "shm",
