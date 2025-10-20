@@ -11,10 +11,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-
 	"github.com/shardeum/shardeum-evm/testutil/config"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
@@ -25,6 +21,9 @@ import (
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	"github.com/shardeum/shardeum-evm/x/vm/keeper"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
+
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"

@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
-
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 

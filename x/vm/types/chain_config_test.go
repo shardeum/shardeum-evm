@@ -3,9 +3,8 @@ package types_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
 )

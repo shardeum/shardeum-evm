@@ -6,7 +6,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/shardeum/shardeum-evm/contracts"
 	"github.com/shardeum/shardeum-evm/utils"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"

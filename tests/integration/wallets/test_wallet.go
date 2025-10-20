@@ -6,7 +6,6 @@ import (
 
 	gethaccounts "github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"
 	"github.com/shardeum/shardeum-evm/wallets/accounts"
 	"github.com/shardeum/shardeum-evm/wallets/ledger/mocks"

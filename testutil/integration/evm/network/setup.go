@@ -6,14 +6,15 @@ import (
 	"slices"
 	"time"
 
-	cmttypes "github.com/cometbft/cometbft/types"
-
 	"github.com/shardeum/shardeum-evm"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	cmttypes "github.com/cometbft/cometbft/types"
+
 	"github.com/cosmos/gogoproto/proto"
 
 	sdkmath "cosmossdk.io/math"

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/shardeum/shardeum-evm/precompiles/bech32"
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 	"github.com/shardeum/shardeum-evm/testutil/config"

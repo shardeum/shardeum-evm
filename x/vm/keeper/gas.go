@@ -5,7 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/params"
-
 	"github.com/shardeum/shardeum-evm/x/vm/types"
 
 	errorsmod "cosmossdk.io/errors"

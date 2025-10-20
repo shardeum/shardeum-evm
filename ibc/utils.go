@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/shardeum/shardeum-evm/utils"
+
 	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 

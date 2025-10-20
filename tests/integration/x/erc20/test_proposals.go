@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/mock"
-
 	"github.com/shardeum/shardeum-evm/contracts"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
@@ -13,6 +11,7 @@ import (
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
 	erc20mocks "github.com/shardeum/shardeum-evm/x/erc20/types/mocks"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/mock"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"

@@ -12,13 +12,12 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/pkg/errors"
-
-	cmtrpcclient "github.com/cometbft/cometbft/rpc/client"
-	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
-
 	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	cmtrpcclient "github.com/cometbft/cometbft/rpc/client"
+	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"

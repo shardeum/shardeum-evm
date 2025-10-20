@@ -3,7 +3,6 @@ package miner
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/shardeum/shardeum-evm/rpc/backend"
 
 	"cosmossdk.io/log"

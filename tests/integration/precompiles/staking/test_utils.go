@@ -7,11 +7,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/shardeum/shardeum-evm/precompiles/staking"
 
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
-
-	"github.com/shardeum/shardeum-evm/precompiles/staking"
 
 	"cosmossdk.io/math"
 

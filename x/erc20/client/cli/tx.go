@@ -4,10 +4,9 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/spf13/cobra"
-
 	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
+	"github.com/spf13/cobra"
 
 	"cosmossdk.io/math"
 

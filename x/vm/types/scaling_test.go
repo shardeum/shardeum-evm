@@ -6,10 +6,9 @@ import (
 	"testing"
 
 	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/require"
-
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
 

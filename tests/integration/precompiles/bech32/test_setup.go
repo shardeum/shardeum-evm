@@ -1,11 +1,10 @@
 package bech32
 
 import (
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/precompiles/bech32"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	"github.com/stretchr/testify/suite"
 )
 
 // PrecompileTestSuite is the implementation of the TestSuite interface for ERC20 precompile

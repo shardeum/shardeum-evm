@@ -8,7 +8,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/uint256"
-
 	"github.com/shardeum/shardeum-evm/precompiles/gov"
 	"github.com/shardeum/shardeum-evm/testutil"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"

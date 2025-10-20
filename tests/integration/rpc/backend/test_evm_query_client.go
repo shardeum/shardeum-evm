@@ -9,6 +9,11 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
+	rpc "github.com/shardeum/shardeum-evm/rpc/types"
+	"github.com/shardeum/shardeum-evm/testutil/constants"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	mock "github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -16,11 +21,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
-	rpc "github.com/shardeum/shardeum-evm/rpc/types"
-	"github.com/shardeum/shardeum-evm/testutil/constants"
-	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
-	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	proto "github.com/cosmos/gogoproto/proto"
 
 	"cosmossdk.io/math"

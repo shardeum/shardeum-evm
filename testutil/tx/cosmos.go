@@ -1,10 +1,9 @@
 package tx
 
 import (
-	protov2 "google.golang.org/protobuf/proto"
-
 	"github.com/shardeum/shardeum-evm"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
+	protov2 "google.golang.org/protobuf/proto"
 
 	sdkmath "cosmossdk.io/math"
 

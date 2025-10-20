@@ -1,12 +1,11 @@
 package feemarket
 
 import (
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 )

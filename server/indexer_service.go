@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+
 	"github.com/cometbft/cometbft/libs/service"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/types"
-
-	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 )
 
 const (

@@ -3,7 +3,6 @@ package keeper
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 

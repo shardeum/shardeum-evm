@@ -10,6 +10,12 @@ import (
 	"runtime/pprof"
 
 	ethmetricsexp "github.com/ethereum/go-ethereum/metrics/exp"
+	"github.com/shardeum/shardeum-evm/indexer"
+	evmmempool "github.com/shardeum/shardeum-evm/mempool"
+	ethdebug "github.com/shardeum/shardeum-evm/rpc/namespaces/ethereum/debug"
+	cosmosevmserverconfig "github.com/shardeum/shardeum-evm/server/config"
+	srvflags "github.com/shardeum/shardeum-evm/server/flags"
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -27,12 +33,6 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 
 	dbm "github.com/cosmos/cosmos-db"
-	"github.com/shardeum/shardeum-evm/indexer"
-	evmmempool "github.com/shardeum/shardeum-evm/mempool"
-	ethdebug "github.com/shardeum/shardeum-evm/rpc/namespaces/ethereum/debug"
-	cosmosevmserverconfig "github.com/shardeum/shardeum-evm/server/config"
-	srvflags "github.com/shardeum/shardeum-evm/server/flags"
-	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"

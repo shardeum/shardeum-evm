@@ -6,13 +6,12 @@ import (
 	"time"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/shardeum/shardeum-evm/testutil"
 	"github.com/shardeum/shardeum-evm/testutil/integration/base/factory"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	"cosmossdk.io/math"
 

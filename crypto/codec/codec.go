@@ -3,9 +3,10 @@ package codec
 import (
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 // RegisterInterfaces register the Cosmos EVM key concrete types.

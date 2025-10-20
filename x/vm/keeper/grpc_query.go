@@ -16,15 +16,14 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	ethparams "github.com/ethereum/go-ethereum/params"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-
 	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 	evmante "github.com/shardeum/shardeum-evm/x/vm/ante"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"

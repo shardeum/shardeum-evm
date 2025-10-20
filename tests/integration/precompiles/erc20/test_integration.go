@@ -8,13 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/stretchr/testify/suite"
-
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/gomega"
-
 	"github.com/shardeum/shardeum-evm/contracts"
 	"github.com/shardeum/shardeum-evm/precompiles/erc20"
 	"github.com/shardeum/shardeum-evm/precompiles/erc20/testdata"
@@ -28,6 +21,12 @@ import (
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/suite"
+
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
 

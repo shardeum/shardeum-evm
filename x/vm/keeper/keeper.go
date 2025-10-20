@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
-
 	evmmempool "github.com/shardeum/shardeum-evm/mempool"
 	"github.com/shardeum/shardeum-evm/utils"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"

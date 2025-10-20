@@ -3,11 +3,11 @@ package ics20
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm"
 	"github.com/shardeum/shardeum-evm/precompiles/ics20"
 	evmibctesting "github.com/shardeum/shardeum-evm/testutil/ibc"
+	"github.com/stretchr/testify/suite"
+
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 )
 

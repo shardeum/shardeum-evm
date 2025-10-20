@@ -3,8 +3,6 @@ package ante
 import (
 	"math"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/testutil/integration"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
@@ -12,6 +10,7 @@ import (
 	"github.com/shardeum/shardeum-evm/testutil/keyring"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/suite"
 
 	sdkmath "cosmossdk.io/math"
 

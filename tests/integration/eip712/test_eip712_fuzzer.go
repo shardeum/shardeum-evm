@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/shardeum/shardeum-evm/ethereum/eip712"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 
 	"github.com/cometbft/cometbft/libs/rand"
-
-	"github.com/shardeum/shardeum-evm/ethereum/eip712"
 )
 
 type FuzzTestParams struct {

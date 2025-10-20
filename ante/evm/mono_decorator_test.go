@@ -12,10 +12,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/require"
-
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-
 	"github.com/shardeum/shardeum-evm/ante/evm"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/encoding"
@@ -25,6 +21,9 @@ import (
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	evmsdktypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	vmtypes "github.com/shardeum/shardeum-evm/x/vm/types/mocks"
+	"github.com/stretchr/testify/require"
+
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"cosmossdk.io/core/address"
 	"cosmossdk.io/log"

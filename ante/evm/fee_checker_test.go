@@ -4,10 +4,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-
 	"github.com/shardeum/shardeum-evm/ante/evm"
 	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 	"github.com/shardeum/shardeum-evm/encoding"
@@ -16,6 +12,9 @@ import (
 	"github.com/shardeum/shardeum-evm/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
+
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"

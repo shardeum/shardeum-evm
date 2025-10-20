@@ -4,9 +4,8 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/stretchr/testify/require"
-
 	"github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewExecErrorWithReason(t *testing.T) {

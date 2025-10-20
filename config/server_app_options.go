@@ -7,9 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/holiman/uint256"
-	"github.com/spf13/cast"
-
 	srvflags "github.com/shardeum/shardeum-evm/server/flags"
+	"github.com/spf13/cast"
 
 	"cosmossdk.io/log"
 

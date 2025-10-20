@@ -3,15 +3,14 @@ package feemarket
 import (
 	"math/big"
 
-	"github.com/stretchr/testify/require"
-
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-
 	"github.com/shardeum/shardeum-evm/testutil/integration"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	"github.com/shardeum/shardeum-evm/x/feemarket/keeper"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
+
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"cosmossdk.io/math"
 

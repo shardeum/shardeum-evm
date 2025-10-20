@@ -3,12 +3,11 @@ package precisebank
 import (
 	"fmt"
 
-	"github.com/stretchr/testify/suite"
-
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	"github.com/shardeum/shardeum-evm/x/precisebank"
 	"github.com/shardeum/shardeum-evm/x/precisebank/types"
+	"github.com/stretchr/testify/suite"
 
 	sdkmath "cosmossdk.io/math"
 

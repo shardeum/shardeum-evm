@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"
 
 	errorsmod "cosmossdk.io/errors"

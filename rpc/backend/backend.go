@@ -13,15 +13,14 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-
-	tmrpcclient "github.com/cometbft/cometbft/rpc/client"
-	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
-
 	evmmempool "github.com/shardeum/shardeum-evm/mempool"
 	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
 	"github.com/shardeum/shardeum-evm/server/config"
 	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	tmrpcclient "github.com/cometbft/cometbft/rpc/client"
+	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 
 	"cosmossdk.io/log"
 

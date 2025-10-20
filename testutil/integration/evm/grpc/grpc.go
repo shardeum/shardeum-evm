@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-
 	basegrpc "github.com/shardeum/shardeum-evm/testutil/integration/base/grpc"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"

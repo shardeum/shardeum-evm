@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	"github.com/shardeum/shardeum-evm/wallets/ledger"
 	"github.com/shardeum/shardeum-evm/wallets/ledger/mocks"
 	"github.com/shardeum/shardeum-evm/wallets/usbwallet"
+	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
 

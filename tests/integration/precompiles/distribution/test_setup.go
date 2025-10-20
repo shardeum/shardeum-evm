@@ -1,8 +1,6 @@
 package distribution
 
 import (
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/precompiles/distribution"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
@@ -10,6 +8,7 @@ import (
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
 	sdkmath "cosmossdk.io/math"

@@ -6,13 +6,12 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/shardeum/shardeum-evm"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/testutil/integration"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

@@ -17,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
-
 	"github.com/shardeum/shardeum-evm/x/vm/store/snapshotmulti"
 	vmstoretypes "github.com/shardeum/shardeum-evm/x/vm/store/types"
 	"github.com/shardeum/shardeum-evm/x/vm/types"

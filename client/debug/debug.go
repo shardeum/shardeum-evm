@@ -9,9 +9,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"
+	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	cosmosclientdebug "github.com/cosmos/cosmos-sdk/client/debug"

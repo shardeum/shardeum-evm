@@ -22,7 +22,6 @@ import (
 	"runtime/trace"
 
 	stderrors "github.com/pkg/errors"
-
 	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
 )
 

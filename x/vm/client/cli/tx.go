@@ -10,10 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-
 	"github.com/shardeum/shardeum-evm/utils"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/spf13/cobra"
 
 	"cosmossdk.io/core/address"
 

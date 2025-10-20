@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"

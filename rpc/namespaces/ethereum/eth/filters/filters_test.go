@@ -9,14 +9,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/filters"
+	filtermocks "github.com/shardeum/shardeum-evm/rpc/namespaces/ethereum/eth/filters/mocks"
+	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	comettypes "github.com/cometbft/cometbft/types"
-
-	filtermocks "github.com/shardeum/shardeum-evm/rpc/namespaces/ethereum/eth/filters/mocks"
-	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
 
 	"cosmossdk.io/log"
 )

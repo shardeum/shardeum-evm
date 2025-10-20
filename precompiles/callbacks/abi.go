@@ -4,7 +4,6 @@ import (
 	"embed"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 )
 

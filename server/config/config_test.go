@@ -5,11 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/spf13/viper"
-	"github.com/stretchr/testify/require"
-
 	serverconfig "github.com/shardeum/shardeum-evm/server/config"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDefaultConfig(t *testing.T) {

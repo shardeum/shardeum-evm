@@ -11,15 +11,14 @@ import (
 	ethrpc "github.com/ethereum/go-ethereum/rpc"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
-	"golang.org/x/sync/errgroup"
-
-	rpcclient "github.com/cometbft/cometbft/rpc/client"
-
 	evmmempool "github.com/shardeum/shardeum-evm/mempool"
 	"github.com/shardeum/shardeum-evm/rpc"
 	"github.com/shardeum/shardeum-evm/rpc/stream"
 	serverconfig "github.com/shardeum/shardeum-evm/server/config"
 	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	"golang.org/x/sync/errgroup"
+
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"

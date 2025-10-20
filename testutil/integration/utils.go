@@ -3,10 +3,10 @@ package integration
 import (
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/shardeum/shardeum-evm"
 	"github.com/shardeum/shardeum-evm/testutil/tx"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	errorsmod "cosmossdk.io/errors"
 

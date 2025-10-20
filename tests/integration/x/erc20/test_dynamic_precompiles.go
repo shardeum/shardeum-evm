@@ -4,7 +4,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"

@@ -6,7 +6,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/shardeum/shardeum-evm/contracts"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/testutil"
@@ -15,6 +14,7 @@ import (
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
 	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"

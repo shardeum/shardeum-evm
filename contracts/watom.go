@@ -1,10 +1,10 @@
 package contracts
 
 import (
-	_ "embed"
-
 	contractutils "github.com/shardeum/shardeum-evm/contracts/utils"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	_ "embed"
 )
 
 var (

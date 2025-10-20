@@ -10,7 +10,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-
 	"github.com/shardeum/shardeum-evm/rpc/backend"
 	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
 	"github.com/shardeum/shardeum-evm/types"

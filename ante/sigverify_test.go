@@ -3,12 +3,11 @@ package ante_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/shardeum/shardeum-evm/ante"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/encoding"
 	"github.com/shardeum/shardeum-evm/server/config"
+	"github.com/stretchr/testify/require"
 
 	storetypes "cosmossdk.io/store/types"
 

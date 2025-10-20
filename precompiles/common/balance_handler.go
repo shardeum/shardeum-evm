@@ -6,7 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
-
 	"github.com/shardeum/shardeum-evm/utils"
 	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"

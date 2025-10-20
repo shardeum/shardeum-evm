@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 

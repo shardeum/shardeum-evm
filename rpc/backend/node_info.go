@@ -8,14 +8,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-
-	cmttypes "github.com/cometbft/cometbft/types"
-
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
 	"github.com/shardeum/shardeum-evm/server/config"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"

@@ -22,7 +22,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
-
 	rpcfilters "github.com/shardeum/shardeum-evm/rpc/namespaces/ethereum/eth/filters"
 	"github.com/shardeum/shardeum-evm/rpc/stream"
 	"github.com/shardeum/shardeum-evm/server/config"

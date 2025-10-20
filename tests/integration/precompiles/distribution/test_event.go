@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 	"github.com/shardeum/shardeum-evm/precompiles/distribution"
 	"github.com/shardeum/shardeum-evm/precompiles/testutil"
@@ -323,7 +322,7 @@ func (s *PrecompileTestSuite) TestFundCommunityPoolEvent() {
 			// New multi-coin deposit test case
 			name: "success - multiple coins => multiple events emitted",
 			coins: sdk.NewCoins(
-				sdk.NewCoin(constants.ShardeumAttoDenom, math.NewInt(10)),   // coin #1
+				sdk.NewCoin(constants.ShardeumAttoDenom, math.NewInt(10)),  // coin #1
 				sdk.NewCoin(constants.OtherCoinDenoms[0], math.NewInt(20)), // coin #2
 				sdk.NewCoin(constants.OtherCoinDenoms[1], math.NewInt(30)), // coin #3
 			).Sort(),

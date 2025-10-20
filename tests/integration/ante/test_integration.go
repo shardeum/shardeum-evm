@@ -3,13 +3,6 @@ package ante
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/gomega"
-
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	commonfactory "github.com/shardeum/shardeum-evm/testutil/integration/base/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
@@ -18,6 +11,12 @@ import (
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
 	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
 	testutiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	"github.com/stretchr/testify/suite"
+
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
 

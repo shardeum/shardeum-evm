@@ -3,10 +3,9 @@ package types_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
+	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
 )

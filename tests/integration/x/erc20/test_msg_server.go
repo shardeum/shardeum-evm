@@ -6,9 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/mock"
-	"go.uber.org/mock/gomock"
-
 	"github.com/shardeum/shardeum-evm/testutil/integration/base/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
 	"github.com/shardeum/shardeum-evm/x/erc20/keeper"
@@ -16,6 +13,8 @@ import (
 	erc20mocks "github.com/shardeum/shardeum-evm/x/erc20/types/mocks"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/mock"
+	"go.uber.org/mock/gomock"
 
 	"cosmossdk.io/math"
 

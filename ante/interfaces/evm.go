@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/uint256"
-
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"

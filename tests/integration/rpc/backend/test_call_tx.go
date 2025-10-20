@@ -10,13 +10,12 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
-	"google.golang.org/grpc/metadata"
-
 	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
 	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"google.golang.org/grpc/metadata"
 
 	"cosmossdk.io/math"
 

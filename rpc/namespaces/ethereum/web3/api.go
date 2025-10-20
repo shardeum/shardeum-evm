@@ -3,7 +3,6 @@ package web3
 import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/shardeum/shardeum-evm/version"
 )
 

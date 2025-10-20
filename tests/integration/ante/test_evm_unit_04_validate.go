@@ -6,7 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/shardeum/shardeum-evm/ante/evm"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"

@@ -7,13 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"google.golang.org/grpc/codes"
-
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/gomega"
-
 	compiledcontracts "github.com/shardeum/shardeum-evm/contracts"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
@@ -27,6 +20,12 @@ import (
 	testutiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"google.golang.org/grpc/codes"
+
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/gomega"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"

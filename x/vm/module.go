@@ -7,13 +7,12 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/spf13/cobra"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/shardeum/shardeum-evm/x/vm/client/cli"
 	"github.com/shardeum/shardeum-evm/x/vm/keeper"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/spf13/cobra"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	"cosmossdk.io/core/address"
 	"cosmossdk.io/core/appmodule"

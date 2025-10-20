@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/shardeum/shardeum-evm/x/erc20/keeper"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
 

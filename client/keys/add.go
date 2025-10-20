@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"sort"
 
+	cryptohd "github.com/shardeum/shardeum-evm/crypto/hd"
 	"github.com/spf13/cobra"
 
-	cryptohd "github.com/shardeum/shardeum-evm/crypto/hd"
 	bip39 "github.com/cosmos/go-bip39"
 
 	"github.com/cosmos/cosmos-sdk/client"

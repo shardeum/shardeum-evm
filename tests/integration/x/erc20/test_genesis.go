@@ -1,12 +1,12 @@
 package erc20
 
 import (
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	"github.com/shardeum/shardeum-evm/x/erc20"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
+	"github.com/stretchr/testify/suite"
+
 	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 
 	"cosmossdk.io/math"

@@ -2,14 +2,13 @@ package bank
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/suite"
-
 	bank2 "github.com/shardeum/shardeum-evm/precompiles/bank"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
 	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
+	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
 

@@ -7,10 +7,9 @@ import (
 	"strconv"
 
 	"github.com/hashicorp/go-metrics"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
 
 	cmttypes "github.com/cometbft/cometbft/types"
-
-	"github.com/shardeum/shardeum-evm/x/vm/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"

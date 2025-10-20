@@ -10,9 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/txpool"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	protov2 "google.golang.org/protobuf/proto"
-
 	evmapi "github.com/shardeum/shardeum-evm/api/cosmos/evm/vm/v1"
+	protov2 "google.golang.org/protobuf/proto"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"

@@ -1,10 +1,10 @@
 package feemarket
 
 import (
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/shardeum/shardeum-evm/x/feemarket/keeper"
 	"github.com/shardeum/shardeum-evm/x/feemarket/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	errorsmod "cosmossdk.io/errors"
 

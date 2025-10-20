@@ -7,16 +7,15 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	ethrpc "github.com/ethereum/go-ethereum/rpc"
-	"google.golang.org/grpc/metadata"
-
-	"github.com/cometbft/cometbft/abci/types"
-	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
-
 	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
 	rpc "github.com/shardeum/shardeum-evm/rpc/types"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"google.golang.org/grpc/metadata"
+
+	"github.com/cometbft/cometbft/abci/types"
+	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 
 	sdkmath "cosmossdk.io/math"
 

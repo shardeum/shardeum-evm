@@ -3,10 +3,9 @@ package constants_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/shardeum/shardeum-evm/testutil/config"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRequireSameTestDenom(t *testing.T) {

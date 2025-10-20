@@ -13,9 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	usb "github.com/zondax/hid"
-
 	"github.com/shardeum/shardeum-evm/wallets/accounts"
+	usb "github.com/zondax/hid"
 )
 
 // Maximum time between wallet health checks to detect USB unplugs.

@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/require"
-
 	"github.com/shardeum/shardeum-evm/contracts"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
@@ -14,6 +12,7 @@ import (
 	testKeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIterateContracts(t *testing.T, create network.CreateEvmApp, options ...network.ConfigOption) {

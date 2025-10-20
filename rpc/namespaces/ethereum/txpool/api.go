@@ -3,7 +3,6 @@ package txpool
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/shardeum/shardeum-evm/rpc/backend"
 	"github.com/shardeum/shardeum-evm/rpc/types"
 

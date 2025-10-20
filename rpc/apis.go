@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/rpc"
-
 	evmmempool "github.com/shardeum/shardeum-evm/mempool"
 	"github.com/shardeum/shardeum-evm/rpc/backend"
 	"github.com/shardeum/shardeum-evm/rpc/namespaces/ethereum/debug"

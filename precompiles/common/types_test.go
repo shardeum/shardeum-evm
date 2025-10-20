@@ -3,10 +3,9 @@ package common_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/shardeum/shardeum-evm/precompiles/common"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
 

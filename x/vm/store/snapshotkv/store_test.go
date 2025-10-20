@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/shardeum/shardeum-evm/x/vm/store/snapshotkv"
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cosmos/cosmos-db"
-	"github.com/shardeum/shardeum-evm/x/vm/store/snapshotkv"
 
 	"cosmossdk.io/store/cachekv"
 	"cosmossdk.io/store/dbadapter"

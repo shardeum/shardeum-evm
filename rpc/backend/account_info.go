@@ -8,11 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
-
-	"github.com/cometbft/cometbft/libs/bytes"
-
 	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	"github.com/cometbft/cometbft/libs/bytes"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	rpcclient "github.com/cometbft/cometbft/rpc/client"
-
 	"github.com/shardeum/shardeum-evm/server/config"
+
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"

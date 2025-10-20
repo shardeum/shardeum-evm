@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/shardeum/shardeum-evm/precompiles/testutil"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 

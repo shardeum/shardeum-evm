@@ -8,9 +8,8 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/require"
-
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkCreateAccountNew(b *testing.B) {

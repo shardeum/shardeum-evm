@@ -4,10 +4,9 @@ import (
 	"bufio"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/spf13/cobra"
-
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/crypto/hd"
+	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/input"

@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/params"
-
 	"github.com/shardeum/shardeum-evm/mempool/txpool"
 	"github.com/shardeum/shardeum-evm/mempool/txpool/legacypool"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"

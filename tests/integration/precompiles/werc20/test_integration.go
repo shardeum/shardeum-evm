@@ -5,12 +5,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/gomega"
-
 	"github.com/shardeum/shardeum-evm/precompiles/erc20"
 	"github.com/shardeum/shardeum-evm/precompiles/testutil"
 	"github.com/shardeum/shardeum-evm/precompiles/werc20"
@@ -26,6 +20,11 @@ import (
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
 

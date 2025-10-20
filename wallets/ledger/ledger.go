@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"
 	"github.com/shardeum/shardeum-evm/wallets/accounts"
 	"github.com/shardeum/shardeum-evm/wallets/usbwallet"

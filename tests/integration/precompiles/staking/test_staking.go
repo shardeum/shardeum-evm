@@ -9,7 +9,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/uint256"
-
 	"github.com/shardeum/shardeum-evm/precompiles/staking"
 	"github.com/shardeum/shardeum-evm/precompiles/testutil"
 	chainutil "github.com/shardeum/shardeum-evm/testutil"

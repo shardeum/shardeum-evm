@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strconv"
 
-	abcitypes "github.com/cometbft/cometbft/abci/types"
-
 	commonfactory "github.com/shardeum/shardeum-evm/testutil/integration/base/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"

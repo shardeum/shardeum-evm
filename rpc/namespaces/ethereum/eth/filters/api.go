@@ -11,11 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/eth/filters"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/pkg/errors"
-
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
-
 	"github.com/shardeum/shardeum-evm/rpc/stream"
 	"github.com/shardeum/shardeum-evm/rpc/types"
+
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 
 	"cosmossdk.io/log"
 

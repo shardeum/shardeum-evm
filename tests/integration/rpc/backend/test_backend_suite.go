@@ -8,11 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/stretchr/testify/suite"
-
-	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
-
-	dbm "github.com/cosmos/cosmos-db"
 	"github.com/shardeum/shardeum-evm/crypto/hd"
 	"github.com/shardeum/shardeum-evm/encoding"
 	"github.com/shardeum/shardeum-evm/indexer"
@@ -23,6 +18,11 @@ import (
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/suite"
+
+	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
+
+	dbm "github.com/cosmos/cosmos-db"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"

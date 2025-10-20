@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
-
 	ibcutils "github.com/shardeum/shardeum-evm/ibc"
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 	erc20 "github.com/shardeum/shardeum-evm/precompiles/erc20"
