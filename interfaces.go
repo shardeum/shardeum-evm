@@ -7,7 +7,6 @@ import (
 	feemarketkeeper "github.com/shardeum/shardeum-evm/x/feemarket/keeper"
 	"github.com/shardeum/shardeum-evm/x/ibc/callbacks/keeper"
 	transferkeeper "github.com/shardeum/shardeum-evm/x/ibc/transfer/keeper"
-	precisebankkeeper "github.com/shardeum/shardeum-evm/x/precisebank/keeper"
 	evmkeeper "github.com/shardeum/shardeum-evm/x/vm/keeper"
 
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
@@ -51,7 +50,6 @@ type EvmApp interface { //nolint:revive
 	GetDistrKeeper() distrkeeper.Keeper
 	GetStakingKeeper() *stakingkeeper.Keeper
 	GetMintKeeper() mintkeeper.Keeper
-	GetPreciseBankKeeper() *precisebankkeeper.Keeper
 	GetFeeGrantKeeper() feegrantkeeper.Keeper
 	GetConsensusParamsKeeper() consensusparamkeeper.Keeper
 	GetCallbackKeeper() keeper.ContractKeeper
