@@ -6,7 +6,6 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/shardeum/shardeum-evm"
 	shardeumd "github.com/shardeum/shardeum-evm/shardeumd"
-	"github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 	testconfig "github.com/shardeum/shardeum-evm/testutil/config"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
