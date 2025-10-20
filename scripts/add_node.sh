@@ -3,6 +3,10 @@
 set -e
 
 CURRENT_DIR="$(pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Source genesis utilities from unified script
+source "$SCRIPT_DIR/genesis_account_split.sh"
 
 # Parse command line arguments
 NODE_ID=""
@@ -175,6 +179,192 @@ cleanup() {
 # Trap signals for graceful shutdown
 trap cleanup SIGINT SIGTERM
 
+# Function to fetch genesis using chunked API
+fetch_genesis_chunked() {
+  local RPC_URL="$1"
+  local OUTPUT_FILE="$2"
+
+  echo -e "${YELLOW}Fetching genesis metadata and chunk 0...${NC}"
+
+  # Create temporary file to store combined chunks
+  local TEMP_COMBINED="/tmp/genesis_combined_$$.txt"
+  rm -f "$TEMP_COMBINED"  # Ensure clean start
+
+  # Fetch chunk 0 to get total count AND the first chunk data with retry
+  local TEMP_CHUNK_0="/tmp/chunk_0_$$.json"
+  local CHUNK_0_RETRIES=3
+  local CHUNK_0_ATTEMPT=0
+  local CHUNK_0_SUCCESS=false
+
+  while [ $CHUNK_0_ATTEMPT -lt $CHUNK_0_RETRIES ] && [ "$CHUNK_0_SUCCESS" = false ]; do
+    CHUNK_0_ATTEMPT=$((CHUNK_0_ATTEMPT + 1))
+    echo -e "${YELLOW}Fetching chunk 0 (attempt $CHUNK_0_ATTEMPT/$CHUNK_0_RETRIES)...${NC}"
+
+    # Use -C - to enable resume on partial transfers
+    curl -s --max-time 600 --connect-timeout 30 -C - "$RPC_URL/genesis_chunked?chunk=0" -o "$TEMP_CHUNK_0"
+    local CURL_EXIT=$?
+
+    if [ $CURL_EXIT -eq 0 ] && [ -s "$TEMP_CHUNK_0" ]; then
+      # Verify we can parse it
+      if jq -r '.result.total' "$TEMP_CHUNK_0" > /dev/null 2>&1; then
+        CHUNK_0_SUCCESS=true
+        echo -e "${GREEN}Chunk 0 fetched successfully ($(stat -f%z "$TEMP_CHUNK_0" 2>/dev/null || stat -c%s "$TEMP_CHUNK_0") bytes)${NC}"
+      else
+        echo -e "${YELLOW}Warning: Chunk 0 downloaded but invalid JSON (attempt $CHUNK_0_ATTEMPT)${NC}"
+        rm -f "$TEMP_CHUNK_0"
+      fi
+    else
+      echo -e "${YELLOW}Warning: Failed to fetch chunk 0 (curl exit: $CURL_EXIT, attempt $CHUNK_0_ATTEMPT)${NC}"
+      rm -f "$TEMP_CHUNK_0"
+
+      if [ $CHUNK_0_ATTEMPT -lt $CHUNK_0_RETRIES ]; then
+        echo -e "${YELLOW}Retrying in 3 seconds...${NC}"
+        sleep 3
+      fi
+    fi
+  done
+
+  if [ "$CHUNK_0_SUCCESS" = false ]; then
+    echo -e "${RED}Error: Failed to fetch chunk 0 after $CHUNK_0_RETRIES attempts${NC}"
+
+    # Try regular genesis endpoint as fallback
+    echo -e "${YELLOW}Trying regular genesis endpoint...${NC}"
+    local TEMP_GENESIS="/tmp/genesis_full_$$.json"
+
+    if curl -s --max-time 300 --connect-timeout 30 "$RPC_URL/genesis" 2>/dev/null | jq -r '.result.genesis // empty' > "$TEMP_GENESIS" 2>/dev/null; then
+      # Check if the result is valid
+      if [ -s "$TEMP_GENESIS" ] && [ "$(head -c 10 "$TEMP_GENESIS")" != "null" ] && [ "$(head -c 1 "$TEMP_GENESIS")" = "{" ]; then
+        mv "$TEMP_GENESIS" "$OUTPUT_FILE"
+        echo -e "${GREEN}Successfully fetched genesis from regular endpoint${NC}"
+        return 0
+      fi
+    fi
+
+    rm -f "$TEMP_GENESIS"
+    echo -e "${RED}Error: Could not fetch genesis from either endpoint${NC}"
+    return 1
+  fi
+
+  # Extract total chunks count
+  local TOTAL_CHUNKS=$(jq -r '.result.total // empty' "$TEMP_CHUNK_0" 2>/dev/null)
+
+  if [ -z "$TOTAL_CHUNKS" ] || ! [[ "$TOTAL_CHUNKS" =~ ^[0-9]+$ ]]; then
+    echo -e "${RED}Error: Could not parse total chunks from response${NC}"
+    rm -f "$TEMP_CHUNK_0" "$TEMP_COMBINED"
+    return 1
+  fi
+
+  echo -e "${GREEN}Total chunks: $TOTAL_CHUNKS${NC}"
+
+  # Extract data from chunk 0
+  local CHUNK_0_DATA=$(jq -r '.result.data // empty' "$TEMP_CHUNK_0" 2>/dev/null)
+  if [ -z "$CHUNK_0_DATA" ] || [ "$CHUNK_0_DATA" = "null" ]; then
+    echo -e "${RED}Error: Could not extract data from chunk 0${NC}"
+    rm -f "$TEMP_CHUNK_0" "$TEMP_COMBINED"
+    return 1
+  fi
+
+  # Save chunk 0 data
+  echo "$CHUNK_0_DATA" > "$TEMP_COMBINED"
+  echo -e "${GREEN}Chunk 1/$TOTAL_CHUNKS fetched successfully ($(stat -f%z "$TEMP_CHUNK_0" 2>/dev/null || stat -c%s "$TEMP_CHUNK_0") bytes)${NC}"
+  rm -f "$TEMP_CHUNK_0"
+
+  # Fetch remaining chunks (1 to TOTAL_CHUNKS-1)
+  for i in $(seq 1 $((TOTAL_CHUNKS - 1))); do
+    echo -e "${YELLOW}Fetching chunk $((i + 1))/$TOTAL_CHUNKS...${NC}"
+
+    # Retry logic for fetching each chunk
+    local MAX_RETRIES=3
+    local RETRY_COUNT=0
+    local CHUNK_SUCCESS=false
+
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$CHUNK_SUCCESS" = false ]; do
+      # Fetch chunk with timeout and retry
+      # Use --max-time for overall timeout (600s = 10 min for very large chunks)
+      # Use --connect-timeout for connection timeout (30s)
+      # Write to temp file to avoid memory issues with large responses
+      local TEMP_CHUNK="/tmp/chunk_${i}_$$.json"
+
+      curl -s --max-time 600 --connect-timeout 30 "$RPC_URL/genesis_chunked?chunk=$i" -o "$TEMP_CHUNK"
+      local CURL_EXIT_CODE=$?
+
+      if [ $CURL_EXIT_CODE -eq 0 ] && [ -s "$TEMP_CHUNK" ]; then
+          # Try to parse the response and extract data field
+          local PARSED_DATA=$(jq -r '.result.data // empty' "$TEMP_CHUNK" 2>/dev/null)
+          local JQ_EXIT=$?
+
+          if [ $JQ_EXIT -eq 0 ] && [ -n "$PARSED_DATA" ] && [ "$PARSED_DATA" != "null" ]; then
+            # Append chunk to combined file (chunk 0 already written)
+            echo "$PARSED_DATA" >> "$TEMP_COMBINED"
+
+            # Verify chunk was written and has content
+            if [ -s "$TEMP_COMBINED" ]; then
+              CHUNK_SUCCESS=true
+              echo -e "${GREEN}Chunk $((i + 1))/$TOTAL_CHUNKS fetched successfully ($(stat -f%z "$TEMP_CHUNK" 2>/dev/null || stat -c%s "$TEMP_CHUNK") bytes)${NC}"
+            fi
+          else
+            echo -e "${YELLOW}Warning: Failed to parse chunk $i (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES, jq exit: $JQ_EXIT)${NC}"
+          fi
+      else
+        if [ $CURL_EXIT_CODE -ne 0 ]; then
+          echo -e "${YELLOW}Warning: curl failed for chunk $i (exit: $CURL_EXIT_CODE, attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)${NC}"
+        else
+          echo -e "${YELLOW}Warning: Failed to fetch chunk $i - empty response (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)${NC}"
+        fi
+      fi
+
+      rm -f "$TEMP_CHUNK"
+
+      if [ "$CHUNK_SUCCESS" = false ]; then
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+          echo -e "${YELLOW}Retrying in 2 seconds...${NC}"
+          sleep 2
+        fi
+      fi
+    done
+
+    # If still failed after all retries, abort
+    if [ "$CHUNK_SUCCESS" = false ]; then
+      echo -e "${RED}Error: Failed to fetch chunk $i after $MAX_RETRIES attempts${NC}"
+      rm -f "$TEMP_COMBINED"
+      return 1
+    fi
+  done
+
+  # Verify we have data
+  if [ ! -s "$TEMP_COMBINED" ]; then
+    echo -e "${RED}Error: No genesis data received${NC}"
+    rm -f "$TEMP_COMBINED"
+    return 1
+  fi
+
+  # Decode base64 and save to file
+  # Use -D flag for macOS base64 compatibility
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    cat "$TEMP_COMBINED" | base64 -D > "$OUTPUT_FILE"
+  else
+    base64 -d "$TEMP_COMBINED" > "$OUTPUT_FILE"
+  fi
+
+  local DECODE_STATUS=$?
+  rm -f "$TEMP_COMBINED"
+
+  if [ $DECODE_STATUS -ne 0 ]; then
+    echo -e "${RED}Error: Failed to decode genesis data${NC}"
+    return 1
+  fi
+
+  # Validate JSON
+  if ! jq empty "$OUTPUT_FILE" 2>/dev/null; then
+    echo -e "${RED}Error: Invalid JSON in genesis file${NC}"
+    return 1
+  fi
+
+  echo -e "${GREEN}Successfully fetched and assembled genesis${NC}"
+  return 0
+}
+
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -250,10 +440,32 @@ EOF
 
 # Get genesis from seed node
 echo -e "${YELLOW}Fetching genesis from seed node...${NC}"
-GENESIS_URL="$SEED_NODE_RPC/genesis"
-if ! curl -s "$GENESIS_URL" | jq -r '.result.genesis' > "$NODE_DIR/config/genesis.json"; then
-  echo -e "${RED}Error: Failed to fetch genesis from $GENESIS_URL${NC}"
+if ! fetch_genesis_chunked "$SEED_NODE_RPC" "$NODE_DIR/config/genesis.json"; then
+  echo -e "${RED}Error: Failed to fetch genesis from $SEED_NODE_RPC${NC}"
   exit 1
+fi
+
+# Validate the genesis file
+echo -e "${YELLOW}Validating genesis file...${NC}"
+if [ ! -s "$NODE_DIR/config/genesis.json" ]; then
+  echo -e "${RED}Error: Genesis file is empty${NC}"
+  exit 1
+fi
+
+# Check if genesis has required fields
+if ! jq -e '.chain_id' "$NODE_DIR/config/genesis.json" > /dev/null 2>&1; then
+  echo -e "${RED}Error: Genesis file is missing required fields${NC}"
+  exit 1
+fi
+
+GENESIS_CHAIN_ID=$(jq -r '.chain_id' "$NODE_DIR/config/genesis.json")
+echo -e "${GREEN}Genesis validated - Chain ID: $GENESIS_CHAIN_ID${NC}"
+
+# Verify chain ID matches
+if [ "$GENESIS_CHAIN_ID" != "$CHAINID" ]; then
+  echo -e "${YELLOW}Warning: Genesis chain ID ($GENESIS_CHAIN_ID) doesn't match expected ($CHAINID)${NC}"
+  echo -e "${YELLOW}Using chain ID from genesis: $GENESIS_CHAIN_ID${NC}"
+  CHAINID="$GENESIS_CHAIN_ID"
 fi
 
 # Find next available ports
