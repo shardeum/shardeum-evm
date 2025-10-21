@@ -2,7 +2,36 @@
 
 set -ex
 
-for ENVAR in PEERS SHARDEUM_NETWORK GENESIS_SOURCE CHAIN_ID KEYRING_BACKEND NODE_HOME NODE_TYPE MIN_GAS JSON_RPC_ADDRESS JSON_RPC_PORT JSON_RPC_WS_PORT P2P_ADDRESS P2P_PORT RPC_ADDRESS RPC_PORT GRPC_ADDRESS GRPC_PORT API_ADDRESS API_PORT; do
+# Common/default env vars required for all node types
+COMMON_ENVS="PEERS SHARDEUM_NETWORK KEYRING_BACKEND GENESIS_URL NODE_HOME NODE_TYPE ALLOW_DUPLICATE_IP"
+
+# Node-type specific env vars
+RPC_ENVS="MIN_GAS JSON_RPC_ADDRESS JSON_RPC_PORT JSON_RPC_WS_PORT P2P_ADDRESS P2P_PORT RPC_ADDRESS RPC_PORT GRPC_ADDRESS GRPC_PORT API_ADDRESS API_PORT"
+SENTRY_ENVS="P2P_ADDRESS P2P_PORT RPC_ADDRESS RPC_PORT PRIVATE_PEER_IDS"
+VALIDATOR_ENVS="P2P_ADDRESS P2P_PORT RPC_ADDRESS RPC_PORT UNCONDITIONAL_PEER_IDS"
+
+# Start with the common ones
+REQUIRED_ENVS="$COMMON_ENVS"
+
+# Add node-type-specific vars
+case "$NODE_TYPE" in
+  RPC)
+    REQUIRED_ENVS="$REQUIRED_ENVS $RPC_ENVS"
+    ;;
+  SENTRY)
+    REQUIRED_ENVS="$REQUIRED_ENVS $SENTRY_ENVS"
+    ;;
+  VALIDATOR)
+    REQUIRED_ENVS="$REQUIRED_ENVS $VALIDATOR_ENVS"
+    ;;
+  *)
+    echo "Unknown NODE_TYPE: $NODE_TYPE"
+    exit 1
+    ;;
+esac
+
+# Check for missing env vars
+for ENVAR in $REQUIRED_ENVS; do
   eval value=\$$ENVAR
   if [ -z "$value" ]; then
     echo "Missing required env variable $ENVAR"
@@ -13,17 +42,36 @@ done
 if [ $missing ]; then exit 1; fi
 
 if [ ! -e "$NODE_HOME/data/state.db" ] && [ ! -e "$NODE_HOME/config/genesis.json" ]; then
-  if [ -z "$GENESIS_SOURCE" ]; then
-    echo "Uninitialized nodes require a GENESIS_SOURCE env var"
+  if [ -z "$SHARDEUM_NETWORK" ]; then
+    echo "Uninitialized nodes require a SHARDEUM_NETWORK env var and will copy genesis file accordingly"
     exit 1
   fi
+
+  # Get CHAIN_ID on the basis of SHARDEUM_NETWORK used
+  # ---
+  CONFIG_FILE="/app/config/environments/$SHARDEUM_NETWORK.json"
+  # Read network configuration
+  CHAIN_ID=$(jq -r '.chain_id' "$CONFIG_FILE")
+  echo "############################################################"
+  echo "Using CHAIN_ID ===> $CHAIN_ID"
+  echo "############################################################"
+
+  # Init
+  # ---
+  echo "Running Init -------------------------------------"
   /app/shardeumd init docker --home $NODE_HOME --chain-id $CHAIN_ID
-  # curl -s http://$GENESIS_SOURCE/genesis | jq -r '.result.genesis' > "$NODE_HOME/config/genesis.json"
-  echo "Downloading genesis json file from $GENESIS_SOURCE"
-  curl -s $GENESIS_SOURCE | jq -r '.result.genesis' > "$NODE_HOME/config/genesis.json"
-  sleep 5
-  echo "Downloaded genesis json file from $GENESIS_SOURCE"
-  
+
+  # # Copy genesis file from /app/config/environments/$SHARDEUM_NETWORK-genesis.genesis.json to $NODE_HOME/config/genesis.json
+  # # ---
+  # echo "Copying genesis from /app/config/environments/$SHARDEUM_NETWORK-genesis.genesis.json =====> $NODE_HOME/config/genesis.json"
+  # cp /app/config/environments/$SHARDEUM_NETWORK-genesis.genesis.json $NODE_HOME/config/genesis.json
+
+  # Download genesis file from $GENESIS_URL to $NODE_HOME/config/genesis.json
+  # ---
+  echo "Downloading genesis from to =====> $NODE_HOME/config/genesis.json"
+  wget $GENESIS_URL -O $NODE_HOME/config/genesis.json
+
+
   # Set up client configuration (do we need this ???)
 cat > "$NODE_HOME/config/client.toml" << EOF
 chain-id = "$CHAIN_ID"
@@ -41,9 +89,12 @@ EOF
   # ---
   # sed -i '/\[api\]/,+3 s/enable = false/enable = true/' $NODE_HOME/config/app.toml
 
-  # # Allow duplicate IP's (only needed to allow_duplicate_ip enabled for local network setup and testing purpose, so commenting it for now)
-  # ---
-  # sed -i "s/allow_duplicate_ip = false/allow_duplicate_ip = true/" "$NODE_HOME/config/config.toml"
+
+  if [ "$ALLOW_DUPLICATE_IP" = true ]; then
+    # Allow duplicate IP's (only needed to allow_duplicate_ip enabled for local network setup and testing purpose, so commenting it for now)
+    # ---
+    sed -i "s/allow_duplicate_ip = false/allow_duplicate_ip = true/" "$NODE_HOME/config/config.toml"
+  fi
 
 ####################################################################################################################################
 
@@ -71,9 +122,9 @@ EOF
 
     # set p2p.laddr as ""
     # ---
-    # sed -i '/^\[p2p\]/,/^\[/{s/^laddr *=.*/laddr = ""/}' "$NODE_HOME/config/config.toml"
-    # cat $NODE_HOME/config/config.toml | grep laddr
-  
+    sed -i '/^\[p2p\]/,/^\[/{s/^laddr *=.*/laddr = ""/}' "$NODE_HOME/config/config.toml"
+    grep -A5 "\[p2p\]" $NODE_HOME/config/config.toml
+
   fi
 
   if [ "$NODE_TYPE" = "SENTRY" ]; then
@@ -113,6 +164,12 @@ EOF
     sed -i 's/^broadcast = .*/broadcast = true/' "$NODE_HOME/config/config.toml"
     cat $NODE_HOME/config/config.toml | grep broadcast
 
+    ###
+    # set rpc.laddr as "" (this isn't working as this will start rpc on 127.0.0.1:DEFAULT_PORT even though laddr becomes set to empty like "")
+    # ---
+    sed -i '/^\[rpc\]/,/^\[/{s/^laddr *=.*/laddr = ""/}' "$NODE_HOME/config/config.toml"
+    grep -A5 "\[rpc\]" $NODE_HOME/config/config.toml
+
   fi
 
   if [ "$NODE_TYPE" = "VALIDATOR" ]; then
@@ -120,78 +177,114 @@ EOF
     # set rpc.laddr as ""
     # ---
     sed -i '/^\[rpc\]/,/^\[/{s/^laddr *=.*/laddr = ""/}' "$NODE_HOME/config/config.toml"
-    grep -A2 "^\[rpc\]" $NODE_HOME/config/config.toml
+    grep -A5 "\[rpc\]" $NODE_HOME/config/config.toml
+
+    ###
+    # set max_num_inbound_peers to 10
+    # ---
+    sed -i 's/^max_num_inbound_peers = .*/max_num_inbound_peers = 10/' "$NODE_HOME/config/config.toml"
+    cat $NODE_HOME/config/config.toml | grep max_num_inbound_peers
 
   fi
 fi
 
-case $SHARDEUM_NETWORK in
-  testnet)
-    cp /app/config/testnet-genesis.json $NODE_HOME/config/genesis.json
-    ;;
-esac
-
-####################################################################################################################################
-
-# EMPTY=""
-
-# # Start command parameters for each
-# case $NODE_TYPE in
-#   RPC)
-#     # OPTIONS='--rpc.laddr "tcp://0.0.0.0:26657" --json-rpc.enable --json-rpc.address "0.0.0.0:8545" --api.enable --api.address "tcp://0.0.0.0:1317"'
-#     OPTIONS="--p2p.laddr "$EMPTY" --rpc.laddr "tcp://$RPC_ADDRESS:$RPC_PORT" --grpc.address "$GRPC_ADDRESS:$GRPC_PORT" --api.enable --json-rpc.enable --json-rpc.address "$JSON_RPC_ADDRESS:$JSON_RPC_PORT" --json-rpc.ws-address "$JSON_RPC_ADDRESS:$JSON_RPC_WS_PORT" --json-rpc.api eth,txpool,personal,net,debug,web3 --minimum-gas-prices="$MIN_GAS" --pruning nothing"
-#     ;;
-#   VALIDATOR)
-#     OPTIONS="--p2p.laddr "tcp://$P2P_ADDRESS:$P2P_PORT" --rpc.laddr "" --pruning nothing"
-#     ;;
-#   SENTRY)
-#     OPTIONS="--p2p.laddr "tcp://$P2P_ADDRESS:$P2P_PORT" --pruning nothing"
+# case $SHARDEUM_NETWORK in
+#   testnet)
+#     cp /app/config/testnet-genesis.json $NODE_HOME/config/genesis.json
 #     ;;
 # esac
 
-# # /app/shardeumd start --home $NODE_HOME --chain-id shardeum-testnet --p2p.seeds "$PEERS" --p2p.persistent_peers "$PEERS" $OPTIONS
-# /app/shardeumd start --home $NODE_HOME --chain-id $CHAIN_ID --p2p.seeds "$PEERS" --p2p.persistent_peers "$PEERS" $OPTIONS
-
-
-if [ "$NODE_TYPE" = "RPC" ]; then
-  /app/shardeumd start \
-  --home $NODE_HOME \
-  --chain-id $CHAIN_ID \
-  --p2p.seeds "$PEERS" \
-  --p2p.persistent_peers "$PEERS" \
-  --p2p.laddr "tcp://$P2P_ADDRESS:$P2P_PORT" \
-  --rpc.laddr "tcp://$RPC_ADDRESS:$RPC_PORT" \
-  --grpc.address "$GRPC_ADDRESS:$GRPC_PORT" \
-  --api.enable \
-  --json-rpc.enable \
-  --json-rpc.address "$JSON_RPC_ADDRESS:$JSON_RPC_PORT" \
-  --json-rpc.ws-address "$JSON_RPC_ADDRESS:$JSON_RPC_WS_PORT" \
-  --json-rpc.api eth,txpool,personal,net,debug,web3 \
-  --minimum-gas-prices="$MIN_GAS" \
-  --pruning nothing
-fi
-
-if [ "$NODE_TYPE" = "VALIDATOR" ]; then
-  /app/shardeumd start \
-  --home $NODE_HOME \
-  --chain-id $CHAIN_ID \
-  --p2p.seeds "$PEERS" \
-  --p2p.persistent_peers "$PEERS" \
-  --p2p.laddr "tcp://$P2P_ADDRESS:$P2P_PORT" \
-  --rpc.laddr "tcp://$RPC_ADDRESS:$RPC_PORT" \
-  --pruning nothing
-fi
-
-# Comma separated list of peer IDs to keep private (will not be gossiped to other peers, we've to add this in below sentry start command flags)
-# Example ID: 3e16af0cead27979e1fc3dac57d03df3c7a77acc@3.87.179.235:26656
+# Get CHAIN_ID on the basis of SHARDEUM_NETWORK used
 # ---
-# --p2p.private_peer_ids string
-if [ "$NODE_TYPE" = "SENTRY" ]; then
-  /app/shardeumd start \
-  --home $NODE_HOME \
-  --chain-id $CHAIN_ID \
-  --p2p.seeds "$PEERS" \
-  --p2p.persistent_peers "$PEERS" \
-  --p2p.laddr "tcp://$P2P_ADDRESS:$P2P_PORT" \
-  --pruning nothing
-fi
+CONFIG_FILE="/app/config/environments/$SHARDEUM_NETWORK.json"
+# Read network configuration
+echo "Getting CHAIN_ID"
+CHAIN_ID=$(jq -r '.chain_id' "$CONFIG_FILE")
+echo "############################################################"
+echo "Using CHAIN_ID ===> $CHAIN_ID"
+echo "############################################################"
+
+### get node-id
+# ---
+echo "##############################################################################################################################"
+echo "############################################################"
+echo "Node's ID ===> $(/app/shardeumd cometbft show-node-id --home $NODE_HOME)"
+echo "############################################################"
+echo "##############################################################################################################################"
+
+####################################################################################################################################
+
+# Start command parameters for each
+case $NODE_TYPE in
+  RPC)
+    OPTIONS="--p2p.laddr "tcp://$P2P_ADDRESS:$P2P_PORT" --rpc.laddr "tcp://$RPC_ADDRESS:$RPC_PORT" --grpc.address "$GRPC_ADDRESS:$GRPC_PORT" --api.enable --json-rpc.enable --json-rpc.address "$JSON_RPC_ADDRESS:$JSON_RPC_PORT" --json-rpc.ws-address "$JSON_RPC_ADDRESS:$JSON_RPC_WS_PORT" --json-rpc.api eth,txpool,personal,net,debug,web3 --minimum-gas-prices="$MIN_GAS" --pruning nothing"
+    ;;
+
+  VALIDATOR)
+    # Comma separated list of nodeID’s. These nodes will be connected to no matter the limits of inbound and outbound peers. This is useful for when sentry nodes have full address books
+    # ---
+    # unconditional_peer_ids = "sentry_ids"  # Always stay connected
+    ############
+    # NEVER share peers
+    # This turns the peer exchange reactor on or off for a node. When pex=false, only the persistent_peers list is available for connection.
+    # ---
+    # --p2p.pex enable/disable Peer-Exchange (default true)
+    OPTIONS="--p2p.laddr "tcp://$P2P_ADDRESS:$P2P_PORT" --rpc.laddr "tcp://$RPC_ADDRESS:$RPC_PORT" --p2p.unconditional_peer_ids $UNCONDITIONAL_PEER_IDS --p2p.pex false --pruning nothing"
+    ;;
+
+  SENTRY)
+    # Comma separated list of peer IDs to keep private (will not be gossiped to other peers, we've to add this in below sentry start command flags)
+    # Example ID: 553bbeeac6c297e228c89046d28a5351c93c3a29
+    # ---
+    # --p2p.private_peer_ids string
+    OPTIONS="--p2p.laddr "tcp://$P2P_ADDRESS:$P2P_PORT" --p2p.private_peer_ids $PRIVATE_PEER_IDS --rpc.laddr "tcp://$RPC_ADDRESS:$RPC_PORT" --pruning nothing"
+    ;;
+esac
+
+# /app/shardeumd start --home $NODE_HOME --chain-id shardeum-testnet --p2p.seeds "$PEERS" --p2p.persistent_peers "$PEERS" $OPTIONS
+/app/shardeumd start --home $NODE_HOME --chain-id $CHAIN_ID --p2p.seeds "$PEERS" --p2p.persistent_peers "$PEERS" $OPTIONS
+
+################################################################################################################################################################
+
+# if [ "$NODE_TYPE" = "RPC" ]; then
+#   /app/shardeumd start \
+#   --home $NODE_HOME \
+#   --chain-id $CHAIN_ID \
+#   --p2p.seeds "$PEERS" \
+#   --p2p.persistent_peers "$PEERS" \
+#   --p2p.laddr "tcp://$P2P_ADDRESS:$P2P_PORT" \
+#   --rpc.laddr "tcp://$RPC_ADDRESS:$RPC_PORT" \
+#   --grpc.address "$GRPC_ADDRESS:$GRPC_PORT" \
+#   --api.enable \
+#   --json-rpc.enable \
+#   --json-rpc.address "$JSON_RPC_ADDRESS:$JSON_RPC_PORT" \
+#   --json-rpc.ws-address "$JSON_RPC_ADDRESS:$JSON_RPC_WS_PORT" \
+#   --json-rpc.api eth,txpool,personal,net,debug,web3 \
+#   --minimum-gas-prices="$MIN_GAS" \
+#   --pruning nothing
+# fi
+
+# if [ "$NODE_TYPE" = "VALIDATOR" ]; then
+#   /app/shardeumd start \
+#   --home $NODE_HOME \
+#   --chain-id $CHAIN_ID \
+#   --p2p.seeds "$PEERS" \
+#   --p2p.persistent_peers "$PEERS" \
+#   --p2p.laddr "tcp://$P2P_ADDRESS:$P2P_PORT" \
+#   --rpc.laddr "tcp://$RPC_ADDRESS:$RPC_PORT" \
+#   --pruning nothing
+# fi
+
+# # Comma separated list of peer IDs to keep private (will not be gossiped to other peers, we've to add this in below sentry start command flags)
+# # Example ID: 553bbeeac6c297e228c89046d28a5351c93c3a29
+# # ---
+# # --p2p.private_peer_ids string
+# if [ "$NODE_TYPE" = "SENTRY" ]; then
+#   /app/shardeumd start \
+#   --home $NODE_HOME \
+#   --chain-id $CHAIN_ID \
+#   --p2p.seeds "$PEERS" \
+#   --p2p.persistent_peers "$PEERS" \
+#   --p2p.laddr "tcp://$P2P_ADDRESS:$P2P_PORT" \
+#   --pruning nothing
+# fi
