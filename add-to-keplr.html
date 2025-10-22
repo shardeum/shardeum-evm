@@ -113,7 +113,7 @@
         
         <div class="info" id="networkDetails">
             <strong>Network Details:</strong><br>
-            <span id="chainIdDisplay">• Chain ID: shardeum_8119-1</span><br>
+            <span id="chainIdDisplay">• Chain ID: shardeum_8117-1</span><br>
             <span id="rpcDisplay">• RPC: http://127.0.0.1:26657</span><br>
             <span id="restDisplay">• REST: http://127.0.0.1:1317</span><br>
             <span id="jsonRpcDisplay">• JSON-RPC: http://127.0.0.1:8545</span><br>
@@ -126,7 +126,7 @@
             <p><strong>Network Endpoints (typically change per deployment):</strong></p>
             <div class="form-group">
                 <label for="customChainId">Chain ID *</label>
-                <input type="text" id="customChainId" placeholder="e.g., shardeum_8119-1" required>
+                <input type="text" id="customChainId" placeholder="e.g., shardeum_8117-1" required>
             </div>
             <div class="form-group">
                 <label for="customChainName">Chain Name *</label>
@@ -164,7 +164,7 @@
             </div>
             <div class="form-group">
                 <label for="customEvmChainId">EVM Chain ID (optional)</label>
-                <input type="number" id="customEvmChainId" value="8119">
+                <input type="number" id="customEvmChainId" value="8117">
             </div>
         </div>
 
@@ -199,7 +199,7 @@
             <h3>Custom Network Guide:</h3>
             <p><strong>Fields that typically change per Shardeum deployment:</strong></p>
             <ul>
-                <li><strong>Chain ID:</strong> Unique identifier with ethermint format (e.g., "shardeum_8119-1")</li>
+                <li><strong>Chain ID:</strong> Unique identifier with ethermint format (e.g., "shardeum_8117-1")</li>
                 <li><strong>Chain Name:</strong> Display name (e.g., "Shardeum Sphinx", "Shardeum Betanet")</li>
                 <li><strong>RPC URL:</strong> Tendermint RPC endpoint (port 26657)</li>
                 <li><strong>REST URL:</strong> Cosmos SDK REST API endpoint (port 1317)</li>
@@ -211,7 +211,7 @@
                 <li><strong>Base Denom:</strong> ashm (atto-SHM, Shardeum standard)</li>
                 <li><strong>Decimals:</strong> 18 (Shardeum standard)</li>
                 <li><strong>Bech32 Prefix:</strong> shardeum (Shardeum standard)</li>
-                <li><strong>EVM Chain ID:</strong> 8119 (Shardeum standard, optional for EVM features)</li>
+                <li><strong>EVM Chain ID:</strong> 8117 (Shardeum standard, optional for EVM features)</li>
             </ul>
         </div>
     </div>
@@ -221,8 +221,8 @@
         const networks = {
             local: {
                 name: "local",
-                chainId: "shardeum_8119-1",
-                evmChainId: 8119,
+                chainId: "shardeum_8117-1",
+                evmChainId: 8117,
                 baseDenom: "ashm",
                 displayDenom: "shm",
                 decimals: 18,

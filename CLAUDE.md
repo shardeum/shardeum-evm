@@ -93,7 +93,7 @@ make contracts-clean        # Clean compilation artifacts
 The following predefined networks are available for development and testing:
 
 ### Network Configurations
-- **local**: Development network (`shardeum_8119-1`, EVM Chain ID: 8119)
+- **local**: Development network (`shardeum_8117-1`, EVM Chain ID: 8117)
 - **testnet**: Test network (`shardeum_8119-2`, EVM Chain ID: 8119)
 - **devnet**: Development staging network (`shardeum_8119-3`, EVM Chain ID: 8119)
 - **mainnet**: Production network (`shardeum_8118-1`, EVM Chain ID: 8118)
