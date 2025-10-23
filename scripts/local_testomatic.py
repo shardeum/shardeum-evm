@@ -332,7 +332,12 @@ def start_node(index):
         "--pruning",
         "nothing",
     ]
-    if index != 0:
+    if index == 0:
+        # Enable REST API for node0
+        cmd.extend([
+            "--api.enable",
+        ])
+    else:
         cmd.extend([
             "--json-rpc.enable",
             "--json-rpc.address",
