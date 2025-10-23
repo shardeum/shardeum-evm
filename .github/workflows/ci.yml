@@ -1,4 +1,4 @@
-name: Node CI Workflow
+name: ci
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ dev ]
 
 jobs:
-  ci:
+  QA-merge-checks:
     name: QA merge checks
     runs-on: ubuntu-latest
     steps:
