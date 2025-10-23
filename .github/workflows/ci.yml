@@ -1,4 +1,4 @@
-name: ci
+name: Node CI Workflow
 
 on:
   push:
