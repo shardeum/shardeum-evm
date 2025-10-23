@@ -23,14 +23,14 @@ case $SHARDEUM_NETWORK in
 esac
 
 case $NODE_TYPE in
-  RPC)
+  API)
     OPTIONS='--rpc.laddr tcp://0.0.0.0:26657 --json-rpc.enable --json-rpc.address 0.0.0.0:8545 --api.enable --api.address tcp://0.0.0.0:1317'
     ;;
   VALIDATOR)
-    OPTIONS='--p2p.laddr "tcp://0.0.0.0:27656"'
+    OPTIONS='--p2p.laddr tcp://0.0.0.0:27656'
     ;;
   SENTRY)
-    OPTIONS='--p2p.laddr "tcp://0.0.0.0:27656"'
+    OPTIONS='--p2p.laddr tcp://0.0.0.0:27656'
     ;;
 esac
 
