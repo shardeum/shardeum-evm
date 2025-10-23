@@ -1,4 +1,4 @@
-name: ci
+name: Node CI Workflow
 
 on:
   push:
@@ -7,9 +7,5 @@ on:
     branches: [ dev ]
 
 jobs:
-  QA-merge-checks:
-    name: QA merge checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Pass
-        run: echo "CI passed successfully"
+  ci:
+    uses: ./.github/workflows/reusable-ci.yml
