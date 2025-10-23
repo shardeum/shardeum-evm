@@ -530,6 +530,8 @@ for i in $(seq 0 $((NODES-1))); do
 
   if [ $i -eq 0 ]; then
     echo -e "  Starting node$i (validator) on ports RPC:$RPC_PORT API:$API_PORT"
+    # Enable REST API for node0
+    START_CMD+=(--api.enable)
   else
     # Other nodes are full nodes - enable JSON-RPC
     echo -e "  Starting node$i (full-node) on ports RPC:$RPC_PORT API:$API_PORT JSON-RPC:$JSON_PORT WebSocket:$WS_PORT"
