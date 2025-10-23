@@ -7,7 +7,7 @@ on:
     branches: [ dev ]
 
 jobs:
-  qa-merge-checks:
+  ci:
     name: QA merge checks
     runs-on: ubuntu-latest
     steps:
