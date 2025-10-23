@@ -7,7 +7,8 @@ on:
     branches: [ dev ]
 
 jobs:
-  pass:
+  qa-merge-checks:
+    name: QA merge checks
     runs-on: ubuntu-latest
     steps:
       - name: Pass
