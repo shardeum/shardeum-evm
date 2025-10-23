@@ -191,6 +191,7 @@ which accepts a path for the resulting pprof file.
 	cmd.Flags().String(srvflags.GRPCWebAddress, cosmosevmserverconfig.DefaultGRPCAddress, "The gRPC-Web server address to listen on")
 
 	cmd.Flags().Bool(srvflags.RPCEnable, cosmosevmserverconfig.DefaultAPIEnable, "Defines if Cosmos-sdk REST server should be enabled")
+	cmd.Flags().String(srvflags.RPCAddress, "tcp://0.0.0.0:1317", "the address to listen on for REST API")
 	cmd.Flags().Bool(srvflags.EnabledUnsafeCors, false, "Defines if CORS should be enabled (unsafe - use it at your own risk)")
 
 	cmd.Flags().Bool(srvflags.JSONRPCEnable, cosmosevmserverconfig.DefaultJSONRPCEnable, "Define if the JSON-RPC server should be enabled")
@@ -501,6 +502,18 @@ func startInProcess(svrCtx *server.Context, clientCtx client.Context, opts Start
 	if grpcSrv != nil {
 		defer grpcSrv.GracefulStop()
 	}
+
+	apiEnable := svrCtx.Viper.GetBool("api.enable")
+	apiAddress := svrCtx.Viper.GetString("api.address")
+	logger.Info("API configuration", "enable", apiEnable, "address", apiAddress, "isSet", svrCtx.Viper.IsSet("api.address"))
+	
+	config.Config.API.Enable = apiEnable
+	if svrCtx.Viper.IsSet("api.address") {
+		config.Config.API.Address = apiAddress
+	}
+	
+	logger.Info("Final API configuration", "enable", config.Config.API.Enable, "address", config.Config.API.Address)
+	logger.Info("About to call startAPIServer", "enable", config.Config.API.Enable, "address", config.Config.API.Address)
 
 	startAPIServer(ctx, svrCtx, clientCtx, g, config.Config, app, grpcSrv, metrics)
 

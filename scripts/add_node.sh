@@ -15,6 +15,7 @@ WEBSITE=""
 IDENTITY=""
 SECURITY=""
 DETAILS=""
+API_ENABLE="false"
 
 # Usage function
 usage() {
@@ -26,11 +27,7 @@ usage() {
   echo "  --network <name>     Network to use (mainnet, testnet, devnet, local)"
   echo "  --chain-id <id>      Override chain ID"
   echo "  --node-type <type>   Node type: validator or full-node (default: validator)"
-  echo "  --moniker <name>     Custom moniker for the node (default: <node_id>)"
-  echo "  --website <url>      Website URL for validator"
-  echo "  --identity <id>      Keybase identity for validator verification"
-  echo "  --security <email>   Security contact email"
-  echo "  --details <text>     Additional details/description for validator"
+  echo "  --api-enable         Enable Cosmos API server (default: false)"
   echo "  --help               Show this help message"
   echo ""
   echo "Environment variables:"
@@ -87,8 +84,34 @@ while [[ $# -gt 0 ]]; do
       DETAILS="$2"
       shift 2
       ;;
+    --api-enable)
+      API_ENABLE="true"
+      shift
+      ;;
     --help)
-      usage
+      echo "Usage: $0 <node_id> [options]"
+      echo "  node_id: Unique identifier for the new node (e.g., node4, node5)"
+      echo ""
+      echo "Options:"
+      echo "  --seed-rpc <url>     RPC endpoint of seed node (default: http://localhost:26657)"
+      echo "  --network <name>     Network to use (mainnet, testnet, devnet, local)"
+      echo "  --chain-id <id>      Override chain ID"
+      echo "  --node-type <type>   Node type: validator or full-node (default: validator)"
+      echo "  --api-enable         Enable Cosmos API server (default: false)"
+      echo "  --help               Show this help message"
+      echo ""
+      echo "Environment variables:"
+      echo "  SHARDEUM_NETWORK     Network to use (overrides --network)"
+      echo "  SHARDEUM_CHAIN_ID    Chain ID to use (overrides --chain-id)"
+      echo "  SHARDEUM_CONFIG_DIR  Absolute path to directory containing configs/*.json"
+      echo "  BINARY               Path to shardeumd binary"
+      echo ""
+      echo "Examples:"
+      echo "  $0 node4 --network testnet"
+      echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
+      echo "  $0 node6 --node-type full-node --network testnet"
+      echo "  SHARDEUM_CONFIG_DIR=path/to/config SHARDEUM_NETWORK=testnet $0 node6"
+      exit 0
       ;;
     --*)
       echo "Unknown option: $1"
@@ -383,7 +406,12 @@ if [[ "$NODE_TYPE" == "full-node" ]]; then
   START_CMD+=(--json-rpc.address "127.0.0.1:$JSON_PORT")
   START_CMD+=(--json-rpc.ws-address "127.0.0.1:$WS_PORT")
   START_CMD+=(--json-rpc.api eth,txpool,personal,net,debug,web3)
+fi
+
+# Enable API if flag is set
+if [ "$API_ENABLE" = "true" ]; then
   START_CMD+=(--api.enable)
+  START_CMD+=(--api.address "tcp://0.0.0.0:$API_PORT")
 fi
 
 # Execute the start command
