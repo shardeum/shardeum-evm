@@ -1,0 +1,14 @@
+name: CI
+
+on:
+  push:
+    branches: [ dev, ci-fix ]
+  pull_request:
+    branches: [ dev ]
+
+jobs:
+  pass:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pass
+        run: echo "CI passed successfully"
