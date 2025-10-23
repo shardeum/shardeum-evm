@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/txpool"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
 	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 	evmkeeper "github.com/shardeum/shardeum-evm/x/vm/keeper"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"

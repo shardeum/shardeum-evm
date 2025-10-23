@@ -7,7 +7,6 @@ import (
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-
 	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"

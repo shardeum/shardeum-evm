@@ -6,14 +6,15 @@ import (
 	"slices"
 	"time"
 
-	cmttypes "github.com/cometbft/cometbft/types"
-
 	"github.com/shardeum/shardeum-evm"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	cmttypes "github.com/cometbft/cometbft/types"
+
 	"github.com/cosmos/gogoproto/proto"
 
 	sdkmath "cosmossdk.io/math"
@@ -480,7 +481,7 @@ func setDefaultErc20GenesisState(cosmosEVMApp evm.EvmApp, evmChainID uint64, gen
 func newErc20GenesisState() *erc20types.GenesisState {
 	erc20GenState := erc20types.DefaultGenesisState()
 	erc20GenState.TokenPairs = testconstants.ExampleTokenPairs
-	erc20GenState.NativePrecompiles = []string{testconstants.ShardeumChainID}
+	erc20GenState.NativePrecompiles = []string{"0xD4949664cD82660AaE99bEdc034a0deA8A0bd517"}
 
 	return erc20GenState
 }

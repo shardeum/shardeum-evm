@@ -3,13 +3,12 @@ package server
 import (
 	"fmt"
 
+	"github.com/shardeum/shardeum-evm/indexer"
 	"github.com/spf13/cobra"
 
 	cmtconfig "github.com/cometbft/cometbft/config"
 	sm "github.com/cometbft/cometbft/state"
 	cmtstore "github.com/cometbft/cometbft/store"
-
-	"github.com/shardeum/shardeum-evm/indexer"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"

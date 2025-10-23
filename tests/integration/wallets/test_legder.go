@@ -4,7 +4,6 @@ import (
 	gethaccounts "github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/shardeum/shardeum-evm/wallets/accounts"
 	"github.com/shardeum/shardeum-evm/wallets/ledger"
 

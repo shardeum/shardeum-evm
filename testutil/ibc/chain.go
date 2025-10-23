@@ -8,6 +8,11 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/shardeum/shardeum-evm"
+	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
+	"github.com/shardeum/shardeum-evm/testutil/config"
+	"github.com/shardeum/shardeum-evm/testutil/tx"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -17,11 +22,6 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 	cmtversion "github.com/cometbft/cometbft/version"
 
-	"github.com/shardeum/shardeum-evm"
-	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
-	"github.com/shardeum/shardeum-evm/testutil/config"
-	"github.com/shardeum/shardeum-evm/testutil/tx"
-	"github.com/shardeum/shardeum-evm/x/vm/types"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"

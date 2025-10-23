@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-
 	"github.com/shardeum/shardeum-evm/contracts"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"

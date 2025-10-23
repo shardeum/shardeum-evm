@@ -3,10 +3,9 @@ package constants_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/shardeum/shardeum-evm/testutil/config"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRequireSameTestDenom(t *testing.T) {
@@ -27,8 +26,8 @@ func TestRequireSameTestBech32Prefix(t *testing.T) {
 
 func TestRequireSameWEVMOSMainnet(t *testing.T) {
 	require.Equal(t,
-		constants.ShardeumChainID,
-		config.ShardeumChainID,
-		"wevmos contract addresses should be the same across the repo",
+		constants.ShardeumChainID.EVMChainID,
+		uint64(config.ShardeumChainID),
+		"EVM chain IDs should be the same across the repo",
 	)
 }

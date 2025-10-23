@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/stretchr/testify/mock"
-
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
 	testutils "github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
 	"github.com/shardeum/shardeum-evm/testutil/keyring"
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	transferkeeper "github.com/shardeum/shardeum-evm/x/ibc/transfer/keeper"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 

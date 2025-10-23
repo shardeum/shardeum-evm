@@ -6,9 +6,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 	cmnmocks "github.com/shardeum/shardeum-evm/precompiles/common/mocks"
 	testutil "github.com/shardeum/shardeum-evm/testutil"
@@ -17,6 +14,8 @@ import (
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	"github.com/shardeum/shardeum-evm/x/vm/types/mocks"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	storetypes "cosmossdk.io/store/types"
 

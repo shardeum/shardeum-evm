@@ -6,7 +6,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-
 	"github.com/shardeum/shardeum-evm/precompiles/erc20"
 	"github.com/shardeum/shardeum-evm/precompiles/testutil"
 )

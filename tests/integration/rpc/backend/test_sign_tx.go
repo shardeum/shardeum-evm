@@ -8,12 +8,11 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	goethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	"google.golang.org/grpc/metadata"
-
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"google.golang.org/grpc/metadata"
 
 	"cosmossdk.io/math"
 

@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
 	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 

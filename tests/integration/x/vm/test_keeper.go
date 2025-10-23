@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
-
 	"github.com/shardeum/shardeum-evm/utils"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"

@@ -5,12 +5,11 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	"github.com/shardeum/shardeum-evm/x/erc20/types"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
-
-	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
-	"github.com/shardeum/shardeum-evm/x/erc20/types"
 )
 
 type TokenPairTestSuite struct {

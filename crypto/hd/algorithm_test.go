@@ -6,11 +6,10 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/require"
-
 	cryptocodec "github.com/shardeum/shardeum-evm/crypto/codec"
 	enccodec "github.com/shardeum/shardeum-evm/encoding/codec"
 	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	"github.com/stretchr/testify/require"
 
 	amino "github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"

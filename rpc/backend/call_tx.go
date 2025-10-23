@@ -13,12 +13,11 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/shardeum/shardeum-evm/mempool"
 	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	errorsmod "cosmossdk.io/errors"
 

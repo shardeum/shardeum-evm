@@ -9,8 +9,6 @@ import (
 	"testing"
 
 	corevm "github.com/ethereum/go-ethereum/core/vm"
-	"github.com/stretchr/testify/require"
-
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	cosmosevmutils "github.com/shardeum/shardeum-evm/utils"
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
@@ -18,6 +16,8 @@ import (
 	"github.com/shardeum/shardeum-evm/x/precisebank/types"
 	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
+
 	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 
 	sdkmath "cosmossdk.io/math"

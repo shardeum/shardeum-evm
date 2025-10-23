@@ -5,12 +5,11 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/shardeum/shardeum-evm/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
-
-	"github.com/shardeum/shardeum-evm/types"
-	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

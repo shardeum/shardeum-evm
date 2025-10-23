@@ -13,13 +13,12 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
-
-	cmtrpcclient "github.com/cometbft/cometbft/rpc/client"
-	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
-
 	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
 	"github.com/shardeum/shardeum-evm/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	cmtrpcclient "github.com/cometbft/cometbft/rpc/client"
+	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 
 	errorsmod "cosmossdk.io/errors"
 

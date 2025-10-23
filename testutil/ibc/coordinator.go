@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shardeum/shardeum-evm/testutil/config"
 	"github.com/stretchr/testify/require"
 
-	"github.com/shardeum/shardeum-evm/testutil/config"
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 )
 

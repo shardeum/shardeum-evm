@@ -5,13 +5,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/suite"
-
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/gomega"
-
 	bank2 "github.com/shardeum/shardeum-evm/precompiles/bank"
 	"github.com/shardeum/shardeum-evm/precompiles/bank/testdata"
 	"github.com/shardeum/shardeum-evm/precompiles/testutil"
@@ -23,6 +16,12 @@ import (
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/suite"
+
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
 

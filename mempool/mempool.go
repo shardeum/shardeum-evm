@@ -8,15 +8,14 @@ import (
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
-
-	cmttypes "github.com/cometbft/cometbft/types"
-
 	"github.com/shardeum/shardeum-evm/mempool/miner"
 	"github.com/shardeum/shardeum-evm/mempool/txpool"
 	"github.com/shardeum/shardeum-evm/mempool/txpool/legacypool"
 	"github.com/shardeum/shardeum-evm/rpc/stream"
 	"github.com/shardeum/shardeum-evm/x/precisebank/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"

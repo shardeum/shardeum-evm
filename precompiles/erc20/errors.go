@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/core/vm"
-
 	"github.com/shardeum/shardeum-evm/ibc"
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 )

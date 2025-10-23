@@ -1,9 +1,8 @@
 package vm
 
 import (
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	"github.com/stretchr/testify/suite"
 )
 
 type EvmAnteTestSuite struct {

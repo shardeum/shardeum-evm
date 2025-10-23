@@ -8,8 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/require"
-
 	"github.com/shardeum/shardeum-evm"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"
@@ -18,6 +16,8 @@ import (
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
+
 	ibctypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 

@@ -6,9 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	evmante "github.com/shardeum/shardeum-evm/ante/evm"
+	"github.com/stretchr/testify/require"
 
 	addresscodec "cosmossdk.io/core/address"
 

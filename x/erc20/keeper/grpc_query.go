@@ -3,11 +3,10 @@ package keeper
 import (
 	"context"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"cosmossdk.io/store/prefix"
 

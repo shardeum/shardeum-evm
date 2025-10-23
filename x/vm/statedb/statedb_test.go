@@ -12,10 +12,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	"github.com/shardeum/shardeum-evm/x/vm/types/mocks"
+	"github.com/stretchr/testify/suite"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

@@ -4,10 +4,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-
 	"github.com/shardeum/shardeum-evm/ante/evm"
 	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 	"github.com/shardeum/shardeum-evm/encoding"
@@ -16,6 +12,9 @@ import (
 	"github.com/shardeum/shardeum-evm/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
+
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
@@ -114,7 +113,7 @@ func TestSDKTxFeeChecker(t *testing.T) {
 				return txBuilder.GetTx()
 			},
 			false,
-			"10aatom",
+			"10ashm",
 			0,
 			true,
 		},
@@ -159,7 +158,7 @@ func TestSDKTxFeeChecker(t *testing.T) {
 				return txBuilder.GetTx()
 			},
 			true,
-			"10aatom",
+			"10ashm",
 			0,
 			true,
 		},
@@ -176,7 +175,7 @@ func TestSDKTxFeeChecker(t *testing.T) {
 				return txBuilder.GetTx()
 			},
 			true,
-			"10000010aatom",
+			"10000010ashm",
 			10,
 			true,
 		},
@@ -197,7 +196,7 @@ func TestSDKTxFeeChecker(t *testing.T) {
 				return txBuilder.GetTx()
 			},
 			true,
-			"10aatom",
+			"10ashm",
 			0,
 			true,
 		},
@@ -220,7 +219,7 @@ func TestSDKTxFeeChecker(t *testing.T) {
 				return txBuilder.GetTx()
 			},
 			true,
-			"5000010aatom",
+			"5000010ashm",
 			5,
 			true,
 		},

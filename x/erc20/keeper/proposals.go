@@ -4,7 +4,6 @@ package keeper
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
 
 	errorsmod "cosmossdk.io/errors"

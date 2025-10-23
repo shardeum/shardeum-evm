@@ -4,10 +4,9 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/stretchr/testify/require"
-
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEVMConfigurator(t *testing.T) {

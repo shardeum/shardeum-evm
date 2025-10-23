@@ -7,14 +7,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/gomega"
-
-	"github.com/cometbft/cometbft/crypto"
-
 	"github.com/shardeum/shardeum-evm/precompiles/p256"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
@@ -22,6 +14,13 @@ import (
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
 	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/gomega"
+
+	"github.com/cometbft/cometbft/crypto"
 )
 
 type IntegrationTestSuite struct {

@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/holiman/uint256"
-
 	"github.com/shardeum/shardeum-evm/utils"
 	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"

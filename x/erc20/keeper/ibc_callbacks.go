@@ -5,9 +5,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/hashicorp/go-metrics"
-
 	"github.com/shardeum/shardeum-evm/ibc"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
+
 	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v10/modules/core/exported"

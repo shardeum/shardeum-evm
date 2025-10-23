@@ -3,10 +3,9 @@ package types_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
+	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
 )
@@ -60,7 +59,7 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 						Enabled:      true,
 					},
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
@@ -85,7 +84,7 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 						Enabled:      true,
 					},
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
@@ -110,7 +109,7 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 						Enabled:      true,
 					},
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
@@ -135,7 +134,7 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 						Enabled:      true,
 					},
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
@@ -155,7 +154,7 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 						Enabled:      true,
 					},
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
@@ -186,13 +185,13 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				TokenPairs: testconstants.ExampleTokenPairs,
 				Allowances: []types.Allowance{
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Owner:        testconstants.ExampleEvmAddressAlice,
 						Spender:      testconstants.ExampleEvmAddressBob,
 						Value:        math.NewInt(100),
 					},
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Owner:        testconstants.ExampleEvmAddressAlice,
 						Spender:      testconstants.ExampleEvmAddressBob,
 						Value:        math.NewInt(100),
@@ -207,7 +206,7 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Params: types.DefaultParams(),
 				TokenPairs: []types.TokenPair{
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
@@ -229,14 +228,14 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Params: types.DefaultParams(),
 				TokenPairs: []types.TokenPair{
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
 				Allowances: []types.Allowance{
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Owner:        "bad",
 						Spender:      testconstants.ExampleEvmAddressBob,
 						Value:        math.NewInt(-1),
@@ -251,14 +250,14 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Params: types.DefaultParams(),
 				TokenPairs: []types.TokenPair{
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
 				Allowances: []types.Allowance{
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Owner:        testconstants.ExampleEvmAddressAlice,
 						Spender:      "bad",
 						Value:        math.NewInt(-1),
@@ -273,14 +272,14 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Params: types.DefaultParams(),
 				TokenPairs: []types.TokenPair{
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
 				Allowances: []types.Allowance{
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Owner:        testconstants.ExampleEvmAddressAlice,
 						Spender:      testconstants.ExampleEvmAddressBob,
 						Value:        math.NewInt(0),
@@ -295,14 +294,14 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Params: types.DefaultParams(),
 				TokenPairs: []types.TokenPair{
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Denom:        testconstants.ShardeumAttoDenom,
 						Enabled:      true,
 					},
 				},
 				Allowances: []types.Allowance{
 					{
-						Erc20Address: testconstants.ShardeumChainID,
+						Erc20Address: "0x0000000000000000000000000000000000000000",
 						Owner:        testconstants.ExampleEvmAddressAlice,
 						Spender:      testconstants.ExampleEvmAddressBob,
 						Value:        math.NewInt(-1),

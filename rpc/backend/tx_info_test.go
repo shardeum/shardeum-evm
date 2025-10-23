@@ -10,6 +10,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/shardeum/shardeum-evm/encoding"
+	"github.com/shardeum/shardeum-evm/indexer"
+	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
+	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
+	"github.com/shardeum/shardeum-evm/testutil/constants"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -18,13 +25,6 @@ import (
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	dbm "github.com/cosmos/cosmos-db"
-	"github.com/shardeum/shardeum-evm/encoding"
-	"github.com/shardeum/shardeum-evm/indexer"
-	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
-	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
-	"github.com/shardeum/shardeum-evm/testutil/constants"
-	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
-	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"

@@ -5,7 +5,6 @@ import (
 	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/shardeum/shardeum-evm/contracts"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"

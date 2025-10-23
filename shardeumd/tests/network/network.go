@@ -477,7 +477,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			return nil, err
 		}
 
-		customAppTemplate, _ := shardeumdconfig.InitAppConfig(testconstants.ShardeumAttoDenom, configconstants.ShardeumChainID)
+		customAppTemplate, _ := shardeumdconfig.InitAppConfig(testconstants.ShardeumAttoDenom, configconstants.ShardeumChainID())
 		srvconfig.SetConfigTemplate(customAppTemplate)
 		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appCfg)
 

@@ -6,7 +6,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
 

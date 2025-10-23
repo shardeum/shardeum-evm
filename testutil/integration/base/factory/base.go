@@ -3,10 +3,10 @@ package factory
 import (
 	"fmt"
 
-	abcitypes "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/shardeum/shardeum-evm/testutil/integration/base/network"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
+
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 
 	errorsmod "cosmossdk.io/errors"
 

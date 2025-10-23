@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/core/vm"
-
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/math"

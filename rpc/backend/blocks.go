@@ -11,14 +11,13 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/pkg/errors"
+	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
 	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
-
-	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
-	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
-	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"

@@ -8,11 +8,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-
-	"github.com/cometbft/cometbft/crypto"
-
 	"github.com/shardeum/shardeum-evm/precompiles/p256"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	"github.com/cometbft/cometbft/crypto"
 )
 
 var trueValue = common.LeftPadBytes(common.Big1.Bytes(), 32)

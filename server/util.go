@@ -6,12 +6,11 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"github.com/shardeum/shardeum-evm/server/config"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/netutil"
 
 	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
-
-	"github.com/shardeum/shardeum-evm/server/config"
 
 	"cosmossdk.io/log"
 

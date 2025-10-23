@@ -6,16 +6,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	"github.com/stretchr/testify/suite"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
-
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"
 	"github.com/shardeum/shardeum-evm/testutil/config"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/suite"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 
 	"cosmossdk.io/math"
 

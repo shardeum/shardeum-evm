@@ -3,7 +3,6 @@ package distribution
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/vm"
-
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"

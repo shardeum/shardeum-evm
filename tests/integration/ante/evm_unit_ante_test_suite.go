@@ -1,10 +1,9 @@
 package ante
 
 import (
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
+	"github.com/stretchr/testify/suite"
 )
 
 // EvmUniAnteTestSuite aims to test all EVM ante handler unit functions.

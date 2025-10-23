@@ -7,14 +7,6 @@ import (
 	"time"
 
 	gethparams "github.com/ethereum/go-ethereum/params"
-
-	abcitypes "github.com/cometbft/cometbft/abci/types"
-	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
-	cmttypes "github.com/cometbft/cometbft/types"
-	"github.com/cometbft/cometbft/version"
-
 	"github.com/shardeum/shardeum-evm"
 	"github.com/shardeum/shardeum-evm/testutil/integration"
 	basenetwork "github.com/shardeum/shardeum-evm/testutil/integration/base/network"
@@ -22,6 +14,13 @@ import (
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	cmttypes "github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/version"
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"

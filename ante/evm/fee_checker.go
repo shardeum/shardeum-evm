@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/ethereum/go-ethereum/params"
-
 	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"

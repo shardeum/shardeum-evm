@@ -2,9 +2,8 @@ package types
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	protov2 "google.golang.org/protobuf/proto"
-
 	erc20api "github.com/shardeum/shardeum-evm/api/cosmos/evm/erc20/v1"
+	protov2 "google.golang.org/protobuf/proto"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"

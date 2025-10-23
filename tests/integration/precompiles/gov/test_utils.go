@@ -5,7 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )

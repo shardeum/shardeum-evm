@@ -4,8 +4,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/contracts"
 	testcontracts "github.com/shardeum/shardeum-evm/precompiles/testutil/contracts"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
@@ -14,6 +12,7 @@ import (
 	testkeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
 )

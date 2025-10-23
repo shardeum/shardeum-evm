@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"math/big"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-
 	"github.com/shardeum/shardeum-evm/testutil/integration/base/factory"
 	"github.com/shardeum/shardeum-evm/testutil/keyring"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 
 	sdkmath "cosmossdk.io/math"
 

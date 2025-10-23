@@ -204,7 +204,7 @@ def is_os_repo(path: Path) -> bool:
             if not line:
                 break
 
-            if "module github.com/cosmos/evm" in line:
+            if "module github.com/cosmos/evm" in line or "module github.com/shardeum/shardeum-evm" in line:
                 return True
 
     return False
@@ -323,7 +323,7 @@ if __name__ == "__main__":
     if not is_os_repo(REPO_PATH):
         raise ValueError(
             "This script should only be executed "
-            + "in the evmos repository."
+            + "in the Cosmos EVM repository."
             + f"Current path: {REPO_PATH}"
         )
 

@@ -16,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	stderrors "github.com/pkg/errors"
-
 	"github.com/shardeum/shardeum-evm/rpc/backend"
 	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"

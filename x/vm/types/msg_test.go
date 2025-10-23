@@ -11,13 +11,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/encoding"
 	"github.com/shardeum/shardeum-evm/testutil/config"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/suite"
 
 	sdkmath "cosmossdk.io/math"
 

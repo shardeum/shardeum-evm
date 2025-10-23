@@ -8,18 +8,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/stretchr/testify/suite"
-
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/gomega"
-
 	"github.com/shardeum/shardeum-evm/contracts"
 	"github.com/shardeum/shardeum-evm/precompiles/erc20"
 	"github.com/shardeum/shardeum-evm/precompiles/erc20/testdata"
 	"github.com/shardeum/shardeum-evm/precompiles/testutil"
-	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
@@ -29,6 +21,12 @@ import (
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/suite"
+
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
 
@@ -251,7 +249,7 @@ func TestIntegrationTestSuite(t *testing.T, create network.CreateEvmApp, options
 			passCheck = failCheck.WithExpPass(true)
 
 			erc20Keeper := is.network.App.GetErc20Keeper()
-			available := erc20Keeper.IsNativePrecompileAvailable(is.network.GetContext(), common.HexToAddress(testconstants.ShardeumChainID))
+			available := erc20Keeper.IsNativePrecompileAvailable(is.network.GetContext(), common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517"))
 			Expect(available).To(BeTrue())
 
 			revertContractAddr, err = is.factory.DeployContract(
@@ -261,7 +259,7 @@ func TestIntegrationTestSuite(t *testing.T, create network.CreateEvmApp, options
 					Contract: revertCallerContract,
 					// NOTE: we're passing the precompile address to the constructor because that initiates the contract
 					// to make calls to the correct ERC20 precompile.
-					ConstructorArgs: []interface{}{common.HexToAddress(testconstants.ShardeumChainID)},
+					ConstructorArgs: []interface{}{common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517")},
 				},
 			)
 			Expect(err).ToNot(HaveOccurred(), "failed to deploy reverter contract")

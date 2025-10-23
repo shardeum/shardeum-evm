@@ -5,13 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/shardeum/shardeum-evm/ante/cosmos"
 	"github.com/shardeum/shardeum-evm/encoding"
 	"github.com/shardeum/shardeum-evm/testutil"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"

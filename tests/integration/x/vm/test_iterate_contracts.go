@@ -5,16 +5,14 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/require"
-
 	"github.com/shardeum/shardeum-evm/contracts"
-	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	testKeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIterateContracts(t *testing.T, create network.CreateEvmApp, options ...network.ConfigOption) {
@@ -57,7 +55,7 @@ func TestIterateContracts(t *testing.T, create network.CreateEvmApp, options ...
 
 	network.App.GetEVMKeeper().IterateContracts(network.GetContext(), func(addr common.Address, codeHash common.Hash) bool {
 		// NOTE: we only care about the 2 contracts deployed above, not the ERC20 native precompile for the aatom denomination
-		if bytes.Equal(addr.Bytes(), common.HexToAddress(testconstants.ShardeumChainID).Bytes()) {
+		if bytes.Equal(addr.Bytes(), common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517").Bytes()) {
 			return false
 		}
 

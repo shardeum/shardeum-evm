@@ -7,6 +7,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/shardeum/shardeum-evm/indexer"
+	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
+	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/metadata"
 
@@ -15,11 +20,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 
 	dbm "github.com/cosmos/cosmos-db"
-	"github.com/shardeum/shardeum-evm/indexer"
-	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
-	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
-	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
-	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"

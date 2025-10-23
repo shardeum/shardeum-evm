@@ -3,13 +3,12 @@ package mempool
 import (
 	"time"
 
-	"github.com/stretchr/testify/suite"
-
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	"github.com/shardeum/shardeum-evm/testutil/keyring"
+	"github.com/stretchr/testify/suite"
 
 	sdkmath "cosmossdk.io/math"
 

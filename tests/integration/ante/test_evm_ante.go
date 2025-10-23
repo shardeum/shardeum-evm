@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
-
 	ethante "github.com/shardeum/shardeum-evm/ante/evm"
 	"github.com/shardeum/shardeum-evm/testutil"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"

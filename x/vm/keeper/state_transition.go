@@ -11,13 +11,12 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
-
-	cmttypes "github.com/cometbft/cometbft/types"
-
 	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 	"github.com/shardeum/shardeum-evm/utils"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
+
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"

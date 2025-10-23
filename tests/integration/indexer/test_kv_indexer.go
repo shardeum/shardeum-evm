@@ -6,18 +6,18 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/stretchr/testify/require"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-	cmttypes "github.com/cometbft/cometbft/types"
-
-	dbm "github.com/cosmos/cosmos-db"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/indexer"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmttypes "github.com/cometbft/cometbft/types"
+
+	dbm "github.com/cosmos/cosmos-db"
 
 	"cosmossdk.io/log"
 

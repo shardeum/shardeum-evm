@@ -3,9 +3,8 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/shardeum/shardeum-evm/x/precisebank/types"
+	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store/prefix"

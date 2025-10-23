@@ -3,12 +3,11 @@ package client
 import (
 	"bufio"
 
+	clientkeys "github.com/shardeum/shardeum-evm/client/keys"
+	"github.com/shardeum/shardeum-evm/crypto/hd"
 	"github.com/spf13/cobra"
 
 	"github.com/cometbft/cometbft/libs/cli"
-
-	clientkeys "github.com/shardeum/shardeum-evm/client/keys"
-	"github.com/shardeum/shardeum-evm/crypto/hd"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"

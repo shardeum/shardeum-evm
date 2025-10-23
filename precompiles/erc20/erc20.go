@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
-
 	ibcutils "github.com/shardeum/shardeum-evm/ibc"
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"

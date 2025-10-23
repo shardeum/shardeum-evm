@@ -3,12 +3,11 @@ package factory
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-
-	abcitypes "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/shardeum/shardeum-evm/precompiles/testutil"
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 
 	errorsmod "cosmossdk.io/errors"
 

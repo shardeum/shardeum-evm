@@ -6,7 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
-
 	"github.com/shardeum/shardeum-evm/x/vm/types"
 )
 

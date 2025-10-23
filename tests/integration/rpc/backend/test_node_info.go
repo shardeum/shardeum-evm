@@ -6,16 +6,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/spf13/viper"
-	"google.golang.org/grpc/metadata"
-
-	cmtrpcclient "github.com/cometbft/cometbft/rpc/client"
-
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
 	"github.com/shardeum/shardeum-evm/server/config"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/spf13/viper"
+	"google.golang.org/grpc/metadata"
+
+	cmtrpcclient "github.com/cometbft/cometbft/rpc/client"
 
 	"cosmossdk.io/math"
 

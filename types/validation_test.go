@@ -4,10 +4,9 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/require"
-
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	"github.com/shardeum/shardeum-evm/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsEmptyHash(t *testing.T) {

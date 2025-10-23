@@ -3,18 +3,18 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
-
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
-
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
 	vmkeeper "github.com/shardeum/shardeum-evm/x/vm/keeper"
 	vmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	"github.com/shardeum/shardeum-evm/x/vm/types/mocks"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
+
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
+
 	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 

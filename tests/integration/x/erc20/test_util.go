@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/shardeum/shardeum-evm/contracts"
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	"github.com/shardeum/shardeum-evm/x/erc20/keeper/testdata"

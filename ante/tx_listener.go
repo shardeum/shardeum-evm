@@ -2,7 +2,6 @@ package ante
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"

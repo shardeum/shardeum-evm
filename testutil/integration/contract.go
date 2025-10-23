@@ -8,12 +8,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/shardeum/shardeum-evm"
 	"github.com/shardeum/shardeum-evm/testutil/tx"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cosmos/cosmos-sdk/codec"

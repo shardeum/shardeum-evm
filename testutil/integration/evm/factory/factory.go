@@ -8,9 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/vm"
-
-	abcitypes "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/shardeum/shardeum-evm/precompiles/testutil"
 	chainutil "github.com/shardeum/shardeum-evm/testutil"
 	basefactory "github.com/shardeum/shardeum-evm/testutil/integration/base/factory"
@@ -18,6 +15,9 @@ import (
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	"github.com/shardeum/shardeum-evm/testutil/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+
 	"github.com/cosmos/gogoproto/proto"
 
 	errorsmod "cosmossdk.io/errors"

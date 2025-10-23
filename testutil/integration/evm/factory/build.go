@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/shardeum/shardeum-evm/server/config"
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"

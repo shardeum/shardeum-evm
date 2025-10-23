@@ -3,7 +3,6 @@ package evm
 import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
 	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 	"github.com/shardeum/shardeum-evm/x/vm/keeper"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"

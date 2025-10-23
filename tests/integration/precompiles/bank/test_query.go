@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/shardeum/shardeum-evm/precompiles/bank"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	cosmosevmutiltx "github.com/shardeum/shardeum-evm/testutil/tx"

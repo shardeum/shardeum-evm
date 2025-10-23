@@ -7,13 +7,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
-
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	"github.com/shardeum/shardeum-evm/x/vm/wrappers"
 	"github.com/shardeum/shardeum-evm/x/vm/wrappers/testutil"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	sdkmath "cosmossdk.io/math"
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-metrics"
-
 	"github.com/shardeum/shardeum-evm/x/precisebank/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 

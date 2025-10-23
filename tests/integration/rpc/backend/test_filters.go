@@ -3,12 +3,11 @@ package backend
 import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
-	cmttypes "github.com/cometbft/cometbft/types"
-
 	"github.com/shardeum/shardeum-evm/rpc/backend/mocks"
 	ethrpc "github.com/shardeum/shardeum-evm/rpc/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	cmttypes "github.com/cometbft/cometbft/types"
 )
 
 func (s *TestSuite) TestGetLogs() {

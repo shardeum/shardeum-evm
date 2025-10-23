@@ -5,8 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/stretchr/testify/suite"
-
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 	"github.com/shardeum/shardeum-evm/precompiles/werc20"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
@@ -14,6 +12,7 @@ import (
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	"github.com/shardeum/shardeum-evm/testutil/keyring"
+	"github.com/stretchr/testify/suite"
 )
 
 type PrecompileUnitTestSuite struct {

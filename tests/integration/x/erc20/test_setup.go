@@ -2,13 +2,12 @@ package erc20
 
 import (
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	"github.com/shardeum/shardeum-evm/testutil/keyring"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
+	"github.com/stretchr/testify/suite"
 
 	sdkmath "cosmossdk.io/math"
 

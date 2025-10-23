@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
 	evmante "github.com/shardeum/shardeum-evm/ante/evm"
 	"github.com/shardeum/shardeum-evm/testutil"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"

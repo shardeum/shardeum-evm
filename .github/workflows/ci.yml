@@ -1,0 +1,11 @@
+name: Node CI Workflow
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+
+jobs:
+  ci:
+    uses: ./.github/workflows/reusable-ci.yml

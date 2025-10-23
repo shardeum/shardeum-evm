@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
-
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 
 	storetypes "cosmossdk.io/store/types"

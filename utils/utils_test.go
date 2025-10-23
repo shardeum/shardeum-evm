@@ -9,8 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/stretchr/testify/require"
-
 	cryptocodec "github.com/shardeum/shardeum-evm/crypto/codec"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/crypto/hd"
@@ -19,6 +17,7 @@ import (
 	"github.com/shardeum/shardeum-evm/utils"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
 

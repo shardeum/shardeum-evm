@@ -5,7 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-
 	"github.com/shardeum/shardeum-evm"
 	cryptocodec "github.com/shardeum/shardeum-evm/crypto/codec"
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"

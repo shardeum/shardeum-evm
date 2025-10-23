@@ -4,16 +4,14 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/shardeum/shardeum-evm/contracts"
-	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 func (s *KeeperTestSuite) TestCallEVM() {
-	wcosmosEVMContract := common.HexToAddress(testconstants.ShardeumChainID)
+	wcosmosEVMContract := common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517")
 	testCases := []struct {
 		name    string
 		method  string
@@ -47,7 +45,7 @@ func (s *KeeperTestSuite) TestCallEVM() {
 
 func (s *KeeperTestSuite) TestCallEVMWithData() {
 	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
-	wcosmosEVMContract := common.HexToAddress(testconstants.ShardeumChainID)
+	wcosmosEVMContract := common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517")
 	testCases := []struct {
 		name     string
 		from     common.Address

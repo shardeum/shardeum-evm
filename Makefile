@@ -194,9 +194,12 @@ test-scripts:
 	@echo "Running scripts tests"
 	@pytest -s -vv ./scripts
 
+# test-solidity: Disabled - local_node.sh is deprecated
+# TODO: Update tests/solidity/test-helper.js to use scripts/start_network.sh instead
 test-solidity:
-	@echo "Beginning solidity tests..."
-	./scripts/run-solidity-tests.sh
+	@echo "Solidity tests are currently disabled - local_node.sh needs to be replaced with start_network.sh"
+	@echo "TODO: Update tests/solidity/test-helper.js line 317 to use the new network scripts"
+	@exit 1
 
 .PHONY: run-tests test test-all $(TEST_TARGETS)
 
@@ -390,17 +393,18 @@ create-validator: build
 
 .PHONY: start-network add-node create-validator
 
-test-system: build-v04 build
-	mkdir -p ./tests/systemtests/binaries/
-	cp $(BUILDDIR)/shardeumd ./tests/systemtests/binaries/
-	$(MAKE) -C tests/systemtests test
+# test-system: Disabled - upgrade tests need to be adapted for Shardeum version history
+# TODO: Re-enable once Shardeum has versioned releases to test upgrades between
+test-system:
+	@echo "System tests are currently disabled - upgrade tests need Shardeum versioned releases"
+	@echo "TODO: Adapt tests/systemtests/upgrade_test.go for Shardeum version history"
+	@exit 1
 
+# build-v04: Disabled - upgrade tests need to be adapted for Shardeum version history
+# The v0.4.1 tag is from the upstream cosmos/evm fork and doesn't exist in Shardeum
 build-v04:
-	mkdir -p ./tests/systemtests/binaries/v0.4
-	git checkout v0.4.1
-	make build
-	cp $(BUILDDIR)/shardeumd ./tests/systemtests/binaries/v0.4
-	git checkout -
+	@echo "Skipping v0.4 build - upgrade tests not yet adapted for Shardeum fork"
+	@echo "TODO: Re-enable once Shardeum has versioned releases to test upgrades between"
 
 mocks:
 	@echo "--> generating mocks"

@@ -5,7 +5,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 	"github.com/shardeum/shardeum-evm/precompiles/slashing"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"

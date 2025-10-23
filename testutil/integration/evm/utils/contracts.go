@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"slices"
 
-	abcitypes "github.com/cometbft/cometbft/abci/types"
-
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 )
 
 // CheckTxTopics checks if all expected topics are present in the transaction response

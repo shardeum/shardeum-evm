@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
