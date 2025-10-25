@@ -24,7 +24,7 @@ esac
 
 case $NODE_TYPE in
   API)
-    OPTIONS='--rpc.laddr tcp://0.0.0.0:26657 --json-rpc.enable --json-rpc.address 0.0.0.0:8545 --api.enable --api.address tcp://0.0.0.0:1317 --rpc.grpc_laddr tcp://0.0.0.0:9090'
+    OPTIONS='--rpc.laddr tcp://0.0.0.0:26657 --json-rpc.enable --json-rpc.address 0.0.0.0:8545 --api.enable --api.address tcp://0.0.0.0:1317 --rpc.grpc_laddr tcp://0.0.0.0:9090 --json-rpc.ws-address 0.0.0.0:8546'
     ;;
   VALIDATOR)
     OPTIONS='--p2p.laddr tcp://0.0.0.0:27656'
