@@ -56,11 +56,39 @@ usage() {
 }
 
 # -----------------------------
+# Windows-compatible process management functions
+# -----------------------------
+is_windows() {
+  case "$(uname -s)" in
+    CYGWIN*|MINGW*|MSYS*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+# Function to kill processes by pattern (Windows compatible)
+kill_processes() {
+  local pattern="$1"
+  if is_windows; then
+    # Windows: Use taskkill with /FI filter
+    taskkill //F //FI "IMAGENAME eq shardeumd.exe" 2>/dev/null || true
+    # Also try to kill by command line pattern using wmic
+    wmic process where "commandline like '%$pattern%'" delete 2>/dev/null || true
+  else
+    # Unix/Linux: Use pkill
+    pkill -f "$pattern" || true
+  fi
+}
+
+# -----------------------------
 # Cleanup function for graceful shutdown
 # -----------------------------
 cleanup() {
   echo -e "\n${YELLOW}Shutting down nodes...${NC}"
-  pkill -f "shardeumd.*$CHAINID" || true
+  kill_processes "shardeumd.*$CHAINID"
   exit 0
 }
 trap cleanup SIGINT SIGTERM
@@ -181,7 +209,7 @@ echo -e "${YELLOW}Base Denomination: $BASE_DENOM${NC}"
 # Clean up any previous run
 # -----------------------------
 rm -rf "$BASE_DIR"
-pkill -f "shardeumd.*$CHAINID" || true
+kill_processes "shardeumd.*$CHAINID"
 
 # -----------------------------
 # Build binary (unless skipped)
@@ -567,7 +595,11 @@ for i in $(seq 0 $((NODES-1))); do
   fi
 done
 echo
-echo "Stop: pkill -f 'shardeumd.*$CHAINID' or Ctrl+C"
+if is_windows; then
+  echo "Stop: taskkill //F //FI \"IMAGENAME eq shardeumd.exe\" or Ctrl+C"
+else
+  echo "Stop: pkill -f 'shardeumd.*$CHAINID' or Ctrl+C"
+fi
 echo -e "${GREEN}Network: $NETWORK${NC}"
 echo -e "${GREEN}Chain ID: $CHAINID${NC}"
 echo -e "${GREEN}EVM Chain ID: $EVM_CHAIN_ID${NC}"

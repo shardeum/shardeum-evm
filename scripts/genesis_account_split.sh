@@ -116,6 +116,35 @@ find_network_genesis() {
 }
 
 # -----------------------------
+# OS detection and path handling
+# -----------------------------
+is_windows() {
+  case "$(uname -s)" in
+    CYGWIN*|MINGW*|MSYS*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+# Convert paths for Python based on OS
+convert_path_for_python() {
+  local path="$1"
+  if is_windows; then
+    # Windows: Handle Git Bash mount points and convert backslashes
+    # Convert /c/ to C:/ for Git Bash compatibility
+    path=$(echo "$path" | sed 's|^/c/|C:/|' | sed 's|^/d/|D:/|' | sed 's|^/e/|E:/|' | sed 's|^/f/|F:/|' | sed 's|^/g/|G:/|' | sed 's|^/h/|H:/|' | sed 's|^/i/|I:/|' | sed 's|^/j/|J:/|')
+    # Convert remaining backslashes to forward slashes
+    echo "$path" | sed 's|\\\\|/|g' | sed 's|\\|/|g'
+  else
+    # Unix/Linux: Use as-is
+    echo "$path"
+  fi
+}
+
+# -----------------------------
 # Python implementation embedded
 # -----------------------------
 run_python_cmd() {
@@ -214,13 +243,18 @@ cmd_split() {
   echo ""
   print_info "Splitting genesis..."
   
+  # Convert paths for Python
+  local PYTHON_GENESIS_FILE=$(convert_path_for_python "$GENESIS_FILE")
+  local PYTHON_OUTPUT_DIR=$(convert_path_for_python "$OUTPUT_DIR")
+
   run_python_cmd "
 import json
 import os
 from pathlib import Path
 
-genesis_path = Path('$GENESIS_FILE')
-output_dir = Path('$OUTPUT_DIR')
+# Use OS-appropriate paths
+genesis_path = Path('$PYTHON_GENESIS_FILE')
+output_dir = Path('$PYTHON_OUTPUT_DIR')
 accounts_per_file = $ACCOUNTS_PER_FILE
 
 # Load genesis file
@@ -351,14 +385,20 @@ cmd_merge() {
   
   print_info "Merging accounts..."
   
+  # Convert paths for Python
+  local PYTHON_GENESIS_FILE=$(convert_path_for_python "$GENESIS_FILE")
+  local PYTHON_ACCOUNTS_DIR=$(convert_path_for_python "$ACCOUNTS_DIR")
+  local PYTHON_OUTPUT=$(convert_path_for_python "$OUTPUT")
+
   run_python_cmd "
 import json
 import glob
 from pathlib import Path
 
-genesis_path = Path('$GENESIS_FILE')
-accounts_dir = Path('$ACCOUNTS_DIR')
-output_path = Path('$OUTPUT')
+# Use OS-appropriate paths
+genesis_path = Path('$PYTHON_GENESIS_FILE')
+accounts_dir = Path('$PYTHON_ACCOUNTS_DIR')
+output_path = Path('$PYTHON_OUTPUT')
 
 # Load main genesis
 with open(genesis_path, 'r') as f:
@@ -704,15 +744,34 @@ load_genesis_with_accounts() {
     OUTPUT_PATH="/tmp/merged_genesis_$$.json"
   fi
   
+  # Convert paths for Python
+  local PYTHON_GENESIS_PATH=$(convert_path_for_python "$GENESIS_PATH")
+  local PYTHON_GENESIS_DIR=$(convert_path_for_python "$GENESIS_DIR")
+  local PYTHON_OUTPUT_PATH=$(convert_path_for_python "$OUTPUT_PATH")
+
+  # Debug: Show converted paths
+  echo "Debug: Original GENESIS_PATH: $GENESIS_PATH" >&2
+  echo "Debug: Converted PYTHON_GENESIS_PATH: $PYTHON_GENESIS_PATH" >&2
+  echo "Debug: Original GENESIS_DIR: $GENESIS_DIR" >&2
+  echo "Debug: Converted PYTHON_GENESIS_DIR: $PYTHON_GENESIS_DIR" >&2
+
   # Merge using embedded Python
   python3 -c "
 import json
 import glob
+import os
 from pathlib import Path
 
-genesis_path = Path('$GENESIS_PATH')
-accounts_dir = Path('$GENESIS_DIR')
-output_path = Path('$OUTPUT_PATH')
+# Use OS-appropriate paths
+genesis_path = Path('$PYTHON_GENESIS_PATH')
+accounts_dir = Path('$PYTHON_GENESIS_DIR')
+output_path = Path('$PYTHON_OUTPUT_PATH')
+
+# Debug: Print the paths
+print(f'Debug: genesis_path: {genesis_path}', file=os.sys.stderr)
+print(f'Debug: accounts_dir: {accounts_dir}', file=os.sys.stderr)
+print(f'Debug: output_path: {output_path}', file=os.sys.stderr)
+print(f'Debug: Genesis file exists: {genesis_path.exists()}', file=os.sys.stderr)
 
 # Load main genesis
 with open(genesis_path, 'r') as f:
