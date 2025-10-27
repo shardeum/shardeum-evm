@@ -1,7 +1,7 @@
 {
   "name": "local",
-  "chain_id": "shardeum-local",
-  "evm_chain_id": 8119,
+  "chain_id": "shardeum_8117-1",
+  "evm_chain_id": 8117,
   "base_denom": "ashm",
   "display_denom": "shm",
   "decimals": 18,

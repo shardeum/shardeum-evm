@@ -67,7 +67,7 @@ shardeumd tx distribution withdraw-validator-commission validator-node1 \
   --from validator-node1 \
   --home .local/node1 \
   --keyring-backend test \
-  --chain-id shardeum-local \
+  --chain-id shardeum_8119-1 \
   --gas auto --gas-adjustment 1.3 \
   --fees 699684826939954723453ashm \
   -y -o json | jq
@@ -79,7 +79,7 @@ shardeumd tx distribution withdraw-validator-commission validator \
   --from validator \
   --home .local/node0 \
   --keyring-backend test \
-  --chain-id shardeum-local \
+  --chain-id shardeum_8119-1 \
   --gas auto --gas-adjustment 1.3 \
   --fees 699684826939954723453ashm -y
 ```
@@ -98,7 +98,7 @@ shardeumd tx distribution withdraw-rewards "$VALOPER_NODE1" \
   --from validator-node1 \
   --home .local/node1 \
   --keyring-backend test \
-  --chain-id shardeum-local \
+  --chain-id shardeum_8119-1 \
   --gas auto --gas-adjustment 1.3 \
   --fees 699684826939954723453ashm -y
 ```
@@ -172,7 +172,7 @@ Sign & broadcast:
 ```bash
 shardeumd tx sign withdraw_commission_unsigned.json \
   --from validator-node1 --home .local/node1 --keyring-backend test \
-  --chain-id shardeum-local -o json > withdraw_commission_signed.json
+  --chain-id shardeum_8119-1 -o json > withdraw_commission_signed.json
 shardeumd tx broadcast withdraw_commission_signed.json -o json | jq
 ```
 
@@ -190,13 +190,13 @@ shardeumd query distribution rewards "$ACC_NODE1" "$VALOPER_NODE1" --home .local
 # Withdraw commission
 shardeumd tx distribution withdraw-validator-commission validator-node1 \
   --from validator-node1 --home .local/node1 --keyring-backend test \
-  --chain-id shardeum-local --gas auto --gas-adjustment 1.3 \
+  --chain-id shardeum_8119-1 --gas auto --gas-adjustment 1.3 \
   --fees 699684826939954723453ashm -y
 
 # (Optional) Withdraw delegator rewards
 shardeumd tx distribution withdraw-rewards "$VALOPER_NODE1" \
   --from validator-node1 --home .local/node1 --keyring-backend test \
-  --chain-id shardeum-local --gas auto --gas-adjustment 1.3 \
+  --chain-id shardeum_8119-1 --gas auto --gas-adjustment 1.3 \
   --fees 699684826939954723453ashm -y
 
 # Verify

@@ -1,7 +1,7 @@
 {
   "name": "mainnet",
-  "chain_id": "shardeum-1",
-  "evm_chain_id": 8119,
+  "chain_id": "shardeum_8118-1",
+  "evm_chain_id": 8118,
   "base_denom": "ashm",
   "display_denom": "shm",
   "decimals": 18,

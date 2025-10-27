@@ -19,7 +19,7 @@ This guide covers how to operate Shardeum nodes independently using the `shardeu
 - Genesis file for target network
 
 ### Network Information
-- Chain ID (e.g., `shardeum-local`, `shardeum-testnet`)
+- Chain ID (e.g., `shardeum_8119-1` - ethermint format for EVM compatibility)
 - Seed node addresses for peer discovery
 - RPC endpoints for existing network
 
@@ -50,7 +50,7 @@ Our scripts provide automated node setup with proper configuration:
 
 # Step 2: Fund the account (example with dev account)
 ./build/shardeumd tx bank send dev0 [validator_address] 3000000000000000000ashm \
-  --keyring-backend test --chain-id shardeum-local --node http://localhost:26657 \
+  --keyring-backend test --chain-id shardeum_8119-1 --node http://localhost:26657 \
   --from dev0 --yes
 
 # Step 3: Create validator
@@ -75,7 +75,7 @@ For advanced users or custom deployments, you can operate nodes manually:
 ```bash
 # Set variables
 NODE_ID="my-node"
-CHAIN_ID="shardeum-local"
+CHAIN_ID="shardeum_8119-1"
 HOME_DIR="$HOME/.shardeum-$NODE_ID"
 
 # Initialize node

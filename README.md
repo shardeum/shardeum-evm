@@ -93,7 +93,7 @@ After setting up validator infrastructure, you need to create and fund a validat
 Option A - Using CLI with existing funded account:
 ```bash
 ./build/shardeumd tx bank send dev0 [validator_address] 3000000000000000000ashm \
-  --keyring-backend test --chain-id shardeum-local --node http://localhost:26657 \
+  --keyring-backend test --chain-id shardeum_8119-1 --node http://localhost:26657 \
   --from dev0 --yes
 ```
 
@@ -124,7 +124,7 @@ make create-validator NODE_ID=node5 VALIDATOR_KEY=my-validator AMOUNT=2000000000
 
 To stop all nodes:
 ```bash
-pkill -f 'shardeumd.*shardeum-testnet'
+pkill -f 'shardeumd.*shardeum_8119-1'
 # Or press Ctrl+C if running in foreground
 ```
 
@@ -163,7 +163,7 @@ Each node runs on different ports:
 4. **Click "Add Shardeum Local to Keplr"** - this will add the network configuration to your Keplr wallet
 
 ### Network Configuration
-- **Chain ID**: `shardeum`
+- **Chain ID**: `shardeum_8119-1` (ethermint format for EVM compatibility)
 - **Currency**: SHM (ashm)
 - **Decimals**: 18
 - **RPC**: http://127.0.0.1:26657
@@ -223,10 +223,10 @@ The following networks are preconfigured:
 
 | Network | Chain ID | EVM Chain ID | Description |
 |---------|----------|--------------|-------------|
-| mainnet | shardeum-1 | 8119 | Production mainnet |
-| testnet | shardeum-testnet | 8119 | Public testnet |
-| devnet | shardeum-devnet | 8119 | Development network |
-| local | shardeum-local | 8119 | Local development |
+| local | shardeum_8119-1 | 8119 | Local development |
+| testnet | shardeum_8119-2 | 8119 | Public testnet |
+| devnet | shardeum_8119-3 | 8119 | Development network |
+| mainnet | shardeum_8118-1 | 8118 | Production mainnet |
 
 ### Network Configuration Usage
 
@@ -246,9 +246,9 @@ export SHARDEUM_NETWORK=testnet
 Or override specific parameters:
 
 ```bash
-# Use testnet config but with custom chain ID
+# Use testnet config but with custom chain ID (use ethermint format for EVM compatibility)
 export SHARDEUM_NETWORK=testnet
-export SHARDEUM_CHAIN_ID=my-custom-chain
+export SHARDEUM_CHAIN_ID=mychain_8119-1
 ./scripts/start_network.sh 4
 ```
 
@@ -259,7 +259,7 @@ All network parameters can be overridden with environment variables:
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `SHARDEUM_NETWORK` | Network name | `testnet` |
-| `SHARDEUM_CHAIN_ID` | Cosmos chain ID | `shardeum-testnet` |
+| `SHARDEUM_CHAIN_ID` | Cosmos chain ID | `shardeum_8119-1` (local), `shardeum_8119-2` (testnet), etc. |
 | `SHARDEUM_EVM_CHAIN_ID` | EVM chain ID | `8119` |
 | `SHARDEUM_BASE_DENOM` | Base denomination | `ashm` |
 | `SHARDEUM_DISPLAY_DENOM` | Display denomination | `shm` |
@@ -282,7 +282,7 @@ cp configs/testnet.json configs/mynetwork.json
 ```json
 {
   "name": "mynetwork",
-  "chain_id": "my-custom-chain",
+  "chain_id": "mynetwork_9999-1",
   "evm_chain_id": 9999,
   "base_denom": "mycoin",
   "display_denom": "my",
