@@ -296,12 +296,20 @@ def save_genesis_data(main_genesis: Path, account_files: List[Path],
 
             # Update balances in this file
             updated_balances = []
+            processed_balance_addrs = set()
             for bal in original_chunk['balances']:
                 addr = bal['address']
                 if addr in balance_map:
                     updated_balances.append(balance_map[addr])
+                    processed_balance_addrs.add(addr)
                 else:
                     updated_balances.append(bal)
+                    processed_balance_addrs.add(addr)
+
+            for addr in file_addresses:
+                if addr in balance_map and addr not in processed_balance_addrs:
+                    updated_balances.append(balance_map[addr])
+                    processed_balance_addrs.add(addr)
 
             # If this is the last file, add new accounts here (optimize: single write)
             if needs_new_accounts:

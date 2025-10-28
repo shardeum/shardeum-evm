@@ -119662,6 +119662,15 @@
           "amount": "1025017050881760000"
         }
       ]
+    },
+    {
+      "address": "shardeum1sk3r46a8ssw5tua2rjaauas08pv8aa4c9jjpht",
+      "coins": [
+        {
+          "denom": "ashm",
+          "amount": "500000000000000000000000000"
+        }
+      ]
     }
   ]
 }
