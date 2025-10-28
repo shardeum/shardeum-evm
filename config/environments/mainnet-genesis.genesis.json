@@ -107,7 +107,7 @@
         "base_fee_change_denominator": 8,
         "elasticity_multiplier": 2,
         "enable_height": "0",
-        "base_fee": "1638504224311233",
+        "base_fee": "2048130280389041",
         "min_gas_price": "2048130280389041",
         "min_gas_multiplier": "0.500000000000000000"
       },
@@ -143,7 +143,7 @@
         "burn_proposal_deposit_prevote": false,
         "burn_vote_quorum": false,
         "burn_vote_veto": true,
-        "expedited_voting_period": "86400s",
+        "expedited_voting_period": "3600s",
         "expedited_threshold": "0.667000000000000000",
         "expedited_min_deposit": [
           {
@@ -241,15 +241,15 @@
     },
     "mint": {
       "minter": {
-        "inflation": "0.130000000000000000",
+        "inflation": "0.010000000000000000",
         "annual_provisions": "0.000000000000000000"
       },
       "params": {
         "mint_denom": "ashm",
         "inflation_rate_change": "0.130000000000000000",
-        "inflation_max": "0.200000000000000000",
-        "inflation_min": "0.070000000000000000",
-        "goal_bonded": "0.670000000000000000",
+        "inflation_max": "0.011000000000000000",
+        "inflation_min": "0.010000000000000000",
+        "goal_bonded": "0.050000000000000000",
         "blocks_per_year": "6311520"
       }
     },
