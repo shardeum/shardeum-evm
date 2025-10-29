@@ -27,7 +27,15 @@ esac
 
 case $NODE_TYPE in
   API)
-    OPTIONS='--rpc.laddr tcp://0.0.0.0:26657 --json-rpc.enable --json-rpc.address 0.0.0.0:8545 --api.enable --api.address tcp://0.0.0.0:1317 --json-rpc.ws-address 0.0.0.0:8546 --pruning nothing --minimum-gas-prices=2048130280389041ashm'
+    OPTIONS='--rpc.laddr tcp://0.0.0.0:26657 \
+             --api.enable \
+             --api.address tcp://0.0.0.0:1317 \
+             --json-rpc.enable \
+             --json-rpc.address 0.0.0.0:8545 \
+             --json-rpc.ws-address 0.0.0.0:8546 \
+             --json-rpc.api eth,txpool,personal,net,debug,web3 \
+             --minimum-gas-prices=2048130280389041ashm \
+             --pruning nothing'
     ;;
   VALIDATOR)
     OPTIONS='--p2p.laddr tcp://0.0.0.0:27656'
