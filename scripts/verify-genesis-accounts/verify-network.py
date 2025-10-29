@@ -305,16 +305,15 @@ def load_genesis_accounts(genesis_path: str, balance_multiplier: int = 1) -> Tup
             if address not in accounts:
                 accounts[address] = AccountData(
                     cosmos_address=address,
-                    eth_address="",  # Will be filled if needed
+                    eth_address="",
+                    genesis_balance=0,  # Default to 0
                     genesis_nonce=sequence,
-                    genesis_balance=0,  # Default to 0, will be updated from bank.balances if exists
                     in_genesis=True
                 )
             else:
                 accounts[address].genesis_nonce = sequence
-                accounts[address].in_genesis = True
 
-        # Load balances from bank.balances (only non-zero balances are here)
+        # Load balances from bank.balances
         for balance_entry in bank_balances:
             address = balance_entry.get('address')
             coins = balance_entry.get('coins', [])
@@ -324,8 +323,6 @@ def load_genesis_accounts(genesis_path: str, balance_multiplier: int = 1) -> Tup
                     amount = int(coin.get('amount', 0))
 
                     if address not in accounts:
-                        # This account has balance but wasn't in auth.accounts
-                        # This shouldn't normally happen but handle it
                         accounts[address] = AccountData(
                             cosmos_address=address,
                             eth_address="",
@@ -333,7 +330,6 @@ def load_genesis_accounts(genesis_path: str, balance_multiplier: int = 1) -> Tup
                             in_genesis=True
                         )
                     else:
-                        # Update the balance for existing account
                         accounts[address].genesis_balance = amount
 
                     total_supply += amount
@@ -366,7 +362,8 @@ def load_genesis_accounts(genesis_path: str, balance_multiplier: int = 1) -> Tup
                 with open(account_file, 'r') as f:
                     chunk_data = json.load(f)
 
-                # Process accounts (nonces) - load ALL accounts including zero balance
+                # Process accounts (sequences/nonces)
+                # Match verify_genesis_accounts.py: Load all from auth with balance=0
                 for acc in chunk_data.get('accounts', []):
                     address = acc.get('address')
                     if address:
@@ -376,14 +373,13 @@ def load_genesis_accounts(genesis_path: str, balance_multiplier: int = 1) -> Tup
                                 cosmos_address=address,
                                 eth_address="",
                                 genesis_nonce=sequence,
-                                genesis_balance=0,  # Default to 0, will be updated from balances if exists
+                                genesis_balance=0,  # Default to 0
                                 in_genesis=True
                             )
                         else:
                             accounts[address].genesis_nonce = sequence
-                            accounts[address].in_genesis = True
 
-                # Process balances (only non-zero balances)
+                # Process balances
                 for balance_entry in chunk_data.get('balances', []):
                     address = balance_entry.get('address')
                     if address:
@@ -394,7 +390,6 @@ def load_genesis_accounts(genesis_path: str, balance_multiplier: int = 1) -> Tup
                                 amount = int(coin.get('amount', 0))
 
                                 if address not in accounts:
-                                    # Account has balance but wasn't in accounts section
                                     accounts[address] = AccountData(
                                         cosmos_address=address,
                                         eth_address="",
@@ -402,7 +397,6 @@ def load_genesis_accounts(genesis_path: str, balance_multiplier: int = 1) -> Tup
                                         in_genesis=True
                                     )
                                 else:
-                                    # Update balance for existing account
                                     accounts[address].genesis_balance = amount
 
                                 total_supply += amount
