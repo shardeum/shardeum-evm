@@ -20,6 +20,9 @@ case $SHARDEUM_NETWORK in
   testnet)
     cp /app/config/testnet-genesis.json /app/config/genesis.json
     ;;
+  mainnet)
+    cp /app/config/mainnet-genesis.json /app/config/genesis.json
+    ;;
 esac
 
 case $NODE_TYPE in
@@ -34,4 +37,4 @@ case $NODE_TYPE in
     ;;
 esac
 
-/app/shardeumd start --home /app --chain-id shardeum-testnet --p2p.seeds "$PEERS" --p2p.persistent_peers "$PEERS" $OPTIONS
+/app/shardeumd start --home /app --chain-id shardeum-${SHARDEUM_NETWORK} --p2p.seeds "$PEERS" --p2p.persistent_peers "$PEERS" $OPTIONS
