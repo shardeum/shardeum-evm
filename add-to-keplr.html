@@ -104,6 +104,7 @@
             <label for="networkSelect"><strong>Select Network:</strong></label><br>
             <select id="networkSelect" onchange="updateNetworkDetails()">
                 <option value="local">Local</option>
+                <option value="testnet_new">Testnet (new chain id)</option>
                 <option value="testnet">Testnet</option>
                 <option value="devnet">Devnet</option>
                 <option value="mainnet">Mainnet</option>
@@ -232,8 +233,8 @@
                 jsonRpcUrl: "http://127.0.0.1:8545",
                 displayName: "Shardeum Local"
             },
-            testnet: {
-                name: "testnet",
+            testnet_new: {
+                name: "testnet_new",
                 chainId: "shardeum_8119-2",
                 evmChainId: 8119,
                 baseDenom: "ashm",
@@ -245,6 +246,19 @@
                 jsonRpcUrl: "https://api-mezame.shardeum.org",
                 displayName: "Shardeum Testnet"
             },
+            testnet: {
+                name: "testnet",
+                chainId: "shardeum-testnet",
+                evmChainId: 8119,
+                baseDenom: "ashm",
+                displayDenom: "shm",
+                decimals: 18,
+                bech32Prefix: "shardeum",
+                rpcUrl: "https://rpc-mezame.shardeum.org",
+                restUrl: "https://rest-mezame.shardeum.org",
+                jsonRpcUrl: "https://api-mezame.shardeum.org",
+                displayName: "Shardeum Testnet"
+            },            
             devnet: {
                 name: "devnet",
                 chainId: "shardeum_8119-3",
