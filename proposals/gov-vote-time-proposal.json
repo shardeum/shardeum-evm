@@ -25,8 +25,8 @@
     }
   ],
   "metadata": "",
-  "deposit": "129000000000000000000000ashm",
-  "title": "Testnet: set expedited voting period to 1 hour",
-  "summary": "Update x/gov params so expedited proposals use a 1-hour voting period (all other params unchanged).",
+  "deposit": "1290000000000000000000000ashm",
+  "title": "Testnet: set expedited voting period to 24 hours",
+  "summary": "Update x/gov params so expedited proposals use a 24-hour voting period (all other params unchanged).",
   "expedited": true
 }
