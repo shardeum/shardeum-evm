@@ -43,7 +43,7 @@ jobs:
           docker build \
             --no-cache \
             --platform linux/${{ matrix.arch }} \
-            -t ghcr.io/shardeum/shardeum-evm:$IMAGE_TAG-${{ matrix.arch }}
+            -t ghcr.io/shardeum/shardeum-evm:$IMAGE_TAG-${{ matrix.arch }} \
             .
 
       - name: Auth
