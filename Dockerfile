@@ -3,7 +3,7 @@ FROM golang:1.25.1-alpine3.22 AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache build-base gcc linux-headers make
+RUN apk add --no-cache build-base gcc linux-headers make git
 
 COPY . .
 
