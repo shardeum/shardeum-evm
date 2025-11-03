@@ -307,42 +307,44 @@ fetch_genesis_chunked() {
   echo -e "${GREEN}Chunk 1/$TOTAL_CHUNKS decoded${NC}"
   rm -f "$TEMP_CHUNK_0"
 
-  # Fetch and decode remaining chunks
-  for i in $(seq 1 $((TOTAL_CHUNKS - 1))); do
-    echo -e "${YELLOW}Fetching chunk $((i + 1))/$TOTAL_CHUNKS...${NC}"
-    local TEMP_CHUNK="/tmp/chunk_${i}_$$.json"
-    local MAX_RETRIES=3
-    local RETRIES=0
-    local OK=false
-    while [ $RETRIES -lt $MAX_RETRIES ] && [ "$OK" = false ]; do
-      curl -s --max-time 600 --connect-timeout 30 "$RPC_URL/genesis_chunked?chunk=$i" -o "$TEMP_CHUNK"
-      local CE=$?
-      if [ $CE -eq 0 ] && [ -s "$TEMP_CHUNK" ]; then
-        local DATA=$(jq -r '.result.data // empty' "$TEMP_CHUNK" 2>/dev/null)
-        if [ -n "$DATA" ] && [ "$DATA" != "null" ]; then
-          if [[ "$OSTYPE" == "darwin"* ]]; then
-            if printf '%s' "$DATA" | base64 -D >> "$OUTPUT_FILE" 2>/dev/null; then OK=true; fi
-          else
-            if printf '%s' "$DATA" | base64 -d >> "$OUTPUT_FILE" 2>/dev/null; then OK=true; fi
+  # Fetch and decode remaining chunks (if any)
+  if [ "$TOTAL_CHUNKS" -gt 1 ]; then
+    for i in $(seq 1 $((TOTAL_CHUNKS - 1))); do
+      echo -e "${YELLOW}Fetching chunk $((i + 1))/$TOTAL_CHUNKS...${NC}"
+      local TEMP_CHUNK="/tmp/chunk_${i}_$$.json"
+      local MAX_RETRIES=3
+      local RETRIES=0
+      local OK=false
+      while [ $RETRIES -lt $MAX_RETRIES ] && [ "$OK" = false ]; do
+        curl -s --max-time 600 --connect-timeout 30 "$RPC_URL/genesis_chunked?chunk=$i" -o "$TEMP_CHUNK"
+        local CE=$?
+        if [ $CE -eq 0 ] && [ -s "$TEMP_CHUNK" ]; then
+          local DATA=$(jq -r '.result.data // empty' "$TEMP_CHUNK" 2>/dev/null)
+          if [ -n "$DATA" ] && [ "$DATA" != "null" ]; then
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              if printf '%s' "$DATA" | base64 -D >> "$OUTPUT_FILE" 2>/dev/null; then OK=true; fi
+            else
+              if printf '%s' "$DATA" | base64 -d >> "$OUTPUT_FILE" 2>/dev/null; then OK=true; fi
+            fi
           fi
         fi
-      fi
-      if [ "$OK" = false ]; then
-        RETRIES=$((RETRIES + 1))
-        if [ $RETRIES -lt $MAX_RETRIES ]; then
-          echo -e "${YELLOW}Retry chunk $i in 2s (attempt $((RETRIES+1))/$MAX_RETRIES)${NC}"
-          sleep 2
+        if [ "$OK" = false ]; then
+          RETRIES=$((RETRIES + 1))
+          if [ $RETRIES -lt $MAX_RETRIES ]; then
+            echo -e "${YELLOW}Retry chunk $i in 2s (attempt $((RETRIES+1))/$MAX_RETRIES)${NC}"
+            sleep 2
+          fi
         fi
+        rm -f "$TEMP_CHUNK"
+      done
+      if [ "$OK" = false ]; then
+        echo -e "${RED}Error: Failed to fetch/decode chunk $i${NC}"
+        rm -f "$TEMP_COMBINED"
+        return 1
       fi
-      rm -f "$TEMP_CHUNK"
+      echo -e "${GREEN}Chunk $((i + 1))/$TOTAL_CHUNKS decoded${NC}"
     done
-    if [ "$OK" = false ]; then
-      echo -e "${RED}Error: Failed to fetch/decode chunk $i${NC}"
-      rm -f "$TEMP_COMBINED"
-      return 1
-    fi
-    echo -e "${GREEN}Chunk $((i + 1))/$TOTAL_CHUNKS decoded${NC}"
-  done
+  fi
 
   # Basic sanity
   if [ ! -s "$OUTPUT_FILE" ]; then
