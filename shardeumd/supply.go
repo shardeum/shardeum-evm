@@ -7,13 +7,12 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 )
 
 const (
 	// Base denom used in the chain
 	BaseDenom = "ashm"
-	// Decimals for SHM token
-	SHMDecimals = 18
 	// Cache TTL for supply calculations
 	SupplyCacheTTL = 60 * time.Second
 )
@@ -47,13 +46,14 @@ func getCachedValue(cache *atomic.Value) (*big.Int, bool) {
 		return nil, false
 	}
 
-	return cachedVal.Value, true
+	// Return a copy to prevent mutation
+	return new(big.Int).Set(cachedVal.Value), true
 }
 
 // setCachedValue stores a value in the cache with current timestamp
 func setCachedValue(cache *atomic.Value, value *big.Int) {
 	cache.Store(&CachedSupplyValue{
-		Value:     value,
+		Value:     new(big.Int).Set(value),
 		Timestamp: time.Now(),
 	})
 }
@@ -186,7 +186,7 @@ func CalculateTotalSupply(sdkCtx sdk.Context, app *ShardeumApp) (result *big.Int
 		return big.NewInt(0), fmt.Errorf("failed to parse total supply amount: %s", amountStr)
 	}
 
-	divisor := new(big.Int).Exp(big.NewInt(10), big.NewInt(SHMDecimals), nil)
+	divisor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(config.ShardeumChainDecimals())), nil)
 	totalSHM := new(big.Int).Div(totalAshm, divisor)
 
 	// Cache the result
@@ -288,23 +288,25 @@ func CalculateCirculatingSupply(sdkCtx sdk.Context, app *ShardeumApp) (result *b
 		}()
 
 		if queryErr != nil {
-			continue
+			return big.NewInt(0), fmt.Errorf("failed to query balance for module %s: %w", moduleName, queryErr)
 		}
 
 		if balance.Amount.IsNil() || balance.Amount.IsZero() {
+			// Zero balance is valid, skip
 			continue
 		}
 
 		balanceStr := balance.Amount.String()
 		if balanceStr == "" || balanceStr == "<nil>" {
-			continue
+			return big.NewInt(0), fmt.Errorf("module %s balance string is empty or nil", moduleName)
 		}
 
 		balanceBigInt := new(big.Int)
 		balanceBigInt, ok := balanceBigInt.SetString(balanceStr, 10)
-		if ok && balanceBigInt != nil {
-			excludedModuleBalance = new(big.Int).Add(excludedModuleBalance, balanceBigInt)
+		if !ok || balanceBigInt == nil {
+			return big.NewInt(0), fmt.Errorf("failed to parse module %s balance: %s", moduleName, balanceStr)
 		}
+		excludedModuleBalance = new(big.Int).Add(excludedModuleBalance, balanceBigInt)
 	}
 
 	// 3. Get balances of non-circulating addresses (foundation, team, ecosystem, sale cold storage)
@@ -336,8 +338,7 @@ func CalculateCirculatingSupply(sdkCtx sdk.Context, app *ShardeumApp) (result *b
 		}()
 
 		if queryErr != nil {
-			// Skip this address if query failed
-			continue
+			return big.NewInt(0), fmt.Errorf("failed to query balance for address %s: %w", addrStr, queryErr)
 		}
 
 		if balance.Amount.IsNil() || balance.Amount.IsZero() {
@@ -346,43 +347,58 @@ func CalculateCirculatingSupply(sdkCtx sdk.Context, app *ShardeumApp) (result *b
 
 		balanceStr := balance.Amount.String()
 		if balanceStr == "" || balanceStr == "<nil>" {
-			continue
+			return big.NewInt(0), fmt.Errorf("balance string for address %s is empty or nil", addrStr)
 		}
 
 		balanceBigInt := new(big.Int)
 		balanceBigInt, ok := balanceBigInt.SetString(balanceStr, 10)
-		if ok && balanceBigInt != nil {
-			excludedAddressBalance = new(big.Int).Add(excludedAddressBalance, balanceBigInt)
+		if !ok || balanceBigInt == nil {
+			return big.NewInt(0), fmt.Errorf("failed to parse balance for address %s: %s", addrStr, balanceStr)
 		}
+		excludedAddressBalance = new(big.Int).Add(excludedAddressBalance, balanceBigInt)
 	}
 
 	// 4. Get community pool balance (unclaimed rewards in distribution module)
 	communityPoolBalance := big.NewInt(0)
+	var poolErr error
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
-				// If community pool query fails, continue with 0
+				poolErr = fmt.Errorf("panic querying community pool: %v", r)
 			}
 		}()
 
 		// Query community pool from distribution module
 		pool, err := app.DistrKeeper.FeePool.Get(sdkCtx)
-		if err == nil && pool.CommunityPool != nil && len(pool.CommunityPool) > 0 {
+		if err != nil {
+			poolErr = fmt.Errorf("failed to get fee pool: %w", err)
+			return
+		}
+
+		if pool.CommunityPool != nil && len(pool.CommunityPool) > 0 {
 			for _, coin := range pool.CommunityPool {
 				if coin.Denom == BaseDenom {
 					poolStr := coin.Amount.TruncateInt().String()
-					if poolStr != "" && poolStr != "<nil>" {
-						poolBigInt := new(big.Int)
-						poolBigInt, ok := poolBigInt.SetString(poolStr, 10)
-						if ok && poolBigInt != nil {
-							communityPoolBalance = poolBigInt
-						}
+					if poolStr == "" || poolStr == "<nil>" {
+						poolErr = fmt.Errorf("community pool balance string is empty or nil")
+						return
 					}
+					poolBigInt := new(big.Int)
+					poolBigInt, ok := poolBigInt.SetString(poolStr, 10)
+					if !ok || poolBigInt == nil {
+						poolErr = fmt.Errorf("failed to parse community pool balance: %s", poolStr)
+						return
+					}
+					communityPoolBalance = poolBigInt
 					break
 				}
 			}
 		}
 	}()
+
+	if poolErr != nil {
+		return big.NewInt(0), poolErr
+	}
 
 	// 5. Calculate circulating supply
 	// Circulating = Total - ExcludedModules - CommunityPool - ExcludedAddresses
@@ -395,8 +411,8 @@ func CalculateCirculatingSupply(sdkCtx sdk.Context, app *ShardeumApp) (result *b
 		circulating = big.NewInt(0)
 	}
 
-	// Convert from ashm to SHM (divide by 10^18)
-	divisor := new(big.Int).Exp(big.NewInt(10), big.NewInt(SHMDecimals), nil)
+	// Convert from ashm to SHM (divide by 10^decimals)
+	divisor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(config.ShardeumChainDecimals())), nil)
 	circulatingSHM := new(big.Int).Div(circulating, divisor)
 
 	// Cache the result
