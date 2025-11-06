@@ -356,28 +356,14 @@ func VerifySignature(
 	fmt.Printf("feePayerSig[0:64]: %x\n", feePayerSig[:len(feePayerSig)-1])
 	fmt.Printf("🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢\n\n")
 
-	// Try both compressed and uncompressed public key formats for verification
-	// go-ethereum's VerifySignature accepts both formats
-	var verified bool
-	useCompressed := true // Toggle this to switch between formats
-	
-	if useCompressed {
-		// Use compressed public key (33 bytes)
-		fmt.Printf("🔧 Using COMPRESSED pubkey for verification\n")
-		verified = secp256k1.VerifySignature(pubKey.Bytes(), sigHash, feePayerSig[:len(feePayerSig)-1])
-	} else {
-		// Use uncompressed public key (64 bytes without 0x04 prefix)
-		// feePayerPubkey from RecoverPubkey is uncompressed (65 bytes with 0x04 prefix)
-		// We need to strip the 0x04 prefix to get the 64-byte uncompressed key
-		fmt.Printf("🔧 Using UNCOMPRESSED pubkey for verification\n")
-		verified = secp256k1.VerifySignature(feePayerPubkey[1:], sigHash, feePayerSig[:len(feePayerSig)-1])
-	}
-	
-	if !verified {
+	// VerifySignature of ethsecp256k1 accepts 64 byte signature [R||S]
+	// pubKey.Bytes() returns compressed public key (33 bytes)
+	// WARNING! Under NO CIRCUMSTANCES try to use pubKey.VerifySignature there
+	if !secp256k1.VerifySignature(pubKey.Bytes(), sigHash, feePayerSig[:len(feePayerSig)-1]) {
 		fmt.Printf("\n❌❌❌ SIGNATURE VERIFICATION FAILED ❌❌❌\n\n")
 		return errorsmod.Wrap(errortypes.ErrorInvalidSigner, "unable to verify signer signature of EIP712 typed data")
 	}
-	
+
 	fmt.Printf("\n✅✅✅ EIP-712 SIGNATURE VERIFICATION SUCCEEDED! ✅✅✅\n\n")
 	return nil
 	default:
