@@ -1,0 +1,28 @@
+{
+    "account_number": "40",
+    "chain_id": "shardeum_8117-1",
+    "fee": {
+        "amount": [
+            {
+                "amount": "500000000000000000000",
+                "denom": "ashm"
+            }
+        ],
+        "gas": "200000"
+    },
+    "memo": "",
+    "msgs": [
+        {
+            "type": "cosmos-sdk/MsgDelegate",
+            "value": {
+                "amount": {
+                    "amount": "1000000000000000000",
+                    "denom": "ashm"
+                },
+                "delegator_address": "shardeum1jhfxwuu23vt839fcu5fxk4a5ww4hyx8pxqty3s",
+                "validator_address": "shardeumvaloper1eaz6tgze26skdmz4yskqgqmnzrp3qzmqtd89j7"
+            }
+        }
+    ],
+    "sequence": "0"
+}

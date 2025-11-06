@@ -1,0 +1,148 @@
+{
+  "typedData": {
+    "types": {
+      "Coin": [
+        {
+          "name": "denom",
+          "type": "string"
+        },
+        {
+          "name": "amount",
+          "type": "string"
+        }
+      ],
+      "EIP712Domain": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        },
+        {
+          "name": "chainId",
+          "type": "uint256"
+        },
+        {
+          "name": "verifyingContract",
+          "type": "string"
+        },
+        {
+          "name": "salt",
+          "type": "string"
+        }
+      ],
+      "Fee": [
+        {
+          "name": "amount",
+          "type": "Coin[]"
+        },
+        {
+          "name": "gas",
+          "type": "string"
+        }
+      ],
+      "Tx": [
+        {
+          "name": "account_number",
+          "type": "string"
+        },
+        {
+          "name": "chain_id",
+          "type": "string"
+        },
+        {
+          "name": "fee",
+          "type": "Fee"
+        },
+        {
+          "name": "memo",
+          "type": "string"
+        },
+        {
+          "name": "sequence",
+          "type": "string"
+        },
+        {
+          "name": "msg0",
+          "type": "TypeMsgDelegate0"
+        }
+      ],
+      "TypeMsgDelegate0": [
+        {
+          "name": "value",
+          "type": "TypeValue0"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        }
+      ],
+      "TypeValue0": [
+        {
+          "name": "validator_address",
+          "type": "string"
+        },
+        {
+          "name": "delegator_address",
+          "type": "string"
+        },
+        {
+          "name": "amount",
+          "type": "TypeValueAmount0"
+        }
+      ],
+      "TypeValueAmount0": [
+        {
+          "name": "denom",
+          "type": "string"
+        },
+        {
+          "name": "amount",
+          "type": "string"
+        }
+      ]
+    },
+    "primaryType": "Tx",
+    "domain": {
+      "name": "Cosmos Web3",
+      "version": "1.0.0",
+      "chainId": "0x1fb5",
+      "verifyingContract": "cosmos",
+      "salt": "0"
+    },
+    "message": {
+      "account_number": "40",
+      "chain_id": "shardeum_8117-1",
+      "fee": {
+        "amount": [
+          {
+            "denom": "ashm",
+            "amount": "500000000000000000000"
+          }
+        ],
+        "gas": "200000"
+      },
+      "memo": "",
+      "sequence": "1",
+      "msg0": {
+        "type": "cosmos-sdk/MsgDelegate",
+        "value": {
+          "validator_address": "shardeumvaloper1levjdcctnxc6ftzedg8whpdwkrqkj5s0555lf4",
+          "delegator_address": "shardeum1jhfxwuu23vt839fcu5fxk4a5ww4hyx8pxqty3s",
+          "amount": {
+            "denom": "ashm",
+            "amount": "1000000000000000000"
+          }
+        }
+      }
+    }
+  },
+  "signature": "0x53c0bc16f9368080d19ab38f4d0fd4d0f2a7b9a9f35352b6a65c1c87352ecc6777fd701dc1750c64824ed7719d0784409f8f2770d6c24d422bd6ee3651dd96881b",
+  "ethAddress": "0x95d267738a8b16789538e5126b57b473ab7218e1",
+  "bech32Address": "shardeum1jhfxwuu23vt839fcu5fxk4a5ww4hyx8pxqty3s",
+  "validatorAddress": "shardeumvaloper1levjdcctnxc6ftzedg8whpdwkrqkj5s0555lf4",
+  "amount": "1000000000000000000",
+  "denom": "ashm"
+}
