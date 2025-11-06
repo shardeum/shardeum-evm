@@ -1016,7 +1016,7 @@ func (app *ShardeumApp) registerSupplyEndpoints(apiSvr *api.Server) {
 		panic("API server or router is nil, cannot register supply endpoints")
 	}
 	// Total supply endpoint - returns plain text number
-	apiSvr.Router.HandleFunc("/cosmos/bank/v1beta1/supply/total", func(w http.ResponseWriter, r *http.Request) {
+	apiSvr.Router.HandleFunc("/total-supply", func(w http.ResponseWriter, r *http.Request) {
 		// Add panic recovery to catch and report errors
 		defer func() {
 			if r := recover(); r != nil {
@@ -1068,7 +1068,7 @@ func (app *ShardeumApp) registerSupplyEndpoints(apiSvr *api.Server) {
 	}).Methods("GET")
 
 	// Circulating supply endpoint - returns plain text number
-	apiSvr.Router.HandleFunc("/cosmos/bank/v1beta1/supply/circulating", func(w http.ResponseWriter, r *http.Request) {
+	apiSvr.Router.HandleFunc("/circulating-supply", func(w http.ResponseWriter, r *http.Request) {
 		// Add panic recovery to catch and report errors
 		defer func() {
 			if r := recover(); r != nil {
