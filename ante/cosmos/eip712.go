@@ -2,11 +2,12 @@ package cosmos
 
 import (
 	"fmt"
+	"os"
 	"strconv"
+	"strings"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"
@@ -61,6 +62,30 @@ func (svd LegacyEip712SigVerificationDecorator) AnteHandle(ctx sdk.Context,
 ) (newCtx sdk.Context, err error) {
 	// no need to verify signatures on recheck tx
 	if ctx.IsReCheckTx() {
+		return next(ctx, tx, simulate)
+	}
+
+	// Check if this transaction has Web3Tx extension - if not, skip EIP-712 verification
+	txWithExtensions, ok := tx.(authante.HasExtensionOptionsTx)
+	if !ok {
+		return next(ctx, tx, simulate)
+	}
+	
+	opts := txWithExtensions.GetExtensionOptions()
+	if len(opts) == 0 {
+		return next(ctx, tx, simulate)
+	}
+	
+	// Only use EIP-712 verification if the transaction has Web3Tx extension
+	hasWeb3Tx := false
+	for _, opt := range opts {
+		if opt.GetTypeUrl() == "/cosmos.evm.types.v1.ExtensionOptionsWeb3Tx" {
+			hasWeb3Tx = true
+			break
+		}
+	}
+	
+	if !hasWeb3Tx {
 		return next(ctx, tx, simulate)
 	}
 
@@ -147,6 +172,10 @@ func (svd LegacyEip712SigVerificationDecorator) AnteHandle(ctx sdk.Context,
 		return ctx, errorsmod.Wrap(errortypes.ErrUnauthorized, errMsg.Error())
 	}
 
+	// Mark context to skip standard Cosmos signature verification
+	// since EIP-712 signature was already verified
+	ctx = ctx.WithValue("eip712-verified", true)
+
 	return next(ctx, tx, simulate)
 }
 
@@ -189,9 +218,30 @@ func VerifySignature(
 			msgs, tx.GetMemo(),
 		)
 
-		signerChainID, err := strconv.ParseUint(signerData.ChainID, 10, 64)
-		if err != nil {
-			return errorsmod.Wrapf(err, "failed to parse chain-id: %s", signerData.ChainID)
+		// DEBUG: Log the StdSignBytes output
+		fmt.Printf("\n������🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢\n")
+		fmt.Printf("🟢 CHAIN STD SIGN BYTES\n")
+		fmt.Printf("🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢\n")
+		fmt.Printf("%s\n", string(txBytes))
+		fmt.Printf("🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢\n\n")
+
+		// Extract EVM chain ID from Cosmos chain ID (e.g., "shardeum_8117-1" -> 8117)
+		// Format is: <name>_<evm-chain-id>-<version>
+		var signerChainID uint64
+		parts := strings.Split(signerData.ChainID, "_")
+		if len(parts) == 2 {
+			// Split on hyphen to get the EVM chain ID part
+			evmParts := strings.Split(parts[1], "-")
+			if len(evmParts) >= 1 {
+				parsed, err := strconv.ParseUint(evmParts[0], 10, 64)
+				if err == nil {
+					signerChainID = parsed
+				}
+			}
+		}
+		
+		if signerChainID == 0 {
+			return errorsmod.Wrapf(errortypes.ErrInvalidChainID, "failed to extract EVM chain ID from: %s", signerData.ChainID)
 		}
 
 		txWithExtensions, ok := tx.(authante.HasExtensionOptionsTx)
@@ -229,10 +279,38 @@ func VerifySignature(
 			return errorsmod.Wrap(err, "failed to create EIP-712 typed data from tx")
 		}
 
-		sigHash, _, err := apitypes.TypedDataAndHash(typedData)
+		// Use custom hash function that preserves decimal chainId format (matches MetaMask)
+		sigHash, typedDataJSONStr, err := eip712.TypedDataAndHashWithDecimalChainID(typedData)
 		if err != nil {
-			return err
+			return errorsmod.Wrap(err, "failed to calculate EIP-712 hash")
 		}
+
+		// DEBUG: Log the reconstructed typed data
+		fmt.Printf("\n🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡\n")
+		fmt.Printf("🟡 CHAIN RECONSTRUCTED TYPED DATA (with decimal chainId)\n")
+		fmt.Printf("🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡\n")
+		fmt.Printf("%s\n", typedDataJSONStr)
+		fmt.Printf("🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡\n\n")
+		
+		// Save to file for comparison
+		_ = os.WriteFile("/tmp/chain-typed-data.json", []byte(typedDataJSONStr), 0644)
+
+
+		// DEBUG: Log the calculated hash
+		fmt.Printf("\n🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴\n")
+		fmt.Printf("🔴 CHAIN CALCULATED HASH\n")
+		fmt.Printf("🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴\n")
+		fmt.Printf("%x\n", sigHash)
+		fmt.Printf("🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴\n\n")
+		
+		// DEBUG: Log feePayer signature
+		fmt.Printf("\n🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣\n")
+		fmt.Printf("🟣 FEE PAYER SIGNATURE (from ExtensionOptionsWeb3Tx)\n")
+		fmt.Printf("🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣\n")
+		fmt.Printf("%x\n", extOpt.FeePayerSig)
+		fmt.Printf("🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣\n\n")
+		
+		fmt.Printf("🔍🔍🔍 EIP712 DEBUG END 🔍🔍🔍\n\n")
 
 		feePayerSig := extOpt.FeePayerSig
 		if len(feePayerSig) != ethcrypto.SignatureLength {
@@ -268,13 +346,40 @@ func VerifySignature(
 			return errorsmod.Wrapf(errortypes.ErrorInvalidSigner, "failed to verify delegated fee payer %s signature", recoveredFeePayerAcc)
 		}
 
-		// VerifySignature of ethsecp256k1 accepts 64 byte signature [R||S]
-		// WARNING! Under NO CIRCUMSTANCES try to use pubKey.VerifySignature there
-		if !secp256k1.VerifySignature(pubKey.Bytes(), sigHash, feePayerSig[:len(feePayerSig)-1]) {
-			return errorsmod.Wrap(errortypes.ErrorInvalidSigner, "unable to verify signer signature of EIP712 typed data")
-		}
+	// DEBUG: Log verification inputs
+	fmt.Printf("\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢\n")
+	fmt.Printf("🟢 ABOUT TO CALL secp256k1.VerifySignature\n")
+	fmt.Printf("🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢\n")
+	fmt.Printf("pubKey.Bytes() (compressed): %x\n", pubKey.Bytes())
+	fmt.Printf("feePayerPubkey (uncompressed): %x\n", feePayerPubkey)
+	fmt.Printf("sigHash: %x\n", sigHash)
+	fmt.Printf("feePayerSig[0:64]: %x\n", feePayerSig[:len(feePayerSig)-1])
+	fmt.Printf("🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢\n\n")
 
-		return nil
+	// Try both compressed and uncompressed public key formats for verification
+	// go-ethereum's VerifySignature accepts both formats
+	var verified bool
+	useCompressed := true // Toggle this to switch between formats
+	
+	if useCompressed {
+		// Use compressed public key (33 bytes)
+		fmt.Printf("🔧 Using COMPRESSED pubkey for verification\n")
+		verified = secp256k1.VerifySignature(pubKey.Bytes(), sigHash, feePayerSig[:len(feePayerSig)-1])
+	} else {
+		// Use uncompressed public key (64 bytes without 0x04 prefix)
+		// feePayerPubkey from RecoverPubkey is uncompressed (65 bytes with 0x04 prefix)
+		// We need to strip the 0x04 prefix to get the 64-byte uncompressed key
+		fmt.Printf("🔧 Using UNCOMPRESSED pubkey for verification\n")
+		verified = secp256k1.VerifySignature(feePayerPubkey[1:], sigHash, feePayerSig[:len(feePayerSig)-1])
+	}
+	
+	if !verified {
+		fmt.Printf("\n❌❌❌ SIGNATURE VERIFICATION FAILED ❌❌❌\n\n")
+		return errorsmod.Wrap(errortypes.ErrorInvalidSigner, "unable to verify signer signature of EIP712 typed data")
+	}
+	
+	fmt.Printf("\n✅✅✅ EIP-712 SIGNATURE VERIFICATION SUCCEEDED! ✅✅✅\n\n")
+	return nil
 	default:
 		return errorsmod.Wrapf(errortypes.ErrTooManySignatures, "unexpected SignatureData %T", sigData)
 	}

@@ -10,7 +10,7 @@ func createEIP712Domain(chainID uint64) apitypes.TypedDataDomain {
 	domain := apitypes.TypedDataDomain{
 		Name:              "Cosmos Web3",
 		Version:           "1.0.0",
-		ChainId:           math.NewHexOrDecimal256(int64(chainID)), // #nosec G115
+		ChainId:           math.NewHexOrDecimal256(int64(chainID)), //#nosec G115 -- int overflow is not a concern here
 		VerifyingContract: "cosmos",
 		Salt:              "0",
 	}

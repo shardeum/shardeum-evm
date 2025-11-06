@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shardeum - Delegate Stake via MetaMask (EIP-712)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .error-box {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        label {
+            font-weight: 600;
+            color: #555;
+            display: block;
+            margin-top: 15px;
+        }
+        .account-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .account-info strong {
+            color: #667eea;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .step {
+            margin: 25px 0;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦊 Delegate Stake via MetaMask</h1>
+        
+        <div class="info-box">
+            <strong>💡 About EIP-712 on Shardeum:</strong><br>
+            This demo shows how to use MetaMask to sign Cosmos staking transactions on Shardeum
+            using the EIP-712 standard. This allows users with MetaMask to perform staking operations
+            without needing Keplr or other Cosmos wallets.
+        </div>
+
+        <div class="warning-box">
+            <strong>⚠️ Important - MetaMask Network:</strong> You MUST switch MetaMask to the Shardeum network before signing!
+            Click "Add Shardeum Local Network" button below and switch to it in MetaMask.
+            <br><br>
+            The manual Cosmos Chain ID field is for the transaction content, but MetaMask must be on chain 8117 (local) or 8118 (mainnet).
+        </div>
+
+        <!-- Step 1: Connect Wallet -->
+        <div class="step">
+            <h2><span class="step-number">1</span>Connect MetaMask</h2>
+            <button id="connectBtn" onclick="connectWallet()">Connect MetaMask</button>
+            <button onclick="addShardeumNetwork()">Add Shardeum Local Network</button>
+            <div id="accountInfo" class="account-info" style="display:none;">
+                <strong>Connected Account:</strong> <span id="accountAddress"></span><br>
+                <strong>Chain ID:</strong> <span id="chainId"></span>
+            </div>
+        </div>
+
+        <!-- Step 2: Configure Delegation -->
+        <div class="step">
+            <h2><span class="step-number">2</span>Configure Delegation</h2>
+            
+            <label for="cosmosChainId">Cosmos Chain ID (for transaction message):</label>
+            <input type="text" id="cosmosChainId" placeholder="shardeum_8117-1" value="shardeum_8117-1" />
+            <small>This goes into the transaction message (shardeum_8117-1 for local, shardeum_8118-1 for mainnet)</small>
+            
+            <label for="evmChainId">EVM Chain ID (reference only):</label>
+            <input type="number" id="evmChainId" placeholder="8117" value="8117" disabled />
+            <small>MetaMask will use its connected network's chain ID for signing. This field is just for reference.</small>
+            
+            <label for="validatorAddress">Validator Address (Bech32):</label>
+            <input type="text" id="validatorAddress" placeholder="shardeumvaloper1..." />
+            
+            <label for="amount">Amount to Delegate:</label>
+            <input type="number" id="amount" placeholder="1000000000000000000" value="1000000000000000000" />
+            <small>Amount in base units with 18 decimals (e.g., 1000000000000000000 = 1 SHM)</small>
+            
+            <label for="denom">Denomination:</label>
+            <input type="text" id="denom" placeholder="ashm" value="ashm" />
+            
+            <label for="gasLimit">Gas Limit:</label>
+            <input type="number" id="gasLimit" placeholder="200000" value="200000" />
+            
+            <label for="memo">Memo (optional):</label>
+            <input type="text" id="memo" placeholder="Delegated via MetaMask" />
+            
+            <label for="accountNumber">Account Number:</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="accountNumber" placeholder="40" value="40" style="flex: 1;" />
+                <button onclick="queryAccountInfo()" style="white-space: nowrap;">🔍 Query from Chain</button>
+            </div>
+            <small>Query from: curl http://localhost:1317/cosmos/auth/v1beta1/accounts/YOUR_ADDRESS</small>
+            
+            <label for="sequence">Sequence:</label>
+            <input type="text" id="sequence" placeholder="0" value="0" />
+            <small>Current sequence number for your account (increments with each transaction)</small>
+        </div>
+
+        <!-- Step 3: Sign & Submit -->
+        <div class="step">
+            <h2><span class="step-number">3</span>Sign & Submit Transaction</h2>
+            <button id="signBtn" onclick="signAndDelegate()" disabled>Sign with MetaMask</button>
+            <button onclick="showTypedData()">Preview EIP-712 Data</button>
+        </div>
+
+        <div id="successBox" class="success-box"></div>
+        <div id="errorBox" class="error-box"></div>
+
+        <!-- Signed Transaction Data -->
+        <div id="signedDataSection" class="step" style="display:none;">
+            <h2>✅ Signed Transaction Data</h2>
+            
+            <div class="warning-box">
+                <strong>⚠️ Broadcasting Not Implemented:</strong><br>
+                This demo currently only signs the transaction with MetaMask. Broadcasting to the network 
+                requires additional implementation to properly encode the signature into a Cosmos transaction format.
+            </div>
+            
+            <div class="info-box" id="signedDataDetails"></div>
+            
+            <h3>📋 Complete Signed Data (JSON)</h3>
+            <textarea id="signedDataJson" rows="15" style="width: 100%; font-family: monospace; font-size: 12px;"></textarea>
+            
+            <button onclick="copySignedData()">📋 Copy to Clipboard</button>
+            <button onclick="saveSignedData()">💾 Save to File</button>
+            
+            <div class="info-box" style="margin-top: 20px;">
+                <h3>🔧 Manual Submission via CLI (TODO)</h3>
+                <p>To broadcast this transaction manually, you would need to:</p>
+                <ol>
+                    <li>Copy the signed data above</li>
+                    <li>Save it to a file (e.g., <code>signed-tx.json</code>)</li>
+                    <li>Use a tool to encode the signature into a Cosmos transaction</li>
+                    <li>Broadcast via: <code>shardeumd tx broadcast [encoded-tx]</code></li>
+                </ol>
+                <p><strong>Note:</strong> The proper encoding implementation is not yet available in this demo. 
+                This requires constructing a full Cosmos SDK transaction with the EIP-712 signature embedded.</p>
+            </div>
+        </div>
+
+        <!-- TypedData Preview -->
+        <div id="typedDataPreview" style="display:none;">
+            <h2>📋 EIP-712 TypedData Preview</h2>
+            <pre id="typedDataContent"></pre>
+        </div>
+
+        <hr style="margin: 40px 0;">
+
+        <h2>📚 Technical Details</h2>
+        <div class="info-box">
+            <h3>How It Works:</h3>
+            <ol>
+                <li><strong>EIP-712 Encoding:</strong> The Cosmos MsgDelegate is encoded using EIP-712 standard</li>
+                <li><strong>MetaMask Signing:</strong> MetaMask signs the typed data using eth_signTypedData_v4</li>
+                <li><strong>Transaction Submission:</strong> The signed transaction is broadcast to the network</li>
+            </ol>
+
+            <h3>Key Concepts:</h3>
+            <ul>
+                <li><code>MsgDelegate</code>: Cosmos SDK message type for staking delegation</li>
+                <li><code>EIP-712</code>: Ethereum standard for typed structured data hashing and signing</li>
+                <li><code>TypedData</code>: JSON structure defining the message schema and data</li>
+            </ul>
+
+            <h3>Code References:</h3>
+            <ul>
+                <li>EIP-712 Implementation: <code>/ethereum/eip712/eip712.go</code></li>
+                <li>Test Examples: <code>/tests/integration/eip712/test_eip712.go</code></li>
+                <li>RPC Endpoint: <code>/rpc/namespaces/ethereum/eth/api.go</code></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let account = null;
+        let chainIdHex = null;
+        let chainIdDecimal = null;
+
+        // Check if MetaMask is installed
+        if (typeof window.ethereum === 'undefined') {
+            document.getElementById('errorBox').style.display = 'block';
+            document.getElementById('errorBox').innerHTML = 
+                '<strong>MetaMask Not Detected:</strong> Please install MetaMask extension to use this demo.';
+        }
+
+        async function connectWallet() {
+            try {
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                account = accounts[0];
+                
+                chainIdHex = await ethereum.request({ method: 'eth_chainId' });
+                chainIdDecimal = parseInt(chainIdHex, 16);
+                
+                document.getElementById('accountAddress').textContent = account;
+                document.getElementById('chainId').textContent = `${chainIdDecimal} (${chainIdHex})`;
+                document.getElementById('accountInfo').style.display = 'block';
+                document.getElementById('signBtn').disabled = false;
+                
+                // Warn if wrong chain ID
+                if (chainIdDecimal !== 8117 && chainIdDecimal !== 8118 && chainIdDecimal !== 8119) {
+                    showError(`⚠️ Wrong network! Connected to chain ID ${chainIdDecimal}. Please switch to Shardeum network (8117 for local, 8118 for mainnet) or click "Add Shardeum Local Network" button.`);
+                } else {
+                    hideError();
+                    showSuccess('✅ MetaMask connected successfully!');
+                }
+            } catch (error) {
+                showError('Failed to connect MetaMask: ' + error.message);
+            }
+        }
+
+        async function addShardeumNetwork() {
+            try {
+                await ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0x1FB5', // 8117 in hex
+                        chainName: 'Shardeum Local (8117)',
+                        nativeCurrency: {
+                            name: 'Shardeum',
+                            symbol: 'SHM',
+                            decimals: 18
+                        },
+                        rpcUrls: ['http://localhost:8545'],
+                        blockExplorerUrls: null
+                    }]
+                });
+                showSuccess('✅ Shardeum Local network added! Please switch to it and reconnect.');
+            } catch (error) {
+                showError('Failed to add network: ' + error.message);
+            }
+        }
+
+        // Convert hex address to Bech32 using proper encoding
+        function hexToBech32(hexAddress, prefix = 'shardeum') {
+            // Remove 0x prefix if present
+            const hex = hexAddress.startsWith('0x') ? hexAddress.slice(2) : hexAddress;
+            
+            // Convert hex to bytes
+            const bytes = [];
+            for (let i = 0; i < hex.length; i += 2) {
+                bytes.push(parseInt(hex.substr(i, 2), 16));
+            }
+            
+            // Bech32 encoding (simplified version)
+            // This uses the bech32 algorithm: https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+            const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+            
+            function polymod(values) {
+                const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
+                let chk = 1;
+                for (const value of values) {
+                    const top = chk >> 25;
+                    chk = (chk & 0x1ffffff) << 5 ^ value;
+                    for (let i = 0; i < 5; i++) {
+                        if ((top >> i) & 1) {
+                            chk ^= GEN[i];
+                        }
+                    }
+                }
+                return chk;
+            }
+            
+            function hrpExpand(hrp) {
+                const ret = [];
+                for (let p = 0; p < hrp.length; p++) {
+                    ret.push(hrp.charCodeAt(p) >> 5);
+                }
+                ret.push(0);
+                for (let p = 0; p < hrp.length; p++) {
+                    ret.push(hrp.charCodeAt(p) & 31);
+                }
+                return ret;
+            }
+            
+            function createChecksum(hrp, data) {
+                const values = hrpExpand(hrp).concat(data).concat([0, 0, 0, 0, 0, 0]);
+                const mod = polymod(values) ^ 1;
+                const ret = [];
+                for (let p = 0; p < 6; p++) {
+                    ret.push((mod >> 5 * (5 - p)) & 31);
+                }
+                return ret;
+            }
+            
+            function convertBits(data, fromBits, toBits, pad) {
+                let acc = 0;
+                let bits = 0;
+                const ret = [];
+                const maxv = (1 << toBits) - 1;
+                for (const value of data) {
+                    acc = (acc << fromBits) | value;
+                    bits += fromBits;
+                    while (bits >= toBits) {
+                        bits -= toBits;
+                        ret.push((acc >> bits) & maxv);
+                    }
+                }
+                if (pad) {
+                    if (bits > 0) {
+                        ret.push((acc << (toBits - bits)) & maxv);
+                    }
+                } else if (bits >= fromBits || ((acc << (toBits - bits)) & maxv)) {
+                    throw new Error('Invalid bits');
+                }
+                return ret;
+            }
+            
+            // Convert 8-bit bytes to 5-bit groups
+            const words = convertBits(bytes, 8, 5, true);
+            const checksumWords = createChecksum(prefix, words);
+            const combined = words.concat(checksumWords);
+            
+            let result = prefix + '1';
+            for (const word of combined) {
+                result += CHARSET.charAt(word);
+            }
+            
+            return result;
+        }
+
+        function buildEIP712TypedData(delegatorAddr, validatorAddr, amount, denom, chainId, cosmosChainId, accountNumber = '0', sequence = '0') {
+            // Construct the EIP-712 TypedData for MsgDelegate
+            // This matches the structure in the Shardeum codebase
+            
+            return {
+                types: {
+                    EIP712Domain: [
+                        { name: 'name', type: 'string' },
+                        { name: 'version', type: 'string' },
+                        { name: 'chainId', type: 'uint256' },
+                        { name: 'verifyingContract', type: 'string' },
+                        { name: 'salt', type: 'string' }
+                    ],
+                    Tx: [
+                        { name: 'account_number', type: 'string' },
+                        { name: 'chain_id', type: 'string' },
+                        { name: 'fee', type: 'Fee' },
+                        { name: 'memo', type: 'string' },
+                        { name: 'msgs', type: 'Msg[]' },
+                        { name: 'sequence', type: 'string' }
+                    ],
+                    Fee: [
+                        { name: 'feePayer', type: 'string' },
+                        { name: 'amount', type: 'Coin[]' },
+                        { name: 'gas', type: 'string' }
+                    ],
+                    Coin: [
+                        { name: 'denom', type: 'string' },
+                        { name: 'amount', type: 'string' }
+                    ],
+                    Msg: [
+                        { name: 'type', type: 'string' },
+                        { name: 'value', type: 'MsgValue' }
+                    ],
+                    MsgValue: [
+                        { name: 'delegator_address', type: 'string' },
+                        { name: 'validator_address', type: 'string' },
+                        { name: 'amount', type: 'TypeAmount' }
+                    ],
+                    TypeAmount: [
+                        { name: 'denom', type: 'string' },
+                        { name: 'amount', type: 'string' }
+                    ]
+                },
+                primaryType: 'Tx',
+                domain: {
+                    name: 'Cosmos Web3',
+                    version: '1.0.0',
+                    chainId: chainId.toString(),
+                    verifyingContract: 'cosmos',
+                    salt: '0'
+                },
+                message: {
+                    account_number: accountNumber,
+                    chain_id: cosmosChainId, // Use the manually specified Cosmos chain ID
+                    fee: {
+                        feePayer: hexToBech32(delegatorAddr),
+                        amount: [
+                            {
+                                denom: denom,
+                                amount: '500000000000000000000'
+                            }
+                        ],
+                        gas: document.getElementById('gasLimit').value || '200000'
+                    },
+                    memo: document.getElementById('memo').value || '',
+                    msgs: [
+                        {
+                            type: 'cosmos-sdk/MsgDelegate',
+                            value: {
+                                delegator_address: hexToBech32(delegatorAddr),
+                                validator_address: validatorAddr,
+                                amount: {
+                                    denom: denom,
+                                    amount: amount
+                                }
+                            }
+                        }
+                    ],
+                    sequence: sequence
+                }
+            };
+        }
+
+        async function signAndDelegate() {
+            try {
+                if (!account) {
+                    showError('Please connect MetaMask first');
+                    return;
+                }
+
+                const validatorAddress = document.getElementById('validatorAddress').value;
+                const amount = document.getElementById('amount').value;
+                const denom = document.getElementById('denom').value || 'ashm';
+
+                if (!validatorAddress) {
+                    showError('Please enter a validator address');
+                    return;
+                }
+
+                // Get manual chain IDs from inputs
+                const manualEvmChainId = parseInt(document.getElementById('evmChainId').value) || 8117;
+                const cosmosChainId = document.getElementById('cosmosChainId').value || 'shardeum_8117-1';
+
+                // Get account number and sequence from manual inputs
+                const accountNumber = document.getElementById('accountNumber').value || '0';
+                const sequence = document.getElementById('sequence').value || '0';
+                console.log(`Using Account Number: ${accountNumber}, Sequence: ${sequence}`);
+
+                // IMPORTANT: Use MetaMask's actual chain ID for EIP-712 domain (MetaMask validates this)
+                // But use the manual Cosmos chain ID for the message content
+                const typedData = buildEIP712TypedData(
+                    account,
+                    validatorAddress,
+                    amount,
+                    denom,
+                    chainIdDecimal, // Use MetaMask's connected chain ID for domain
+                    cosmosChainId,   // Use manual Cosmos chain ID for message
+                    accountNumber,  // Pass the queried account number
+                    sequence        // Pass the queried sequence
+                );
+
+                hideError();
+                showSuccess('📝 Requesting signature from MetaMask...');
+
+                // Request signature using eth_signTypedData_v4
+                const signature = await ethereum.request({
+                    method: 'eth_signTypedData_v4',
+                    params: [account, JSON.stringify(typedData)],
+                });
+
+                // Display the signed data
+                displaySignedTransaction(typedData, signature, validatorAddress, amount, denom);
+                
+                showSuccess(`✅ Transaction signed successfully!`);
+                
+                console.log('Signature:', signature);
+                console.log('TypedData:', typedData);
+
+            } catch (error) {
+                showError('Signing failed: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function displaySignedTransaction(typedData, signature, validatorAddress, amount, denom) {
+            const delegatorBech32 = hexToBech32(account);
+            
+            // Create the signed data display
+            const signedDataSection = document.getElementById('signedDataSection');
+            signedDataSection.style.display = 'block';
+            
+            // Fill in the details
+            document.getElementById('signedDataDetails').innerHTML = `
+                <strong>Delegator:</strong> ${account}<br>
+                <strong>Validator:</strong> ${validatorAddress}<br>
+                <strong>Amount:</strong> ${amount} ${denom}<br>
+                <strong>Signature:</strong> ${signature.slice(0, 20)}...${signature.slice(-20)}
+            `;
+            
+            // Prepare the data for CLI submission
+            const cliData = {
+                typedData: typedData,
+                signature: signature,
+                ethAddress: account,
+                bech32Address: delegatorBech32,
+                validatorAddress: validatorAddress,
+                amount: amount,
+                denom: denom
+            };
+            
+            document.getElementById('signedDataJson').value = JSON.stringify(cliData, null, 2);
+        }
+
+        function showTypedData() {
+            if (!account) {
+                showError('Please connect MetaMask first');
+                return;
+            }
+
+            const validatorAddress = document.getElementById('validatorAddress').value || 'shardeumvaloper1...';
+            const amount = document.getElementById('amount').value || '1000000';
+            const denom = document.getElementById('denom').value || 'ashm';
+            const evmChainId = parseInt(document.getElementById('evmChainId').value) || 8117;
+            const cosmosChainId = document.getElementById('cosmosChainId').value || 'shardeum_8117-1';
+
+            const typedData = buildEIP712TypedData(account, validatorAddress, amount, denom, evmChainId, cosmosChainId);
+            
+            document.getElementById('typedDataContent').textContent = JSON.stringify(typedData, null, 2);
+            document.getElementById('typedDataPreview').style.display = 'block';
+        }
+
+        function copySignedData() {
+            const textarea = document.getElementById('signedDataJson');
+            textarea.select();
+            document.execCommand('copy');
+            showSuccess('✅ Signed data copied to clipboard!');
+        }
+
+        function saveSignedData() {
+            const data = document.getElementById('signedDataJson').value;
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `signed-delegation-${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showSuccess('✅ Signed data saved to file!');
+        }
+
+        async function queryAccountInfo() {
+            try {
+                if (!account) {
+                    showError('Please connect MetaMask first');
+                    return;
+                }
+
+                hideError();
+                showSuccess('🔍 Querying account info from chain...');
+                
+                const bech32Address = hexToBech32(account);
+                console.log('Bech32 Address:', bech32Address);
+                
+                const nodeUrl = 'http://localhost:1317';
+                const accountInfoUrl = `${nodeUrl}/cosmos/auth/v1beta1/accounts/${bech32Address}`;
+                
+                console.log('Fetching account info from:', accountInfoUrl);
+                const accountResp = await fetch(accountInfoUrl);
+                console.log('Response status:', accountResp.status);
+                
+                if (accountResp.ok) {
+                    const accountData = await accountResp.json();
+                    console.log('Account data:', accountData);
+                    
+                    const accountNumber = accountData.account?.account_number || '0';
+                    const sequence = accountData.account?.sequence || '0';
+                    
+                    // Update the input fields
+                    document.getElementById('accountNumber').value = accountNumber;
+                    document.getElementById('sequence').value = sequence;
+                    
+                    console.log(`✅ Account Number: ${accountNumber}, Sequence: ${sequence}`);
+                    showSuccess(`✅ Account info retrieved: Account #${accountNumber}, Sequence: ${sequence}`);
+                } else {
+                    throw new Error(`HTTP ${accountResp.status}: ${accountResp.statusText}`);
+                }
+            } catch (e) {
+                console.error('Failed to query account info:', e);
+                showError('⚠️ Failed to query account info: ' + e.message + '. Using manual values or enable CORS on the chain.');
+            }
+        }
+
+        function showSuccess(message) {
+            const box = document.getElementById('successBox');
+            box.innerHTML = message;
+            box.style.display = 'block';
+            setTimeout(() => { box.style.display = 'none'; }, 5000);
+        }
+
+        function showError(message) {
+            const box = document.getElementById('errorBox');
+            box.innerHTML = '<strong>Error:</strong> ' + message;
+            box.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorBox').style.display = 'none';
+        }
+
+        // Listen for account changes
+        if (window.ethereum) {
+            ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length === 0) {
+                    account = null;
+                    document.getElementById('accountInfo').style.display = 'none';
+                    document.getElementById('signBtn').disabled = true;
+                } else {
+                    connectWallet();
+                }
+            });
+
+            ethereum.on('chainChanged', () => {
+                window.location.reload();
+            });
+        }
+    </script>
+</body>
+</html>

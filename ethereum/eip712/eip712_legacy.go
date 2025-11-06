@@ -63,7 +63,13 @@ func LegacyWrapTxToTypedData(
 			return apitypes.TypedData{}, errorsmod.Wrap(errortypes.ErrInvalidType, "cannot parse fee from tx data")
 		}
 
-		feeInfo["feePayer"] = feeDelegation.FeePayer.String()
+		// Reconstruct the fee object with fields in the correct order to match the type definition
+		// The order MUST be: feePayer, amount, gas (as defined below in msgTypes["Fee"])
+		orderedFee := make(map[string]interface{})
+		orderedFee["feePayer"] = feeDelegation.FeePayer.String()
+		orderedFee["amount"] = feeInfo["amount"]
+		orderedFee["gas"] = feeInfo["gas"]
+		txData["fee"] = orderedFee
 
 		// also patching msgTypes to include feePayer
 		msgTypes["Fee"] = []apitypes.Type{

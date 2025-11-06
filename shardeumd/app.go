@@ -809,7 +809,7 @@ func (app *ShardeumApp) setAnteHandler(txConfig client.TxConfig, maxGasWanted ui
 		Cdc:                    app.appCodec,
 		AccountKeeper:          app.AccountKeeper,
 		BankKeeper:             app.BankKeeper,
-		ExtensionOptionChecker: cosmosevmtypes.HasDynamicFeeExtensionOption,
+		ExtensionOptionChecker: cosmosevmtypes.HasDynamicFeeOrWeb3ExtensionOption,
 		EvmKeeper:              app.EVMKeeper,
 		FeegrantKeeper:         app.FeeGrantKeeper,
 		IBCKeeper:              app.IBCKeeper,

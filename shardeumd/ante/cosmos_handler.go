@@ -32,7 +32,12 @@ func newCosmosAnteHandler(options baseevmante.HandlerOptions) sdk.AnteHandler {
 		ante.NewSetPubKeyDecorator(options.AccountKeeper),
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),
 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
-		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
+		// Try EIP-712 signature verification first (will skip if not Web3Tx)
+		cosmosante.NewLegacyEip712SigVerificationDecorator(options.AccountKeeper),
+		// Wrap standard Cosmos signature verification to skip for EIP-712 txs
+		cosmosante.NewEip712SigVerifyWrapper(
+			ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
+		),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
 		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
 		evmante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),

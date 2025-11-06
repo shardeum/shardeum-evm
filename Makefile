@@ -93,6 +93,14 @@ build: go.sum $(BUILDDIR)/
 	@cd $(SHARDEUMD_DIR) && CGO_ENABLED="1" \
 	  go build $(BUILD_FLAGS) -o $(BUILDDIR)/$(EXAMPLE_BINARY) $(SHARDEUMD_MAIN_PKG)
 
+# Build EIP-712 broadcast tool (separate target)
+build-eip712: go.sum $(BUILDDIR)/
+	@echo "🏗️  Building broadcast-eip712 to $(BUILDDIR)/broadcast-eip712 ..."
+	@go build $(BUILD_FLAGS) -o $(BUILDDIR)/broadcast-eip712 ./eip712demo/broadcast-eip712
+
+# Convenience alias
+eip712: build-eip712
+
 # Cross-compile for Linux AMD64
 build-linux:
 	GOOS=linux GOARCH=amd64 $(MAKE) build
@@ -107,7 +115,7 @@ $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
 
 # Default & all target
-.PHONY: all build build-linux install
+.PHONY: all build build-eip712 eip712 build-linux install
 all: build
 
 ###############################################################################
