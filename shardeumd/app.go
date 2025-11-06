@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 
 	"os"
 
@@ -16,6 +17,7 @@ import (
 	_ "github.com/ethereum/go-ethereum/eth/tracers/native"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	dbm "github.com/cosmos/cosmos-db"
 	evmante "github.com/shardeum/shardeum-evm/ante"
@@ -979,6 +981,9 @@ func (app *ShardeumApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.A
 	// Register grpc-gateway routes for all modules.
 	app.BasicModuleManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
+	// Register supply endpoints
+	app.registerSupplyEndpoints(apiSvr)
+
 	// register swagger API from root so that other applications can override easily
 	if err := sdkserver.RegisterSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
 		panic(err)
@@ -1002,6 +1007,117 @@ func (app *ShardeumApp) RegisterTendermintService(clientCtx client.Context) {
 
 func (app *ShardeumApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
 	node.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
+}
+
+// registerSupplyEndpoints registers total supply and circulating supply endpoints
+func (app *ShardeumApp) registerSupplyEndpoints(apiSvr *api.Server) {
+	// Validate that the API server and router are not nil
+	if apiSvr == nil || apiSvr.Router == nil {
+		panic("API server or router is nil, cannot register supply endpoints")
+	}
+	// Total supply endpoint - returns plain text number
+	apiSvr.Router.HandleFunc("/cosmos/bank/v1beta1/supply/total", func(w http.ResponseWriter, r *http.Request) {
+		// Add panic recovery to catch and report errors
+		defer func() {
+			if r := recover(); r != nil {
+				http.Error(w, fmt.Sprintf("Panic in total supply calculation: %v", r), http.StatusInternalServerError)
+			}
+		}()
+
+		if r.Method != "GET" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Get SDK context from the latest committed state with proper caching
+		// Create a cache-wrapped multistore to avoid concurrent access issues
+		var ctx sdk.Context
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					http.Error(w, fmt.Sprintf("Failed to create query context: %v", r), http.StatusInternalServerError)
+				}
+			}()
+
+			height := app.LastBlockHeight()
+			ms := app.CommitMultiStore().CacheMultiStore()
+			ctx = sdk.NewContext(ms, tmproto.Header{
+				Height:  height,
+				ChainID: app.ChainID(),
+			}, false, app.Logger())
+		}()
+
+		// Validate context was created successfully
+		if ctx.MultiStore() == nil {
+			http.Error(w, "Failed to create context: multistore is nil", http.StatusInternalServerError)
+			return
+		}
+
+		// Calculate total supply
+		totalSupply, err := CalculateTotalSupply(ctx, app)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to calculate total supply: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		// Return plain text response with just the number
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "%s", totalSupply.String())
+	}).Methods("GET")
+
+	// Circulating supply endpoint - returns plain text number
+	apiSvr.Router.HandleFunc("/cosmos/bank/v1beta1/supply/circulating", func(w http.ResponseWriter, r *http.Request) {
+		// Add panic recovery to catch and report errors
+		defer func() {
+			if r := recover(); r != nil {
+				http.Error(w, fmt.Sprintf("Panic in circulating supply calculation: %v", r), http.StatusInternalServerError)
+			}
+		}()
+
+		if r.Method != "GET" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Get SDK context from the latest committed state with proper caching
+		// Create a cache-wrapped multistore to avoid concurrent access issues
+		var ctx sdk.Context
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					http.Error(w, fmt.Sprintf("Failed to create query context: %v", r), http.StatusInternalServerError)
+				}
+			}()
+
+			height := app.LastBlockHeight()
+			ms := app.CommitMultiStore().CacheMultiStore()
+			ctx = sdk.NewContext(ms, tmproto.Header{
+				Height:  height,
+				ChainID: app.ChainID(),
+			}, false, app.Logger())
+		}()
+
+		// Validate context was created successfully
+		if ctx.MultiStore() == nil {
+			http.Error(w, "Failed to create context: multistore is nil", http.StatusInternalServerError)
+			return
+		}
+
+		// Calculate circulating supply
+		circulatingSupply, err := CalculateCirculatingSupply(ctx, app)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to calculate circulating supply: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		// Return plain text response with just the number
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "%s", circulatingSupply.String())
+	}).Methods("GET")
 }
 
 // ---------------------------------------------
