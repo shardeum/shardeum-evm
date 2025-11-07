@@ -2,6 +2,8 @@ package config
 
 import (
 	"os"
+
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
 const (
@@ -65,4 +67,9 @@ func ShardeumChainID() uint64 {
 // DefaultChainID returns the default Shardeum chain ID for the current network
 func DefaultChainID() string {
 	return GetDefaultNetworkConfig().ChainID
+}
+
+// ShardeumChainDecimals returns the number of decimals for the Shardeum chain's base coin for the current network
+func ShardeumChainDecimals() evmtypes.Decimals {
+	return GetDefaultNetworkConfig().Decimals
 }
