@@ -1015,7 +1015,7 @@ func (app *ShardeumApp) registerSupplyEndpoints(apiSvr *api.Server) {
 	if apiSvr == nil || apiSvr.Router == nil {
 		panic("API server or router is nil, cannot register supply endpoints")
 	}
-	// Total supply endpoint - returns plain text number
+	// Total supply endpoint
 	apiSvr.Router.HandleFunc("/total-supply", func(w http.ResponseWriter, r *http.Request) {
 		// Add panic recovery to catch and report errors
 		defer func() {
@@ -1060,14 +1060,11 @@ func (app *ShardeumApp) registerSupplyEndpoints(apiSvr *api.Server) {
 			return
 		}
 
-		// Return plain text response with just the number
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "%s", totalSupply.String())
+		// Format and return response based on Accept header or format parameter
+		formatSupplyResponse(w, r, totalSupply, "total")
 	}).Methods("GET")
 
-	// Circulating supply endpoint - returns plain text number
+	// Circulating supply endpoint
 	apiSvr.Router.HandleFunc("/circulating-supply", func(w http.ResponseWriter, r *http.Request) {
 		// Add panic recovery to catch and report errors
 		defer func() {
@@ -1112,11 +1109,8 @@ func (app *ShardeumApp) registerSupplyEndpoints(apiSvr *api.Server) {
 			return
 		}
 
-		// Return plain text response with just the number
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "%s", circulatingSupply.String())
+		// Format and return response based on Accept header or format parameter
+		formatSupplyResponse(w, r, circulatingSupply, "circulating")
 	}).Methods("GET")
 }
 

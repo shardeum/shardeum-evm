@@ -1,8 +1,11 @@
 package shardeumd
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
+	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -442,4 +445,48 @@ func CalculateCirculatingSupply(sdkCtx sdk.Context, app *ShardeumApp) (result *b
 	setCachedValue(&circulatingSupplyCache, circulatingSHM)
 
 	return circulatingSHM, nil
+}
+
+// SupplyResponse represents the JSON response format for supply endpoints
+type SupplyResponse struct {
+	Result string `json:"result"`
+}
+
+// formatSupplyResponse formats the supply response based on the Accept header
+// Supports both "application/json" and "text/plain" (default)
+func formatSupplyResponse(w http.ResponseWriter, r *http.Request, supply *big.Int, supplyType string) {
+	// Check Accept header or format query parameter
+	acceptHeader := r.Header.Get("Accept")
+	formatParam := r.URL.Query().Get("format")
+
+	// Determine response format
+	useJSON := false
+	if formatParam == "json" || strings.Contains(acceptHeader, "application/json") {
+		useJSON = true
+	}
+
+	// Set CORS headers
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if useJSON {
+		// Return JSON response with 18 decimal places
+		decimals := config.ShardeumChainDecimals()
+		decimalStr := fmt.Sprintf("%s.%0*d", supply.String(), decimals, 0)
+
+		response := SupplyResponse{
+			Result: decimalStr,
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, fmt.Sprintf("Failed to encode JSON: %v", err), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		// Return plain text response (default) - whole number without decimals
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "%s", supply.String())
+	}
 }
