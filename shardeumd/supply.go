@@ -3,6 +3,7 @@ package shardeumd
 import (
 	"fmt"
 	"math/big"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -26,7 +27,9 @@ type CachedSupplyValue struct {
 // Cache storage using atomic values for thread-safe access
 var (
 	totalSupplyCache       atomic.Value // stores *CachedSupplyValue
+	totalSupplyMutex       sync.Mutex   // prevents cache stampede for total supply
 	circulatingSupplyCache atomic.Value // stores *CachedSupplyValue
+	circulatingSupplyMutex sync.Mutex   // prevents cache stampede for circulating supply
 )
 
 // getCachedValue retrieves a cached value if it's still valid
@@ -103,7 +106,17 @@ var networkNonCircAddresses = map[string][]string{
 
 // CalculateTotalSupply returns the total supply of SHM (whole number, not ashm)
 func CalculateTotalSupply(sdkCtx sdk.Context, app *ShardeumApp) (result *big.Int, err error) {
-	// Check cache first
+	// Check cache first (fast path - no lock)
+	if cached, ok := getCachedValue(&totalSupplyCache); ok {
+		return cached, nil
+	}
+
+	// Cache miss - acquire lock
+	totalSupplyMutex.Lock()
+	defer totalSupplyMutex.Unlock()
+
+	// Double-check cache after acquiring lock
+	// Another goroutine might have computed it while we waited
 	if cached, ok := getCachedValue(&totalSupplyCache); ok {
 		return cached, nil
 	}
@@ -197,7 +210,17 @@ func CalculateTotalSupply(sdkCtx sdk.Context, app *ShardeumApp) (result *big.Int
 
 // CalculateCirculatingSupply returns the circulating supply of SHM
 func CalculateCirculatingSupply(sdkCtx sdk.Context, app *ShardeumApp) (result *big.Int, err error) {
-	// Check cache first
+	// Check cache first (fast path - no lock)
+	if cached, ok := getCachedValue(&circulatingSupplyCache); ok {
+		return cached, nil
+	}
+
+	// Cache miss - acquire lock to prevent stampede
+	circulatingSupplyMutex.Lock()
+	defer circulatingSupplyMutex.Unlock()
+
+	// Double-check cache after acquiring lock
+	// Another goroutine might have computed it while we waited
 	if cached, ok := getCachedValue(&circulatingSupplyCache); ok {
 		return cached, nil
 	}
