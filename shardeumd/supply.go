@@ -66,9 +66,9 @@ func setCachedValue(cache *atomic.Value, value *big.Int) {
 
 // Module accounts to exclude from circulating supply
 var excludedModules = map[string]bool{
-	"bonded_tokens_pool":     true,
-	"not_bonded_tokens_pool": true,
-	"distribution":           true,
+//	"bonded_tokens_pool":     true,		//bonded will get counted in circulating supply
+//	"not_bonded_tokens_pool": true,     //Holds tokens that are unbonding or delegated to unbonding/unbonded validators. counts for circulating supply
+	"distribution":           true,		//rewards or commission waiting to be claimed
 	"gov":                    true,
 	"fee_collector":          true,
 	"mint":                   true,
