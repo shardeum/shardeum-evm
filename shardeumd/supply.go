@@ -85,22 +85,40 @@ var excludedModules = map[string]bool{
 // These are configured per network
 var networkNonCircAddresses = map[string][]string{
 	"shardeum_8118-1": { // mainnet
-		"shardeum1lg3dd9d0zmvkpcrmrkr5guc6dn8s2k43gr3p6j", // Foundation Cold Storage
-		"shardeum16r5ta5cpvcnkfgrkxvgnnnjwfd4eqlhend3ly8", // Team Cold Storage
-		"shardeum1twv0y2s9426yqxmmh3u3r30q86ha8j0wcu7ajf", // Ecosystem Cold Storage
-		"shardeum1uev04qcth9hgxkrvcs2dnntuyazlppg9nr8ul6", // Sale Cold Storage
+		"shardeum1lg3dd9d0zmvkpcrmrkr5guc6dn8s2k43gr3p6j", // Foundation Cold Storage - 0xfa22D695Af16D960E07b1D8744731A6ccF055aB1
+		"shardeum16r5ta5cpvcnkfgrkxvgnnnjwfd4eqlhend3ly8", // Team Cold Storage - 0xD0e8BEd301662764a076331139Ce4e4b6B907EF9
+		"shardeum1twv0y2s9426yqxmmh3u3r30q86ha8j0wcu7ajf", // Ecosystem Cold Storage - 0x5B98F22a05aaB4401b7BBC7911C5e03eAFD3C9Ee
+		"shardeum1uev04qcth9hgxkrvcs2dnntuyazlppg9nr8ul6", // Sale Cold Storage - 0xE658fA830bB96E83586cC414D9cD7C2745f08505
+		"shardeum1v2w9txzex8lyyh358y29mz3ap2h59a8ryhm8q7", // 0x629c55985931fE425e3439145D8A3d0aAf42F4E3
+		"shardeum1uq6hh953v7hgng6eh6clr4hpv5ylcwr6smsxux", // 0xe0357b969167ae89a359beb1f1d6e16509fc387a
+		"shardeum1xxufgfpnh5ls5nrzau0j4ur0glqamrpj6nvn90", // 0x31B8942433BD3f0A4C62EF1F2Af06F47C1dD8c32
+		"shardeum1jrxdd6xfdqtk9kepeunsq87mfxy6n3fs39zupy", // 0x90CCd6e8C9681762db21CF27001fdB4989A9C530
+		"shardeum1lgsqfegwwgvfwz2ukcrgvxcdc7kpxr0fhwa4ff", // 0xFa2004E50e721897095cB606861b0Dc7AC130dE9
+		"shardeum1t0rzptla0ueq99c3tm3d8hq27vv6rdtxsgx6ur", // 0x5Bc620affd7F320297115Ee2D3dC0AF319a1B566
 	},
 	"shardeum_8119-2": { // testnet
-		"shardeum1lg3dd9d0zmvkpcrmrkr5guc6dn8s2k43gr3p6j",
-		"shardeum16r5ta5cpvcnkfgrkxvgnnnjwfd4eqlhend3ly8",
-		"shardeum1twv0y2s9426yqxmmh3u3r30q86ha8j0wcu7ajf",
-		"shardeum1uev04qcth9hgxkrvcs2dnntuyazlppg9nr8ul6",
+		"shardeum1lg3dd9d0zmvkpcrmrkr5guc6dn8s2k43gr3p6j", // 0xfa22D695Af16D960E07b1D8744731A6ccF055aB1
+		"shardeum16r5ta5cpvcnkfgrkxvgnnnjwfd4eqlhend3ly8", // 0xD0e8BEd301662764a076331139Ce4e4b6B907EF9
+		"shardeum1twv0y2s9426yqxmmh3u3r30q86ha8j0wcu7ajf", // 0x5B98F22a05aaB4401b7BBC7911C5e03eAFD3C9Ee
+		"shardeum1uev04qcth9hgxkrvcs2dnntuyazlppg9nr8ul6", // 0xE658fA830bB96E83586cC414D9cD7C2745f08505
+		"shardeum1v2w9txzex8lyyh358y29mz3ap2h59a8ryhm8q7", // 0x629c55985931fE425e3439145D8A3d0aAf42F4E3
+		"shardeum1uq6hh953v7hgng6eh6clr4hpv5ylcwr6smsxux", // 0xe0357b969167ae89a359beb1f1d6e16509fc387a
+		"shardeum1xxufgfpnh5ls5nrzau0j4ur0glqamrpj6nvn90", // 0x31B8942433BD3f0A4C62EF1F2Af06F47C1dD8c32
+		"shardeum1jrxdd6xfdqtk9kepeunsq87mfxy6n3fs39zupy", // 0x90CCd6e8C9681762db21CF27001fdB4989A9C530
+		"shardeum1lgsqfegwwgvfwz2ukcrgvxcdc7kpxr0fhwa4ff", // 0xFa2004E50e721897095cB606861b0Dc7AC130dE9
+		"shardeum1t0rzptla0ueq99c3tm3d8hq27vv6rdtxsgx6ur", // 0x5Bc620affd7F320297115Ee2D3dC0AF319a1B566
 	},
 	"shardeum_8119-3": { // devnet
-		"shardeum1lg3dd9d0zmvkpcrmrkr5guc6dn8s2k43gr3p6j",
-		"shardeum16r5ta5cpvcnkfgrkxvgnnnjwfd4eqlhend3ly8",
-		"shardeum1twv0y2s9426yqxmmh3u3r30q86ha8j0wcu7ajf",
-		"shardeum1uev04qcth9hgxkrvcs2dnntuyazlppg9nr8ul6",
+		"shardeum1lg3dd9d0zmvkpcrmrkr5guc6dn8s2k43gr3p6j", // 0xfa22D695Af16D960E07b1D8744731A6ccF055aB1
+		"shardeum16r5ta5cpvcnkfgrkxvgnnnjwfd4eqlhend3ly8", // 0xD0e8BEd301662764a076331139Ce4e4b6B907EF9
+		"shardeum1twv0y2s9426yqxmmh3u3r30q86ha8j0wcu7ajf", // 0x5B98F22a05aaB4401b7BBC7911C5e03eAFD3C9Ee
+		"shardeum1uev04qcth9hgxkrvcs2dnntuyazlppg9nr8ul6", // 0xE658fA830bB96E83586cC414D9cD7C2745f08505
+		"shardeum1v2w9txzex8lyyh358y29mz3ap2h59a8ryhm8q7", // 0x629c55985931fE425e3439145D8A3d0aAf42F4E3
+		"shardeum1uq6hh953v7hgng6eh6clr4hpv5ylcwr6smsxux", // 0xe0357b969167ae89a359beb1f1d6e16509fc387a
+		"shardeum1xxufgfpnh5ls5nrzau0j4ur0glqamrpj6nvn90", // 0x31B8942433BD3f0A4C62EF1F2Af06F47C1dD8c32
+		"shardeum1jrxdd6xfdqtk9kepeunsq87mfxy6n3fs39zupy", // 0x90CCd6e8C9681762db21CF27001fdB4989A9C530
+		"shardeum1lgsqfegwwgvfwz2ukcrgvxcdc7kpxr0fhwa4ff", // 0xFa2004E50e721897095cB606861b0Dc7AC130dE9
+		"shardeum1t0rzptla0ueq99c3tm3d8hq27vv6rdtxsgx6ur", // 0x5Bc620affd7F320297115Ee2D3dC0AF319a1B566
 	},
 	"shardeum_8117-1": { // local
 		// empty list
