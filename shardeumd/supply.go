@@ -402,52 +402,14 @@ func CalculateCirculatingSupply(sdkCtx sdk.Context, app *ShardeumApp) (result *b
 		excludedAddressBalance = new(big.Int).Add(excludedAddressBalance, balanceBigInt)
 	}
 
-	// 4. Get community pool balance (unclaimed rewards in distribution module)
-	communityPoolBalance := big.NewInt(0)
-	var poolErr error
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				poolErr = fmt.Errorf("panic querying community pool: %v", r)
-			}
-		}()
-
-		// Query community pool from distribution module
-		pool, err := app.DistrKeeper.FeePool.Get(sdkCtx)
-		if err != nil {
-			poolErr = fmt.Errorf("failed to get fee pool: %w", err)
-			return
-		}
-
-		if pool.CommunityPool != nil && len(pool.CommunityPool) > 0 {
-			for _, coin := range pool.CommunityPool {
-				if coin.Denom == BaseDenom {
-					poolStr := coin.Amount.TruncateInt().String()
-					if poolStr == "" || poolStr == "<nil>" {
-						poolErr = fmt.Errorf("community pool balance string is empty or nil")
-						return
-					}
-					poolBigInt := new(big.Int)
-					poolBigInt, ok := poolBigInt.SetString(poolStr, 10)
-					if !ok || poolBigInt == nil {
-						poolErr = fmt.Errorf("failed to parse community pool balance: %s", poolStr)
-						return
-					}
-					communityPoolBalance = poolBigInt
-					break
-				}
-			}
-		}
-	}()
-
-	if poolErr != nil {
-		return big.NewInt(0), poolErr
-	}
+	// 4. Community pool is NOT queried separately because it's already included
+	// in the distribution module account balance. Querying it separately would
+	// cause double-counting (subtracting the same tokens twice).
 
 	// 5. Calculate circulating supply
-	// Circulating = Total - ExcludedModules - CommunityPool - ExcludedAddresses
+	// Circulating = Total - ExcludedModules - ExcludedAddresses
+	// Note: CommunityPool is already included in distribution module balance, so no separate subtraction
 	circulating := new(big.Int).Sub(totalSupplyBigInt, excludedModuleBalance)
-	circulating = new(big.Int).Sub(circulating, communityPoolBalance)
 	circulating = new(big.Int).Sub(circulating, excludedAddressBalance)
 
 	// Ensure non-negative
