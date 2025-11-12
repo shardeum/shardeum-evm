@@ -21,6 +21,8 @@ WORKDIR /app
 RUN addgroup shardeum
 RUN adduser -D shardeum -G shardeum
 RUN chown -R shardeum:shardeum /app
+RUN mkdir -p /app/.shardeumd && \
+    chown -R shardeum:shardeum /app/.shardeumd
 
 COPY --from=builder --chown=shardeum:shardeum /app/build/shardeumd .
 COPY --from=builder --chown=shardeum:shardeum /app/config/environments config/environments
