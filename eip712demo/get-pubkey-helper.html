@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Extract Public Key from MetaMask</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 1.5rem;
+      background: #0f172a;
+      color: #e5e7eb;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1, h2 {
+      margin-top: 0;
+    }
+    .card {
+      background: #020617;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #1f2937;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+      margin-bottom: 0.25rem;
+      color: #9ca3af;
+      font-weight: 500;
+    }
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.9rem;
+    }
+    input:focus, textarea:focus {
+      outline: 2px solid #38bdf8;
+      outline-offset: 1px;
+      border-color: #38bdf8;
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+    }
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.9rem;
+      background: #38bdf8;
+      color: #0f172a;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 0.75rem;
+      margin-right: 0.5rem;
+    }
+    button.secondary {
+      background: #111827;
+      color: #e5e7eb;
+      border: 1px solid #374151;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    button:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      background: #0f172a;
+      border: 1px solid #1f2937;
+      color: #9ca3af;
+      margin-top: 0.5rem;
+    }
+    .muted {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      line-height: 1.5;
+    }
+    .success {
+      color: #34d399;
+    }
+    .info-box {
+      background: #1e293b;
+      border-left: 3px solid #38bdf8;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85rem;
+      background: #1e293b;
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.25rem;
+    }
+    .command-box {
+      background: #0c1220;
+      border: 1px solid #1f2937;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-top: 0.5rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+      color: #34d399;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔑 Extract Public Key from MetaMask</h1>
+  <p class="muted">
+    This tool helps you extract your Ethereum public key from MetaMask so you can create
+    multisig accounts without exposing your private key. The public key is derived from your
+    signature of a simple message.
+  </p>
+
+  <div class="card">
+    <h2 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Step 1: Connect Wallet</h2>
+    <p class="muted">Connect your MetaMask wallet to get started.</p>
+    <button id="connectButton">Connect MetaMask</button>
+    <div id="accountInfo" style="display: none; margin-top: 1rem;">
+      <label>Connected Account</label>
+      <div class="tag" id="accountTag" style="margin-top: 0.5rem;"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Step 2: Extract Public Key</h2>
+    <p class="muted">
+      Sign a simple message to extract your public key. This doesn't send any transaction
+      or spend any gas—it's just used to mathematically derive your public key from the signature.
+    </p>
+    <button id="extractButton" disabled>Extract Public Key</button>
+    <div id="results" style="display: none;">
+      <label>Your Ethereum Address</label>
+      <input id="ethAddress" type="text" readonly />
+      
+      <label>Your Public Key (Hex - 65 bytes uncompressed)</label>
+      <textarea id="pubkeyHex" readonly></textarea>
+      
+      <label>Your Public Key (Compressed - 33 bytes)</label>
+      <textarea id="pubkeyCompressed" readonly></textarea>
+      
+      <label>Your Public Key (Base64 - for Cosmos SDK)</label>
+      <textarea id="pubkeyBase64" readonly></textarea>
+      
+      <label>Shardeum/Cosmos SDK JSON Format</label>
+      <textarea id="pubkeyJSON" readonly></textarea>
+    </div>
+  </div>
+
+  <div class="card" id="commandCard" style="display: none;">
+    <h2 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Step 3: Import to Shardeum</h2>
+    <p class="muted">
+      Use this command to import your public key into your Shardeum keyring:
+    </p>
+    <div class="command-box" id="importCommand"></div>
+    <button class="secondary" id="copyCommand">Copy Command</button>
+    
+    <div class="info-box" style="margin-top: 1.5rem;">
+      <strong style="color: #38bdf8;">💡 Next Steps for Multisig</strong>
+      <p class="muted" style="margin: 0.5rem 0 0 0;">
+        After each participant imports their public key, create the multisig with:<br>
+        <code style="display: block; margin-top: 0.5rem;">
+          shardeumd keys add mymulti \<br>
+          &nbsp;&nbsp;--multisig alice-pub,bob-pub,carol-pub \<br>
+          &nbsp;&nbsp;--multisig-threshold 2 \<br>
+          &nbsp;&nbsp;--keyring-backend test
+        </code>
+      </p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script>
+    const connectButton = document.getElementById('connectButton');
+    const extractButton = document.getElementById('extractButton');
+    const accountInfo = document.getElementById('accountInfo');
+    const accountTag = document.getElementById('accountTag');
+    const results = document.getElementById('results');
+    const commandCard = document.getElementById('commandCard');
+    const copyCommand = document.getElementById('copyCommand');
+    
+    const ethAddressEl = document.getElementById('ethAddress');
+    const pubkeyHexEl = document.getElementById('pubkeyHex');
+    const pubkeyCompressedEl = document.getElementById('pubkeyCompressed');
+    const pubkeyBase64El = document.getElementById('pubkeyBase64');
+    const pubkeyJSONEl = document.getElementById('pubkeyJSON');
+    const importCommandEl = document.getElementById('importCommand');
+
+    let currentAccount = null;
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert('MetaMask not detected. Please install MetaMask extension.');
+        return;
+      }
+
+      try {
+        const accounts = await window.ethereum.request({
+          method: 'eth_requestAccounts'
+        });
+        
+        if (accounts.length === 0) {
+          alert('No accounts found. Please unlock MetaMask.');
+          return;
+        }
+
+        currentAccount = accounts[0];
+        accountTag.textContent = currentAccount;
+        accountInfo.style.display = 'block';
+        connectButton.textContent = 'Connected ✓';
+        connectButton.disabled = true;
+        extractButton.disabled = false;
+
+        // Listen for account changes
+        window.ethereum.on('accountsChanged', (accounts) => {
+          if (accounts.length === 0) {
+            // User disconnected
+            currentAccount = null;
+            accountInfo.style.display = 'none';
+            connectButton.textContent = 'Connect MetaMask';
+            connectButton.disabled = false;
+            extractButton.disabled = true;
+            results.style.display = 'none';
+            commandCard.style.display = 'none';
+          } else {
+            currentAccount = accounts[0];
+            accountTag.textContent = currentAccount;
+          }
+        });
+      } catch (error) {
+        console.error('Error connecting wallet:', error);
+        alert('Failed to connect: ' + (error.message || error));
+      }
+    }
+
+    async function extractPublicKey() {
+      if (!currentAccount) {
+        alert('Please connect your wallet first.');
+        return;
+      }
+
+      try {
+        // Sign a simple message to extract the public key
+        const message = 'Extract my public key for Shardeum multisig';
+        const signature = await window.ethereum.request({
+          method: 'personal_sign',
+          params: [message, currentAccount]
+        });
+
+        // Use ethers.js to recover the public key from the signature
+        const messageHash = ethers.utils.hashMessage(message);
+        const publicKey = ethers.utils.recoverPublicKey(messageHash, signature);
+
+        // publicKey is 65 bytes uncompressed (0x04 + 64 bytes)
+        // We need to convert it to compressed format for Cosmos SDK
+        
+        // Remove '0x04' prefix for compressed key
+        const publicKeyBytes = ethers.utils.arrayify(publicKey);
+        
+        // Compress the public key (33 bytes)
+        const compressedPublicKey = compressPublicKey(publicKeyBytes);
+        
+        // Convert to base64 (Cosmos SDK format)
+        const base64PubKey = btoa(String.fromCharCode(...compressedPublicKey));
+        
+        // Create JSON format
+        const pubkeyJSON = {
+          "@type": "/ethermint.crypto.v1.ethsecp256k1.PubKey",
+          "key": base64PubKey
+        };
+
+        // Display results
+        ethAddressEl.value = currentAccount;
+        pubkeyHexEl.value = publicKey;
+        pubkeyCompressedEl.value = '0x' + Array.from(compressedPublicKey)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+        pubkeyBase64El.value = base64PubKey;
+        pubkeyJSONEl.value = JSON.stringify(pubkeyJSON, null, 2);
+        
+        results.style.display = 'block';
+        
+        // Generate import command
+        const keyName = 'metamask-' + currentAccount.substring(2, 8);
+        const jsonString = JSON.stringify(pubkeyJSON);
+        const escapedJSON = jsonString.replace(/"/g, '\\"');
+        const command = `shardeumd keys add ${keyName} --pubkey '${jsonString}' --keyring-backend test`;
+        importCommandEl.textContent = command;
+        commandCard.style.display = 'block';
+        
+      } catch (error) {
+        console.error('Error extracting public key:', error);
+        alert('Failed to extract public key: ' + (error.message || error));
+      }
+    }
+
+    function compressPublicKey(publicKeyBytes) {
+      // publicKeyBytes is 65 bytes: [0x04, x (32 bytes), y (32 bytes)]
+      // Compressed format is 33 bytes: [prefix, x (32 bytes)]
+      // prefix is 0x02 if y is even, 0x03 if y is odd
+      
+      if (publicKeyBytes[0] !== 0x04) {
+        throw new Error('Invalid uncompressed public key format');
+      }
+      
+      const x = publicKeyBytes.slice(1, 33);
+      const y = publicKeyBytes.slice(33, 65);
+      
+      // Check if y is even or odd
+      const prefix = (y[31] & 1) === 0 ? 0x02 : 0x03;
+      
+      const compressed = new Uint8Array(33);
+      compressed[0] = prefix;
+      compressed.set(x, 1);
+      
+      return compressed;
+    }
+
+    function copyCommandToClipboard() {
+      const command = importCommandEl.textContent;
+      navigator.clipboard.writeText(command).then(() => {
+        const originalText = copyCommand.textContent;
+        copyCommand.textContent = 'Copied ✓';
+        setTimeout(() => {
+          copyCommand.textContent = originalText;
+        }, 2000);
+      }).catch(err => {
+        alert('Failed to copy: ' + err);
+      });
+    }
+
+    connectButton.addEventListener('click', connectWallet);
+    extractButton.addEventListener('click', extractPublicKey);
+    copyCommand.addEventListener('click', copyCommandToClipboard);
+  </script>
+</body>
+</html>

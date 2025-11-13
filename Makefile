@@ -97,6 +97,8 @@ build: go.sum $(BUILDDIR)/
 build-eip712: go.sum $(BUILDDIR)/
 	@echo "🏗️  Building broadcast-eip712 to $(BUILDDIR)/broadcast-eip712 ..."
 	@go build $(BUILD_FLAGS) -o $(BUILDDIR)/broadcast-eip712 ./eip712demo/broadcast-eip712
+	@echo "🏗️  Building broadcast-eip712-multisig to $(BUILDDIR)/broadcast-eip712-multisig ..."
+	@go build $(BUILD_FLAGS) -o $(BUILDDIR)/broadcast-eip712-multisig ./eip712demo/broadcast-eip712-multisig
 
 # Convenience alias
 eip712: build-eip712

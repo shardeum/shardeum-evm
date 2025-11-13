@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Shardeum EIP-712 Multisig Delegate Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 1.5rem;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    h1, h2 {
+      margin-top: 0;
+    }
+    .card {
+      background: #020617;
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid #1f2937;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      margin-top: 0.35rem;
+      margin-bottom: 0.15rem;
+      color: #9ca3af;
+    }
+    input, textarea, select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.35rem 0.5rem;
+      border-radius: 0.5rem;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.9rem;
+    }
+    input:focus, textarea:focus {
+      outline: 2px solid #38bdf8;
+      outline-offset: 1px;
+      border-color: #38bdf8;
+    }
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+    }
+    .row {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .row > div {
+      flex: 1;
+    }
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 0.5rem 0.95rem;
+      font-size: 0.9rem;
+      background: #38bdf8;
+      color: #0f172a;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-right: 0.5rem;
+      margin-top: 0.35rem;
+    }
+    button.secondary {
+      background: #111827;
+      color: #e5e7eb;
+      border: 1px solid #374151;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.1rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: #0f172a;
+      border: 1px solid #1f2937;
+      color: #9ca3af;
+    }
+    .muted {
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Shardeum EIP-712 Multisig &amp; Delegate Demo</h1>
+  <p class="muted">
+    Each signer connects with MetaMask and signs the <strong>same</strong> EIP-712 payload for a
+    Cosmos <code>MsgDelegate</code>. The JSON you download per signer is what the
+    Go tool (<code>broadcast-eip712-multisig</code>) consumes.
+  </p>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+      <div>
+        <strong>1. Wallet</strong>
+        <div class="muted">Connect an EVM wallet (MetaMask).</div>
+      </div>
+      <div>
+        <button id="connectButton">Connect MetaMask</button>
+        <span id="accountTag" class="tag" style="display:none;"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <strong>2. Transaction Parameters</strong>
+    <div class="muted" style="margin-top:0.25rem;">
+      These must be identical for <em>all</em> signers: same delegator (multisig), fee, gas,
+      memo, account number, and sequence.
+    </div>
+
+    <div class="row" style="margin-top:0.75rem;">
+      <div>
+        <label for="evmChainId">EVM / TypedData Chain ID</label>
+        <input id="evmChainId" type="number" value="8117" />
+      </div>
+      <div>
+        <label for="cosmosChainId">Cosmos Chain ID</label>
+        <input id="cosmosChainId" type="text" value="shardeum_8117-1" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="delegator">Delegator (Bech32 multisig)</label>
+        <input id="delegator" type="text" value="shardeum1gz02hcrkklw2fe5vv34vh5pzact2dwg06hl3ug" />
+      </div>
+      <div>
+        <label for="validator">Validator Address (Bech32)</label>
+        <input id="validator" type="text" placeholder="shardeumvaloper1..." />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="amount">Amount</label>
+        <input id="amount" type="text" value="1000000000000000000" />
+      </div>
+      <div>
+        <label for="denom">Denom</label>
+        <input id="denom" type="text" value="ashm" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="feeAmount">Fee Amount</label>
+        <input id="feeAmount" type="text" value="520000000000000000000" />
+      </div>
+      <div>
+        <label for="feeDenom">Fee Denom</label>
+        <input id="feeDenom" type="text" value="ashm" />
+      </div>
+      <div>
+        <label for="gas">Gas</label>
+        <input id="gasLimit" type="text" value="250000" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="accountNumber">Account Number (multisig)</label>
+        <input id="accountNumber" type="text" value="53" />
+      </div>
+      <div>
+        <label for="sequence">Sequence (multisig)</label>
+        <input id="sequence" type="text" value="0" />
+      </div>
+    </div>
+
+    <label for="memo">Memo (optional)</label>
+    <input id="memo" type="text" placeholder="optional memo" />
+  </div>
+
+  <div class="card">
+    <strong>3. Sign &amp; Export</strong>
+    <div class="muted" style="margin-top:0.25rem;">
+      Each signer should:
+      <ol class="muted">
+        <li>Ensure the parameters above match the agreed values.</li>
+        <li>Click <strong>Sign with MetaMask</strong>.</li>
+        <li>Download the JSON file and send it to whoever runs the Go tool.</li>
+      </ol>
+    </div>
+
+    <button id="signButton" disabled>Sign with MetaMask</button>
+    <button id="downloadButton" class="secondary" disabled>Download JSON</button>
+
+    <p class="muted" style="margin-top:0.5rem;">
+      The JSON below is what <code>broadcast-eip712-multisig</code> expects per signer.
+    </p>
+    <label for="output">Signed EIP-712 JSON</label>
+    <textarea id="output" spellcheck="false"></textarea>
+  </div>
+
+  <script>
+    const connectButton = document.getElementById('connectButton');
+    const signButton = document.getElementById('signButton');
+    const downloadButton = document.getElementById('downloadButton');
+    const accountTag = document.getElementById('accountTag');
+    const outputEl = document.getElementById('output');
+
+    let currentAccount = null;
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert('MetaMask (or another EVM wallet) is required.');
+        return;
+      }
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        currentAccount = accounts[0];
+        accountTag.style.display = 'inline-flex';
+        accountTag.textContent = currentAccount;
+        connectButton.textContent = 'Connected';
+        signButton.disabled = false;
+      } catch (err) {
+        console.error(err);
+        alert('Failed to connect wallet: ' + (err && err.message ? err.message : err));
+      }
+    }
+
+    function buildTypedData() {
+      const evmChainId = Number(document.getElementById('evmChainId').value || '1');
+      const cosmosChainId = document.getElementById('cosmosChainId').value.trim();
+      const delegator = document.getElementById('delegator').value.trim();
+      const validator = document.getElementById('validator').value.trim();
+      const amount = document.getElementById('amount').value.trim();
+      const denom = document.getElementById('denom').value.trim();
+      const feeAmount = document.getElementById('feeAmount').value.trim();
+      const feeDenom = document.getElementById('feeDenom').value.trim();
+      const gas = document.getElementById('gasLimit').value.trim();
+      //const accountNumber = document.getElementById('accountNumber').value.trim();
+      const accountNumber = document.getElementById('accountNumber').value || '0';
+      const sequence = document.getElementById('sequence').value.trim();
+      const memo = document.getElementById('memo').value || '';
+
+      if (!delegator || !validator || !denom || !amount) {
+        throw new Error('Delegator, validator, amount, and denom are required.');
+      }
+      const signerBech32 = hexToBech32(currentAccount);
+        const typedData = buildEIP712TypedData(
+            delegator,
+            validator,
+            amount,
+            denom,
+            evmChainId, // Use MetaMask's connected chain ID for domain
+            cosmosChainId,   // Use manual Cosmos chain ID for message
+            accountNumber,  // Pass the queried account number
+            sequence        // Pass the queried sequence
+        );
+      return { typedData, extra: {delegator, signerBech32, validator, amount, denom } };
+    }
+
+    function buildEIP712TypedData(delegatorAddr, validatorAddr, amount, denom, chainId, cosmosChainId, accountNumber = '0', sequence = '0') {
+        // Construct the EIP-712 TypedData for MsgDelegate
+        // This MUST match exactly what the chain's eip712 package creates
+
+        return {
+            types: {
+                Coin: [
+                    { name: 'denom', type: 'string' },
+                    { name: 'amount', type: 'string' }
+                ],
+                EIP712Domain: [
+                    { name: 'name', type: 'string' },
+                    { name: 'version', type: 'string' },
+                    { name: 'chainId', type: 'uint256' },
+                    { name: 'verifyingContract', type: 'string' },
+                    { name: 'salt', type: 'string' }
+                ],
+                Fee: [
+                    { name: 'amount', type: 'Coin[]' },
+                    { name: 'gas', type: 'string' }
+                ],
+                Tx: [
+                    { name: 'account_number', type: 'string' },
+                    { name: 'chain_id', type: 'string' },
+                    { name: 'fee', type: 'Fee' },
+                    { name: 'memo', type: 'string' },
+                    { name: 'sequence', type: 'string' },
+                    { name: 'msg0', type: 'TypeMsgDelegate0' }
+                ],
+                TypeMsgDelegate0: [
+                    { name: 'value', type: 'TypeValue0' },
+                    { name: 'type', type: 'string' }
+                ],
+                TypeValue0: [
+                    { name: 'validator_address', type: 'string' },
+                    { name: 'delegator_address', type: 'string' },
+                    { name: 'amount', type: 'TypeValueAmount0' }
+                ],
+                TypeValueAmount0: [
+                    { name: 'denom', type: 'string' },
+                    { name: 'amount', type: 'string' }
+                ]
+            },
+            primaryType: 'Tx',
+            domain: {
+                name: 'Cosmos Web3',
+                version: '1.0.0',
+                chainId: '0x' + chainId.toString(16), // Hex format for non-legacy handler
+                verifyingContract: 'cosmos',
+                salt: '0'
+            },
+            message: {
+                account_number: accountNumber,
+                chain_id: cosmosChainId, // Use the manually specified Cosmos chain ID
+                fee: {
+                    amount: [
+                        {
+                            denom: denom,
+                            amount: '520000000000000000000' //todo make this not hardcoded!
+                        }
+                    ],
+                    gas: document.getElementById('gasLimit').value || '250000'
+                },
+                memo: document.getElementById('memo').value || '',
+                sequence: sequence,
+                // Messages are flattened into individual fields (msg0, msg1, etc.)
+                msg0: {
+                    type: 'cosmos-sdk/MsgDelegate',
+                    value: {
+                        validator_address: validatorAddr,
+                        delegator_address: delegatorAddr, //already is bech32
+                        amount: {
+                            denom: denom,
+                            amount: amount
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+            // Convert hex address to Bech32 using proper encoding
+        function hexToBech32(hexAddress, prefix = 'shardeum') {
+            // Remove 0x prefix if present
+            const hex = hexAddress.startsWith('0x') ? hexAddress.slice(2) : hexAddress;
+            
+            // Convert hex to bytes
+            const bytes = [];
+            for (let i = 0; i < hex.length; i += 2) {
+                bytes.push(parseInt(hex.substr(i, 2), 16));
+            }
+            
+            // Bech32 encoding (simplified version)
+            // This uses the bech32 algorithm: https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+            const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+            
+            function polymod(values) {
+                const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
+                let chk = 1;
+                for (const value of values) {
+                    const top = chk >> 25;
+                    chk = (chk & 0x1ffffff) << 5 ^ value;
+                    for (let i = 0; i < 5; i++) {
+                        if ((top >> i) & 1) {
+                            chk ^= GEN[i];
+                        }
+                    }
+                }
+                return chk;
+            }
+            
+            function hrpExpand(hrp) {
+                const ret = [];
+                for (let p = 0; p < hrp.length; p++) {
+                    ret.push(hrp.charCodeAt(p) >> 5);
+                }
+                ret.push(0);
+                for (let p = 0; p < hrp.length; p++) {
+                    ret.push(hrp.charCodeAt(p) & 31);
+                }
+                return ret;
+            }
+            
+            function createChecksum(hrp, data) {
+                const values = hrpExpand(hrp).concat(data).concat([0, 0, 0, 0, 0, 0]);
+                const mod = polymod(values) ^ 1;
+                const ret = [];
+                for (let p = 0; p < 6; p++) {
+                    ret.push((mod >> 5 * (5 - p)) & 31);
+                }
+                return ret;
+            }
+            
+            function convertBits(data, fromBits, toBits, pad) {
+                let acc = 0;
+                let bits = 0;
+                const ret = [];
+                const maxv = (1 << toBits) - 1;
+                for (const value of data) {
+                    acc = (acc << fromBits) | value;
+                    bits += fromBits;
+                    while (bits >= toBits) {
+                        bits -= toBits;
+                        ret.push((acc >> bits) & maxv);
+                    }
+                }
+                if (pad) {
+                    if (bits > 0) {
+                        ret.push((acc << (toBits - bits)) & maxv);
+                    }
+                } else if (bits >= fromBits || ((acc << (toBits - bits)) & maxv)) {
+                    throw new Error('Invalid bits');
+                }
+                return ret;
+            }
+            
+            // Convert 8-bit bytes to 5-bit groups
+            const words = convertBits(bytes, 8, 5, true);
+            const checksumWords = createChecksum(prefix, words);
+            const combined = words.concat(checksumWords);
+            
+            let result = prefix + '1';
+            for (const word of combined) {
+                result += CHARSET.charAt(word);
+            }
+            
+            return result;
+        }
+
+
+    async function signWithMetaMask() {
+      if (!window.ethereum || !currentAccount) {
+        alert('Connect MetaMask first.');
+        return;
+      }
+
+      let payload;
+      try {
+        payload = buildTypedData();
+      } catch (err) {
+        alert(err.message || String(err));
+        return;
+      }
+
+      const typedData = payload.typedData;
+
+      const jsonStr = JSON.stringify(typedData);
+      try {
+        const signature = await window.ethereum.request({
+          method: 'eth_signTypedData_v4',
+          params: [currentAccount, jsonStr],
+        });
+
+        const bundle = {
+          typedData: typedData,
+          signature: signature,
+          ethAddressSigner: currentAccount,
+          bech32Signer: payload.extra.signerBech32,
+          multisigDelegatorAddr: payload.extra.delegator,
+          validatorAddress: payload.extra.validator,
+          amount: payload.extra.amount,
+          denom: payload.extra.denom,
+        };
+
+        const out = JSON.stringify(bundle, null, 2);
+        outputEl.value = out;
+        downloadButton.disabled = false;
+      } catch (err) {
+        console.error(err);
+        alert('Signing failed: ' + (err && err.message ? err.message : err));
+      }
+    }
+
+    function downloadJSON() {
+      const text = outputEl.value.trim();
+      if (!text) {
+        alert('Nothing to download.');
+        return;
+      }
+      let obj;
+      try {
+        obj = JSON.parse(text);
+      } catch (e) {
+        alert('Current output is not valid JSON.');
+        return;
+      }
+
+      const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const addr = obj.ethAddress || 'signer';
+      a.download = `eip712-multisig-${addr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    connectButton.addEventListener('click', connectWallet);
+    signButton.addEventListener('click', signWithMetaMask);
+    downloadButton.addEventListener('click', downloadJSON);
+  </script>
+</body>
+</html>
