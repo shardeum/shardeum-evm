@@ -1,0 +1,25 @@
+{
+  "signers": [
+    {
+      "name": "alice",
+      "pubkey": {
+        "@type": "/ethermint.crypto.v1.ethsecp256k1.PubKey",
+        "key": "A4a/68YttrozQF6k+Wdw58VrUMh9ybO5PiEWt32J5JCO"
+      }
+    },
+    {
+      "name": "bob",
+      "pubkey": {
+        "@type": "/ethermint.crypto.v1.ethsecp256k1.PubKey",
+        "key": "A7OixuGpnL3QJhF/TX2oVjBaZjoTKaoH0ndwHdD1S+mA"
+      }
+    },
+    {
+      "name": "carol",
+      "pubkey": {
+        "@type": "/ethermint.crypto.v1.ethsecp256k1.PubKey",
+        "key": "A8KvS2WE+/9S80VCAmna6rGTOIIYQAtRUJBMowlBJRjb"
+      }
+    }
+  ]
+}
