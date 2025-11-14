@@ -55,12 +55,38 @@ Output example:
 }
 ```
 
-### Option B: Get Public Key from Address (if key is in keyring)
+### Option B: Get Public Key from Hardware Wallet (Ledger)
+
+For hardware wallet users, the easiest method is to import the public key (not private key) from the hardware wallet:
 
 ```bash
 # Signer runs this on their machine
-shardeumd keys show alice --pubkey --keyring-backend test --output json | jq -c '.'
+# Connect your Ledger device and open the Ethereum app
+
+# Add the hardware wallet key (this only imports the public key, not the private key)
+shardeumd keys add alice --ledger --keyring-backend test
+
+# Export the public key in the format we need
+shardeumd keys show alice --pubkey --keyring-backend test
 ```
+
+**Note:** The `--ledger` flag only imports the public key from the hardware wallet. The private key never leaves the device.
+
+### Option C: Convert Hex Public Key to JSON Format
+
+If a signer has a hex public key (e.g., from a hardware wallet export or other tool), you can convert it using the helper script:
+
+```bash
+# From the shardeum-evm directory
+bash scripts/convert_pubkey_to_json.sh <hex_pubkey>
+
+# Example:
+bash scripts/convert_pubkey_to_json.sh 0x04a1b2c3d4e5f6...
+# or for compressed keys (33 bytes):
+bash scripts/convert_pubkey_to_json.sh a1b2c3... true
+```
+
+**Important:** You **cannot** derive a public key from just a bech32 address. The address is a hash of the public key, so it's a one-way operation. You need the actual public key (hex or from hardware wallet).
 
 ### Create Signers JSON File
 
