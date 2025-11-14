@@ -268,23 +268,8 @@ func displayTx(filePath string) error {
 	}
 
 	fmt.Println("\n" + strings.Repeat("=", 80))
-	fmt.Println("⚠️  Broadcasting Not Yet Implemented")
+	fmt.Println("  please use --broadcast to send this transaction to the network")
 	fmt.Println(strings.Repeat("=", 80))
-	fmt.Println(`
-This tool validates and displays the transaction but cannot broadcast it yet.
-
-To broadcast this transaction, you need:
-  1. Public key recovery from the EIP-712 signature
-  2. Proper Cosmos SDK transaction builder with EIP-712 extension
-  3. Account number querying from the chain
-
-Alternative approaches:
-  - Use the Python script examples/broadcast_eip712_tx.py for more details
-  - Implement full EIP-712 support using testutil/tx/eip712.go as reference
-  - Create a backend service that handles the encoding
-
-See: docs/EIP712_BROADCAST_TODO.md for implementation roadmap
-`)
 
 	return nil
 }
