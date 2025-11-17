@@ -147,6 +147,10 @@ export STAKE_AMOUNT=1000000000000000000000ashm  # 1000 SHM
 export CHAIN_ID=shardeum_8117-1  # Adjust based on your network
 ```
 
+**Note for Testnet/Remote Networks:**
+- The chain ID may differ from the config file. For example, testnet uses `shardeum-testnet`. Always verify the actual chain ID from your genesis file or network documentation.
+- For fee estimation on remote networks, query the appropriate RPC endpoint (e.g., `shardeumd query feemarket params --node https://rpc-mezame.shardeum.org` for testnet).
+
 ## Step 3: Add Node with Multisig Operator Key
 
 Run `add_node.sh` with the multisig options:
@@ -387,8 +391,11 @@ Signing Steps (Option 1 — Using shardeumd CLI):
      --sequence 0 \
      --keyring-backend test \
      --keyring-dir "$TEMP_KEYRING" \
+     --offline \
      --output-document <your-name>-sig.json
    ```
+
+   **Note:** The `--offline` flag is required when signing on a machine without a local node running (common in remote/testnet setups).
 
 5. Delete the temporary keyring:
    ```bash
@@ -420,6 +427,7 @@ mkdir -p signatures
 
 Combine the signatures into a single signed transaction:
 
+### For Local Network Setup:
 ```bash
 NODE_DIR=".local/node2"
 
@@ -436,12 +444,39 @@ shardeumd tx multisign "$NODE_DIR/create-validator-unsigned.json" \
 echo "✅ Merged signatures: $NODE_DIR/create-validator-signed.json"
 ```
 
-**Note:** If you have more signatures than the threshold, you can include them all. The multisig will use the first `threshold` valid signatures.
+### For Remote/Testnet Setup:
+```bash
+NODE_DIR=".local/node2"
+
+# Get account number and sequence (from Step 5)
+ACCOUNT_NUMBER=<from_step_5>
+SEQUENCE=<from_step_5>
+
+# Merge signatures with offline mode
+shardeumd tx multisign "$NODE_DIR/create-validator-unsigned.json" \
+  validator-operator \
+  signatures/alice-sig.json \
+  signatures/bob-sig.json \
+  --chain-id "$CHAIN_ID" \
+  --keyring-backend test \
+  --home "$NODE_DIR" \
+  --offline \
+  --account-number $ACCOUNT_NUMBER \
+  --sequence $SEQUENCE \
+  --output-document "$NODE_DIR/create-validator-signed.json"
+
+echo "✅ Merged signatures: $NODE_DIR/create-validator-signed.json"
+```
+
+**Note:**
+- If you have more signatures than the threshold, you can include them all. The multisig will use the first `threshold` valid signatures.
+- For remote/testnet setups, the `--offline`, `--account-number`, and `--sequence` flags are required when merging signatures on a machine without a local node running.
 
 ## Step 11: Broadcast Transaction
 
 Broadcast the signed transaction:
 
+### For Local Network:
 ```bash
 NODE_DIR=".local/node2"
 
@@ -457,6 +492,23 @@ VALIDATOR_OPERATOR_ADDR=$(cat "$NODE_DIR/multisig_info.json" | jq -r '.validator
 shardeumd query staking validator "$VALIDATOR_OPERATOR_ADDR" --node tcp://localhost:26657
 ```
 
+### For Remote/Testnet:
+```bash
+NODE_DIR=".local/node2"
+
+# Broadcast to remote RPC endpoint
+shardeumd tx broadcast "$NODE_DIR/create-validator-signed.json" \
+  --chain-id "$CHAIN_ID" \
+  --node https://rpc-mezame.shardeum.org  # Replace with your testnet RPC endpoint
+
+# Wait a moment for confirmation
+sleep 5
+
+# Verify validator was created
+VALIDATOR_OPERATOR_ADDR=$(cat "$NODE_DIR/multisig_info.json" | jq -r '.validator_operator_address')
+shardeumd query staking validator "$VALIDATOR_OPERATOR_ADDR" --node https://rpc-mezame.shardeum.org
+```
+
 **Expected Output:**
 ```
 code: 0
@@ -464,6 +516,8 @@ codespace: ""
 txhash: <transaction-hash>
 ...
 ```
+
+**Note:** For remote/testnet setups, replace `tcp://localhost:26657` with the appropriate RPC endpoint for your network (e.g., `https://rpc-mezame.shardeum.org` for testnet).
 
 ## Step 12: Verify Validator Status
 
