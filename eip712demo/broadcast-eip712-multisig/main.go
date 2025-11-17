@@ -22,12 +22,12 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	ethermint "github.com/shardeum/shardeum-evm/types"
+	"github.com/shardeum/shardeum-evm/eip712demo/common"
 	"github.com/spf13/cobra"
 	"sort"
 )
@@ -55,14 +55,12 @@ func init() {
 	// This matches what the chain does in ante/cosmos/eip712.go
 	registry := codectypes.NewInterfaceRegistry()
 	ethermint.RegisterInterfaces(registry)
-	banktypes.RegisterInterfaces(registry)
 	stakingtypes.RegisterInterfaces(registry)
 	cryptocodec.RegisterInterfaces(registry)
 	evmCodec = codec.NewProtoCodec(registry)
 	
 	// Set the amino codec for legacy StdSignBytes
 	aminoCodec := codec.NewLegacyAmino()
-	banktypes.RegisterLegacyAminoCodec(aminoCodec)
 	stakingtypes.RegisterLegacyAminoCodec(aminoCodec)
 	cryptocodec.RegisterCrypto(aminoCodec)
 	legacytx.RegressionTestingAminoCodec = aminoCodec
@@ -246,7 +244,7 @@ func displayTx(filePaths []string) error {
 	fmt.Printf("\n💰 Transaction Details:\n")
 
 	// Parse messages
-	msgs, err := buildMessages(baseTx)
+	msgs, err := common.BuildMessages(&baseTx)
 	if err != nil {
 		fmt.Printf("   ⚠️  Failed to parse messages: %v\n", err)
 	} else {
@@ -256,6 +254,10 @@ func displayTx(filePaths []string) error {
 			// Display message details
 			switch m := msg.(type) {
 			case *stakingtypes.MsgDelegate:
+				fmt.Printf("      Delegator: %s\n", m.DelegatorAddress)
+				fmt.Printf("      Validator: %s\n", m.ValidatorAddress)
+				fmt.Printf("      Amount:    %s\n", m.Amount.String())
+			case *stakingtypes.MsgUndelegate:
 				fmt.Printf("      Delegator: %s\n", m.DelegatorAddress)
 				fmt.Printf("      Validator: %s\n", m.ValidatorAddress)
 				fmt.Printf("      Amount:    %s\n", m.Amount.String())
@@ -351,52 +353,6 @@ func parseSignature(sigHex string) ([]byte, error) {
 	return sig, nil
 }
 
-func buildMessages(signedTx SignedEIP712Tx) ([]sdk.Msg, error) {
-	var msgs []sdk.Msg
-
-	for _, rawMsg := range signedTx.GetMsgs() {
-		var msgWrapper struct {
-			Type  string          `json:"type"`
-			Value json.RawMessage `json:"value"`
-		}
-
-		if err := json.Unmarshal(rawMsg, &msgWrapper); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal message wrapper: %w", err)
-		}
-
-		switch msgWrapper.Type {
-		case "cosmos-sdk/MsgDelegate":
-			var delegateValue struct {
-				DelegatorAddress string `json:"delegator_address"`
-				ValidatorAddress string `json:"validator_address"`
-				Amount           struct {
-					Denom  string `json:"denom"`
-					Amount string `json:"amount"`
-				} `json:"amount"`
-			}
-			if err := json.Unmarshal(msgWrapper.Value, &delegateValue); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal MsgDelegate: %w", err)
-			}
-
-			amount, ok := sdkmath.NewIntFromString(delegateValue.Amount.Amount)
-			if !ok {
-				return nil, fmt.Errorf("invalid amount: %s", delegateValue.Amount.Amount)
-			}
-
-			msg := stakingtypes.NewMsgDelegate(
-				delegateValue.DelegatorAddress,
-				delegateValue.ValidatorAddress,
-				sdk.NewCoin(delegateValue.Amount.Denom, amount),
-			)
-			msgs = append(msgs, msg)
-
-		default:
-			return nil, fmt.Errorf("unsupported message type: %s", msgWrapper.Type)
-		}
-	}
-
-	return msgs, nil
-}
 
 // broadcastTx broadcasts the multisig EIP-712 transaction to the network
 func broadcastTx(filePaths []string, nodeURL string, evmChainID uint64, cosmosChainID string, thresholdFlag int) error {
@@ -596,7 +552,7 @@ func broadcastTx(filePaths []string, nodeURL string, evmChainID uint64, cosmosCh
 
 	// Step 4: Build messages
 	fmt.Println("\n� Step 4: Building transaction messages...")
-	msgs, err := buildMessages(baseTx)
+	msgs, err := common.BuildMessages(&baseTx)
 	if err != nil {
 		return fmt.Errorf("failed to build messages: %w", err)
 	}
@@ -739,7 +695,6 @@ func buildMultisigTx(
 ) ([]byte, error) {
 	// Create codec
 	registry := codectypes.NewInterfaceRegistry()
-	banktypes.RegisterInterfaces(registry)
 	stakingtypes.RegisterInterfaces(registry)
 	authtypes.RegisterInterfaces(registry)
 	ethermint.RegisterInterfaces(registry)
@@ -976,7 +931,6 @@ func buildEIP712Tx(
 ) ([]byte, error) {
 	// Create codec
 	registry := codectypes.NewInterfaceRegistry()
-	banktypes.RegisterInterfaces(registry)
 	stakingtypes.RegisterInterfaces(registry)
 	authtypes.RegisterInterfaces(registry)
 	ethermint.RegisterInterfaces(registry)

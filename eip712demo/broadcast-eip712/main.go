@@ -13,19 +13,19 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/shardeum/shardeum-evm/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
+	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+	cryptocodec "github.com/shardeum/shardeum-evm/crypto/codec"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
+	"github.com/shardeum/shardeum-evm/eip712demo/common"
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"
 	ethermint "github.com/shardeum/shardeum-evm/types"
 	"github.com/spf13/cobra"
@@ -46,14 +46,12 @@ func init() {
 	// This matches what the chain does in ante/cosmos/eip712.go
 	registry := codectypes.NewInterfaceRegistry()
 	ethermint.RegisterInterfaces(registry)
-	banktypes.RegisterInterfaces(registry)
 	stakingtypes.RegisterInterfaces(registry)
 	cryptocodec.RegisterInterfaces(registry)
 	evmCodec = codec.NewProtoCodec(registry)
 	
 	// Set the amino codec for legacy StdSignBytes
 	aminoCodec := codec.NewLegacyAmino()
-	banktypes.RegisterLegacyAminoCodec(aminoCodec)
 	stakingtypes.RegisterLegacyAminoCodec(aminoCodec)
 	cryptocodec.RegisterCrypto(aminoCodec)
 	legacytx.RegressionTestingAminoCodec = aminoCodec
@@ -90,6 +88,13 @@ func (tx *SignedEIP712Tx) GetSequence() string {
 		return seq
 	}
 	return ""
+}
+
+func (tx *SignedEIP712Tx) GetAccountNumber() string {
+	if accNum, ok := tx.TypedData.Message["account_number"].(string); ok {
+		return accNum
+	}
+	return "0"
 }
 
 func (tx *SignedEIP712Tx) GetFee() ([]struct {
@@ -225,7 +230,7 @@ func displayTx(filePath string) error {
 	fmt.Printf("\n💰 Transaction Details:\n")
 
 	// Parse messages
-	msgs, err := buildMessages(signedTx)
+	msgs, err := common.BuildMessages(&signedTx)
 	if err != nil {
 		fmt.Printf("   ⚠️  Failed to parse messages: %v\n", err)
 	} else {
@@ -235,6 +240,10 @@ func displayTx(filePath string) error {
 			// Display message details
 			switch m := msg.(type) {
 			case *stakingtypes.MsgDelegate:
+				fmt.Printf("      Delegator: %s\n", m.DelegatorAddress)
+				fmt.Printf("      Validator: %s\n", m.ValidatorAddress)
+				fmt.Printf("      Amount:    %s\n", m.Amount.String())
+			case *stakingtypes.MsgUndelegate:
 				fmt.Printf("      Delegator: %s\n", m.DelegatorAddress)
 				fmt.Printf("      Validator: %s\n", m.ValidatorAddress)
 				fmt.Printf("      Amount:    %s\n", m.Amount.String())
@@ -296,52 +305,6 @@ func parseSignature(sigHex string) ([]byte, error) {
 	return sig, nil
 }
 
-func buildMessages(signedTx SignedEIP712Tx) ([]sdk.Msg, error) {
-	var msgs []sdk.Msg
-
-	for _, rawMsg := range signedTx.GetMsgs() {
-		var msgWrapper struct {
-			Type  string          `json:"type"`
-			Value json.RawMessage `json:"value"`
-		}
-
-		if err := json.Unmarshal(rawMsg, &msgWrapper); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal message wrapper: %w", err)
-		}
-
-		switch msgWrapper.Type {
-		case "cosmos-sdk/MsgDelegate":
-			var delegateValue struct {
-				DelegatorAddress string `json:"delegator_address"`
-				ValidatorAddress string `json:"validator_address"`
-				Amount           struct {
-					Denom  string `json:"denom"`
-					Amount string `json:"amount"`
-				} `json:"amount"`
-			}
-			if err := json.Unmarshal(msgWrapper.Value, &delegateValue); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal MsgDelegate: %w", err)
-			}
-
-			amount, ok := sdkmath.NewIntFromString(delegateValue.Amount.Amount)
-			if !ok {
-				return nil, fmt.Errorf("invalid amount: %s", delegateValue.Amount.Amount)
-			}
-
-			msg := stakingtypes.NewMsgDelegate(
-				delegateValue.DelegatorAddress,
-				delegateValue.ValidatorAddress,
-				sdk.NewCoin(delegateValue.Amount.Denom, amount),
-			)
-			msgs = append(msgs, msg)
-
-		default:
-			return nil, fmt.Errorf("unsupported message type: %s", msgWrapper.Type)
-		}
-	}
-
-	return msgs, nil
-}
 
 // broadcastTx broadcasts the signed EIP-712 transaction to the network
 func broadcastTx(filePath, nodeURL string, evmChainID uint64, cosmosChainID string) error {
@@ -426,7 +389,7 @@ func broadcastTx(filePath, nodeURL string, evmChainID uint64, cosmosChainID stri
 
 	// Step 3: Build messages
 	fmt.Println("\n🔨 Step 3: Building transaction messages...")
-	msgs, err := buildMessages(signedTx)
+	msgs, err := common.BuildMessages(&signedTx)
 	if err != nil {
 		return fmt.Errorf("failed to build messages: %w", err)
 	}
@@ -460,7 +423,7 @@ func broadcastTx(filePath, nodeURL string, evmChainID uint64, cosmosChainID stri
 // recoverPubKeyFromEIP712 recovers the public key from EIP-712 signature
 func recoverPubKeyFromEIP712(signedTx SignedEIP712Tx, sig []byte, evmChainID uint64) (cryptotypes.PubKey, error) {
 	// Build messages from the signed transaction
-	msgs, err := buildMessages(signedTx)
+	msgs, err := common.BuildMessages(&signedTx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build messages: %w", err)
 	}
@@ -473,6 +436,7 @@ func recoverPubKeyFromEIP712(signedTx SignedEIP712Tx, sig []byte, evmChainID uin
 	feeAmounts, gas := signedTx.GetFee()
 	chainID := signedTx.GetChainID()
 	sequence := signedTx.GetSequence()
+	accountNumber := signedTx.GetAccountNumber()
 	memo := signedTx.GetMemo()
 	
 	// Build the fee structure for Amino encoding
@@ -489,7 +453,7 @@ func recoverPubKeyFromEIP712(signedTx SignedEIP712Tx, sig []byte, evmChainID uin
 	fmt.Sscanf(gas, "%d", &gasLimit)
 	
 	var accNum, seq uint64
-	fmt.Sscanf("0", "%d", &accNum) // account_number is "0" in the TypedData
+	fmt.Sscanf(accountNumber, "%d", &accNum)
 	fmt.Sscanf(sequence, "%d", &seq)
 	
 	// Use legacytx.StdSignBytes to create proper Amino JSON
@@ -602,7 +566,6 @@ func buildEIP712Tx(
 ) ([]byte, error) {
 	// Create codec
 	registry := codectypes.NewInterfaceRegistry()
-	banktypes.RegisterInterfaces(registry)
 	stakingtypes.RegisterInterfaces(registry)
 	authtypes.RegisterInterfaces(registry)
 	ethermint.RegisterInterfaces(registry)
