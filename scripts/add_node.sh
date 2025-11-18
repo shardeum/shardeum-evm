@@ -21,6 +21,8 @@ SECURITY=""
 DETAILS=""
 API_ENABLE="false"
 ONLY_FETCH=false
+MULTISIG_KEYS_FILE=""
+MULTISIG_THRESHOLD=""
 
 # Usage function
 usage() {
@@ -34,6 +36,8 @@ usage() {
   echo "  --node-type <type>   Node type: validator or full-node (default: validator)"
   echo "  --api-enable         Enable Cosmos API server (default: false)"
   echo "  --only-fetch         Only download genesis to ./genesis.json, print chain-id and raw SHA256, then exit"
+  echo "  --multisig-keys-file <path>  Path to JSON file containing signer public keys (creates multisig operator key)"
+  echo "  --multisig-threshold <n>     Multisig threshold (required if --multisig-keys-file is provided)"
   echo "  --help               Show this help message"
   echo ""
   echo "Environment variables:"
@@ -47,6 +51,7 @@ usage() {
   echo "  $0 node5 --seed-rpc http://localhost:26657 --network devnet"
   echo "  $0 node6 --node-type full-node --network testnet"
   echo "  $0 node7 --moniker 'My Validator' --website https://mysite.com --details 'Production validator'"
+  echo "  $0 node8 --multisig-keys-file signers.json --multisig-threshold 2"
   echo "  SHARDEUM_CONFIG_DIR=/path/to/config SHARDEUM_NETWORK=testnet $0 node6"
   exit 1
 }
@@ -97,6 +102,14 @@ while [[ $# -gt 0 ]]; do
     --api-enable)
       API_ENABLE="true"
       shift
+      ;;
+    --multisig-keys-file)
+      MULTISIG_KEYS_FILE="$2"
+      shift 2
+      ;;
+    --multisig-threshold)
+      MULTISIG_THRESHOLD="$2"
+      shift 2
       ;;
     --help)
       echo "Usage: $0 <node_id> [options]"
@@ -455,6 +468,156 @@ cat > "$NODE_DIR/validator_metadata.json" << EOF
 }
 EOF
 
+# Handle multisig operator key creation if requested
+if [[ -n "$MULTISIG_KEYS_FILE" || -n "$MULTISIG_THRESHOLD" ]]; then
+  # Validate both parameters are provided
+  if [[ -z "$MULTISIG_KEYS_FILE" ]]; then
+    echo -e "${RED}Error: --multisig-keys-file is required when --multisig-threshold is provided${NC}"
+    exit 1
+  fi
+  if [[ -z "$MULTISIG_THRESHOLD" ]]; then
+    echo -e "${RED}Error: --multisig-threshold is required when --multisig-keys-file is provided${NC}"
+    exit 1
+  fi
+
+  # Validate keys file exists
+  if [[ ! -f "$MULTISIG_KEYS_FILE" ]]; then
+    echo -e "${RED}Error: Multisig keys file not found: $MULTISIG_KEYS_FILE${NC}"
+    exit 1
+  fi
+
+  # Validate JSON format
+  if ! jq empty "$MULTISIG_KEYS_FILE" 2>/dev/null; then
+    echo -e "${RED}Error: Invalid JSON in multisig keys file: $MULTISIG_KEYS_FILE${NC}"
+    exit 1
+  fi
+
+  echo -e "${YELLOW}Setting up multisig operator key...${NC}"
+
+  # Extract signers array
+  SIGNERS_COUNT=$(jq '.signers | length' "$MULTISIG_KEYS_FILE" 2>/dev/null || echo "0")
+  if [[ "$SIGNERS_COUNT" -eq 0 ]]; then
+    echo -e "${RED}Error: No signers found in multisig keys file. Expected 'signers' array.${NC}"
+    exit 1
+  fi
+
+  # Validate threshold <= signers count
+  if [[ "$MULTISIG_THRESHOLD" -gt "$SIGNERS_COUNT" ]]; then
+    echo -e "${RED}Error: Threshold ($MULTISIG_THRESHOLD) cannot be greater than number of signers ($SIGNERS_COUNT)${NC}"
+    exit 1
+  fi
+
+  if [[ "$MULTISIG_THRESHOLD" -lt 1 ]]; then
+    echo -e "${RED}Error: Threshold must be at least 1${NC}"
+    exit 1
+  fi
+
+  # Import each signer's public key as offline key
+  SIGNER_NAMES=()
+  SIGNER_ADDRESSES=()
+  SIGNER_PUBKEYS=()
+
+  for i in $(seq 0 $((SIGNERS_COUNT - 1))); do
+    SIGNER_NAME=$(jq -r ".signers[$i].name" "$MULTISIG_KEYS_FILE" 2>/dev/null)
+    SIGNER_PUBKEY=$(jq -c ".signers[$i].pubkey" "$MULTISIG_KEYS_FILE" 2>/dev/null)
+
+    # Validate name is present
+    if [[ -z "$SIGNER_NAME" || "$SIGNER_NAME" == "null" ]]; then
+      echo -e "${RED}Error: Signer at index $i is missing 'name' field${NC}"
+      exit 1
+    fi
+
+    # Validate pubkey is present
+    if [[ -z "$SIGNER_PUBKEY" || "$SIGNER_PUBKEY" == "null" ]]; then
+      echo -e "${RED}Error: Signer '$SIGNER_NAME' is missing 'pubkey' field${NC}"
+      exit 1
+    fi
+
+    # Validate pubkey format - should be a JSON object
+    echo -e "${YELLOW}Validating public key for $SIGNER_NAME...${NC}"
+    if ! echo "$SIGNER_PUBKEY" | jq -e '."@type"' > /dev/null 2>&1; then
+      echo -e "${RED}Error: Invalid public key format for signer '$SIGNER_NAME'${NC}"
+      echo "Expected format: JSON object with @type and key fields"
+      echo "Example: {\"@type\":\"/ethermint.crypto.v1.ethsecp256k1.PubKey\",\"key\":\"...\"}"
+      exit 1
+    fi
+    
+    # Try to import as a test to validate the key is actually valid
+    if ! "$BINARY" keys add "${SIGNER_NAME}_test" --pubkey="$SIGNER_PUBKEY" --keyring-backend test --home "$NODE_DIR" --dry-run > /dev/null 2>&1; then
+      echo -e "${RED}Error: Invalid public key for signer '$SIGNER_NAME' - key validation failed${NC}"
+      exit 1
+    fi
+    # Clean up test key if it was created
+    "$BINARY" keys delete "${SIGNER_NAME}_test" --keyring-backend test --home "$NODE_DIR" -y > /dev/null 2>&1 || true
+
+    # Import as offline key
+    echo -e "${YELLOW}Importing signer '$SIGNER_NAME' as offline key...${NC}"
+    if ! "$BINARY" keys add "$SIGNER_NAME" --pubkey="$SIGNER_PUBKEY" --keyring-backend test --home "$NODE_DIR" > /dev/null 2>&1; then
+      echo -e "${RED}Error: Failed to import public key for signer '$SIGNER_NAME'${NC}"
+      exit 1
+    fi
+
+    # Get address for this signer
+    SIGNER_ADDR=$("$BINARY" keys show "$SIGNER_NAME" -a --keyring-backend test --home "$NODE_DIR")
+    SIGNER_NAMES+=("$SIGNER_NAME")
+    SIGNER_ADDRESSES+=("$SIGNER_ADDR")
+    SIGNER_PUBKEYS+=("$SIGNER_PUBKEY")
+
+    echo -e "${GREEN}✓ Imported $SIGNER_NAME (address: $SIGNER_ADDR)${NC}"
+  done
+
+  # Create multisig key
+  MULTISIG_KEY_NAME="validator-operator"
+  SIGNER_NAMES_CSV=$(IFS=,; echo "${SIGNER_NAMES[*]}")
+
+  echo -e "${YELLOW}Creating multisig operator key '$MULTISIG_KEY_NAME' (threshold: $MULTISIG_THRESHOLD of $SIGNERS_COUNT)...${NC}"
+  if ! "$BINARY" keys add "$MULTISIG_KEY_NAME" \
+    --multisig "$SIGNER_NAMES_CSV" \
+    --multisig-threshold "$MULTISIG_THRESHOLD" \
+    --keyring-backend test \
+    --home "$NODE_DIR" > /dev/null 2>&1; then
+    echo -e "${RED}Error: Failed to create multisig operator key${NC}"
+    exit 1
+  fi
+
+  # Get multisig addresses
+  MULTISIG_ADDR=$("$BINARY" keys show "$MULTISIG_KEY_NAME" -a --keyring-backend test --home "$NODE_DIR")
+  VALIDATOR_OPERATOR_ADDR=$("$BINARY" keys show "$MULTISIG_KEY_NAME" --bech val -a --keyring-backend test --home "$NODE_DIR")
+
+  # Create multisig_info.json
+  echo -e "${YELLOW}Creating multisig info file...${NC}"
+  cat > "$NODE_DIR/multisig_info.json" << EOF
+{
+  "multisig_key_name": "$MULTISIG_KEY_NAME",
+  "multisig_address": "$MULTISIG_ADDR",
+  "validator_operator_address": "$VALIDATOR_OPERATOR_ADDR",
+  "threshold": $MULTISIG_THRESHOLD,
+  "total_signers": $SIGNERS_COUNT,
+  "signers": [
+$(for i in $(seq 0 $((SIGNERS_COUNT - 1))); do
+    if [[ $i -lt $((SIGNERS_COUNT - 1)) ]]; then
+      echo "    {\"name\": \"${SIGNER_NAMES[$i]}\", \"address\": \"${SIGNER_ADDRESSES[$i]}\"},"
+    else
+      echo "    {\"name\": \"${SIGNER_NAMES[$i]}\", \"address\": \"${SIGNER_ADDRESSES[$i]}\"}"
+    fi
+  done)
+  ]
+}
+EOF
+
+  echo -e "${GREEN}✅ Multisig operator key created successfully!${NC}"
+  echo -e "${YELLOW}Multisig Address: $MULTISIG_ADDR${NC}"
+  echo -e "${YELLOW}Validator Operator Address: $VALIDATOR_OPERATOR_ADDR${NC}"
+  echo -e "${YELLOW}Threshold: $MULTISIG_THRESHOLD of $SIGNERS_COUNT${NC}"
+  echo -e "${YELLOW}Multisig info saved to: $NODE_DIR/multisig_info.json${NC}"
+  echo ""
+  echo -e "${YELLOW}📝 Next steps:${NC}"
+  echo "1. Fund the multisig address: $MULTISIG_ADDR"
+  echo "2. Create unsigned validator transaction"
+  echo "3. Share with signers for signatures"
+  echo "4. Merge signatures and broadcast"
+fi
+
 # Get genesis from seed node
 echo -e "${YELLOW}Fetching genesis from seed node...${NC}"
 if ! fetch_genesis_chunked "$SEED_NODE_RPC" "$NODE_DIR/config/genesis.json"; then
@@ -646,10 +809,18 @@ echo "The node will discover peers automatically via PEX protocol"
 echo
 
 if [[ "$NODE_TYPE" == "validator" ]]; then
-echo -e "${YELLOW}📝 To create a validator:${NC}"
-echo "1. Create and fund a validator account"
-echo "2. Run: ./scripts/create_validator.sh $NODE_ID"
-echo
+  if [[ -n "$MULTISIG_KEYS_FILE" && -n "$MULTISIG_THRESHOLD" ]]; then
+    echo -e "${YELLOW}📝 Multisig operator key created!${NC}"
+    echo "1. Fund the multisig address (see $NODE_DIR/multisig_info.json)"
+    echo "2. Create unsigned validator transaction"
+    echo "3. Share with signers for signatures (threshold: $MULTISIG_THRESHOLD)"
+    echo "4. Merge signatures and broadcast"
+  else
+    echo -e "${YELLOW}📝 To create a validator:${NC}"
+    echo "1. Create and fund a validator account"
+    echo "2. Run: ./scripts/create_validator.sh $NODE_ID"
+  fi
+  echo
 fi
 
 echo "Stop this node: kill $NODE_PID or Ctrl+C"
