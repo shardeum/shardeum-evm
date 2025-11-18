@@ -3,9 +3,11 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -14,8 +16,13 @@ type SignedEIP712Tx interface {
 	GetMsgs() []json.RawMessage
 }
 
-// BuildMessages parses raw messages from a signed EIP-712 transaction and converts them to SDK messages.
-// Supports multiple message types: MsgDelegate and MsgUndelegate.
+// BuildMessages parses raw messages from a signed EIP-712 transaction and converts
+// them to SDK messages.
+//
+// Supported message types today:
+// - cosmos-sdk/MsgDelegate
+// - cosmos-sdk/MsgUndelegate
+// - cosmos-sdk/MsgVote (governance voting)
 func BuildMessages(signedTx SignedEIP712Tx) ([]sdk.Msg, error) {
 	var msgs []sdk.Msg
 
@@ -41,6 +48,13 @@ func BuildMessages(signedTx SignedEIP712Tx) ([]sdk.Msg, error) {
 			msg, err := parseMsgUndelegate(msgWrapper.Value)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse MsgUndelegate: %w", err)
+			}
+			msgs = append(msgs, msg)
+
+		case "cosmos-sdk/MsgVote":
+			msg, err := parseMsgVote(msgWrapper.Value)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse MsgVote: %w", err)
 			}
 			msgs = append(msgs, msg)
 
@@ -106,3 +120,46 @@ func parseMsgUndelegate(value json.RawMessage) (*stakingtypes.MsgUndelegate, err
 	), nil
 }
 
+// parseMsgVote parses a MsgVote (governance vote) message from JSON.
+// This expects the legacy gov MsgVote shape used by the EIP-712 encoding:
+//
+//	{
+//	  "proposal_id": "5",
+//	  "voter": "shardeum1...",
+//	  "option": 1
+//	}
+func parseMsgVote(value json.RawMessage) (*govtypes.MsgVote, error) {
+	var voteValue struct {
+		ProposalID string `json:"proposal_id"`
+		Voter      string `json:"voter"`
+		Option     int32  `json:"option"`
+	}
+
+	if err := json.Unmarshal(value, &voteValue); err != nil {
+		return nil, err
+	}
+
+	if voteValue.Voter == "" {
+		return nil, fmt.Errorf("voter address is required")
+	}
+
+	voterAddr, err := sdk.AccAddressFromBech32(voteValue.Voter)
+	if err != nil {
+		return nil, fmt.Errorf("invalid voter bech32 address %q: %w", voteValue.Voter, err)
+	}
+
+	proposalID, err := strconv.ParseUint(voteValue.ProposalID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid proposal_id %q: %w", voteValue.ProposalID, err)
+	}
+
+	// Map the numeric option directly onto the legacy gov VoteOption enum:
+	// 1 = Yes, 2 = Abstain, 3 = No, 4 = NoWithVeto.
+	option := govtypes.VoteOption(voteValue.Option)
+
+	return govtypes.NewMsgVote(
+		voterAddr,
+		proposalID,
+		option,
+	), nil
+}
