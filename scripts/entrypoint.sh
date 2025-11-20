@@ -18,7 +18,7 @@ fi
 
 case $SHARDEUM_NETWORK in
   testnet)
-    CHAIN_ID=shardeum-8119-2
+    CHAIN_ID=shardeum-testnet
     EVM_CHAIN_ID=8119
     cp /app/config/testnet-genesis.json /app/config/genesis.json
     ;;
