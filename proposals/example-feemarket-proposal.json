@@ -1,7 +1,7 @@
 {
   "messages": [
     {
-      "@type": "/feemarket.feemarket.v1.MsgParams",
+      "@type": "/cosmos.evm.feemarket.v1.MsgUpdateParams",
       "authority": "shardeum10d07y265gmmuvt4z0w9aw880jnsr700jzj92zh",
       "params": {
         "base_fee": "1048130280389041.000000000000000000",
