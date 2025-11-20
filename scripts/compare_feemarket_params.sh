@@ -74,6 +74,8 @@ echo ""
 
 # Query current params from network
 echo -e "${BLUE}Querying current parameters from network...${NC}"
+echo -e "${YELLOW}Query Command Used:${NC} $BINARY query feemarket params --node $NODE --chain-id $CHAIN_ID"
+echo ""
 CURRENT_PARAMS=$($BINARY query feemarket params --node "$NODE" --chain-id "$CHAIN_ID" --output json 2>/dev/null)
 
 if [ $? -ne 0 ]; then
