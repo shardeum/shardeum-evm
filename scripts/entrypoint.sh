@@ -2,16 +2,11 @@
 
 set -e
 
-for ENVAR in PEERS SHARDEUM_NETWORK; do
-  eval value=\$$ENVAR
-  if [ -z "$value" ]; then
-    echo "Missing required env variable $ENVAR"
-    missing=1
-  fi
-done
-
 MONIKER=${MONIKER:-docker}
 
+# ============================================
+# DETERMINE NODE HOME DIRECTORY
+# ============================================
 case $NODE_TYPE in
   API)
     NODE_HOME="/app"
@@ -19,104 +14,127 @@ case $NODE_TYPE in
   SENTRY)
     NODE_HOME="/app/.shardeumd"
     ;;
+  *)
+    echo "ERROR: NODE_TYPE must be 'API' or 'SENTRY'"
+    exit 1
+    ;;
 esac
 
-if [ $missing ]; then exit 1; fi
+# ============================================
+# VALIDATE REQUIRED ENVIRONMENT VARIABLES
+# ============================================
+missing=0
 
+# Common required vars
+for ENVAR in SHARDEUM_NETWORK CHAIN_ID EVM_CHAIN_ID SEEDS; do
+  eval value=\$$ENVAR
+  if [ -z "$value" ]; then
+    echo "ERROR: Missing required env variable '$ENVAR'"
+    missing=1
+  fi
+done
+
+# Sentry-specific required vars
+if [ "$NODE_TYPE" = "SENTRY" ]; then
+  for ENVAR in PERSISTENT_PEERS PRIVATE_PEER_IDS; do
+    eval value=\$$ENVAR
+    if [ -z "$value" ]; then
+      echo "ERROR: Missing required env variable '$ENVAR' for SENTRY node"
+      missing=1
+    fi
+  done
+fi
+
+if [ "$missing" = "1" ]; then exit 1; fi
+
+# ============================================
+# INITIALIZE NODE IF NEEDED
+# ============================================
 if [ ! -e "$NODE_HOME/data/state.db" ]; then
+  echo "=== Initializing node: $MONIKER ==="
   /app/shardeumd init $MONIKER --home $NODE_HOME
 fi
 
-if [ "$NODE_TYPE" = "SENTRY" ]; then
-    ###
-    # set max_num_inbound_peers to 80
-    # ---
-    sed -i 's/^max_num_inbound_peers = .*/max_num_inbound_peers = 80/' "$NODE_HOME/config/config.toml"
-    cat $NODE_HOME/config/config.toml | grep max_num_inbound_peers
-
-    ###
-    # set max_num_outbound_peers to 30
-    # ---
-    sed -i 's/^max_num_outbound_peers = .*/max_num_outbound_peers = 30/' "$NODE_HOME/config/config.toml"
-    cat $NODE_HOME/config/config.toml | grep max_num_outbound_peers
-
-    ###
-    # set send_rate to 10 MB
-    # ---
-    sed -i 's/^send_rate = .*/send_rate = 10240000/' "$NODE_HOME/config/config.toml"
-    cat $NODE_HOME/config/config.toml | grep send_rate
-
-    ###
-    # set recv_rate to 10 MB
-    # ---
-    sed -i 's/^recv_rate = .*/recv_rate = 10240000/' "$NODE_HOME/config/config.toml"
-    cat $NODE_HOME/config/config.toml | grep recv_rate
-
-    ###
-    # set size to 10000 (Larger for relay)
-    # ---
-    sed -i 's/^size = .*/size = 10000/' "$NODE_HOME/config/config.toml"
-    cat $NODE_HOME/config/config.toml | grep size
-
-    ###
-    # set broadcast to true, by default it's true probably (Must broadcast)
-    # ---
-    sed -i 's/^broadcast = .*/broadcast = true/' "$NODE_HOME/config/config.toml"
-    cat $NODE_HOME/config/config.toml | grep broadcast
-
-    ###
-    # set rpc.laddr as "" (this isn't working as this will start rpc on 127.0.0.1:DEFAULT_PORT even though laddr becomes set to empty like "")
-    # ---
-    sed -i '/^\[rpc\]/,/^\[/{s/^laddr *=.*/laddr = ""/}' "$NODE_HOME/config/config.toml"
-    grep -A5 "\[rpc\]" $NODE_HOME/config/config.toml
-
-fi
-
+# ============================================
+# CONFIGURE GENESIS
+# ============================================
 case $SHARDEUM_NETWORK in
   local)
-    CHAIN_ID=shardeum_8117-1
-    EVM_CHAIN_ID=8117
-    # cp /app/config/local-genesis.json $NODE_HOME/config/genesis.json
-    echo "Downloading genesis from to =====> $NODE_HOME/config/genesis.json"
-    # wget $GENESIS_URL -O $NODE_HOME/config/genesis.json
+    if [ -z "$GENESIS_URL" ]; then
+      echo "ERROR: GENESIS_URL required for local network"
+      exit 1
+    fi
+    echo "=== Downloading genesis from $GENESIS_URL ==="
     curl -s $GENESIS_URL | jq -r '.result.genesis' > $NODE_HOME/config/genesis.json
     ;;
   testnet)
-    CHAIN_ID=shardeum-8119-2
-    EVM_CHAIN_ID=8119
+    echo "=== Using testnet genesis ==="
     cp /app/config/testnet-genesis.json $NODE_HOME/config/genesis.json
     ;;
   mainnet)
-    CHAIN_ID=shardeum_8118-1
-    EVM_CHAIN_ID=8118
+    echo "=== Using mainnet genesis ==="
     cp /app/config/mainnet-genesis.json $NODE_HOME/config/genesis.json
+    ;;
+  *)
+    echo "ERROR: SHARDEUM_NETWORK must be 'local', 'testnet', or 'mainnet'"
+    exit 1
     ;;
 esac
 
+# ============================================
+# BUILD START OPTIONS
+# ============================================
 case $NODE_TYPE in
   API)
-    OPTIONS="--rpc.laddr tcp://0.0.0.0:26657 \
+    OPTIONS="--p2p.seeds ${SEEDS} \
+             --p2p.persistent_peers ${SEEDS} \
+             --rpc.laddr tcp://0.0.0.0:26657 \
              --api.enable \
              --api.address tcp://0.0.0.0:1317 \
              --json-rpc.enable \
              --json-rpc.address 0.0.0.0:8545 \
              --json-rpc.ws-address 0.0.0.0:8546 \
-             --json-rpc.api eth,txpool,personal,net,debug,web3 \
-             --evm.evm-chain-id $EVM_CHAIN_ID \
+             --evm.evm-chain-id ${EVM_CHAIN_ID} \
              --minimum-gas-prices=2048130280389041ashm \
              --pruning nothing"
     ;;
-  VALIDATOR)
-    OPTIONS='--p2p.laddr tcp://0.0.0.0:27656'
-    ;;
+
   SENTRY)
-    # ---
-    # Comma separated list of peer IDs to keep private (will not be gossiped to other peers, we've to add this in below sentry start command flags)
-    # Example ID: 553bbeeac6c297e228c89046d28a5351c93c3a29
-    # ---
-    # --p2p.private_peer_ids string
-    OPTIONS="--p2p.laddr "tcp://$P2P_ADDRESS:$P2P_PORT" --p2p.private_peer_ids $PRIVATE_PEER_IDS --p2p.unconditional_peer_ids $UNCONDITIONAL_PEER_IDS --rpc.laddr "tcp://$RPC_ADDRESS:$RPC_PORT" --pruning nothing"
+    P2P_PORT=${P2P_PORT:-26656}
+    RPC_PORT=${RPC_PORT:-26657}
+    P2P_ADDRESS=${P2P_ADDRESS:-0.0.0.0}
+    RPC_ADDRESS=${RPC_ADDRESS:-127.0.0.1}
+
+    OPTIONS="--p2p.seeds ${SEEDS} \
+             --p2p.persistent_peers ${PERSISTENT_PEERS} \
+             --p2p.private_peer_ids ${PRIVATE_PEER_IDS} \
+             --p2p.unconditional_peer_ids ${PRIVATE_PEER_IDS} \
+             --p2p.pex true \
+             --p2p.addr_book_strict false \
+             --p2p.laddr tcp://${P2P_ADDRESS}:${P2P_PORT} \
+             --rpc.laddr tcp://${RPC_ADDRESS}:${RPC_PORT} \
+             --evm.evm-chain-id ${EVM_CHAIN_ID} \
+             --pruning nothing"
     ;;
 esac
 
-/app/shardeumd start --home $NODE_HOME --chain-id $CHAIN_ID --p2p.seeds "$PEERS" --p2p.persistent_peers "$PEERS" $OPTIONS
+# ============================================
+# START NODE
+# ============================================
+echo "==========================================="
+echo "Starting $NODE_TYPE node"
+echo "  Moniker: $MONIKER"
+echo "  Chain ID: $CHAIN_ID"
+echo "  EVM Chain ID: $EVM_CHAIN_ID"
+echo "  Network: $SHARDEUM_NETWORK"
+echo "  Seeds: $SEEDS"
+echo "  Home: $NODE_HOME"
+if [ "$NODE_TYPE" = "SENTRY" ]; then
+  echo "  Persistent Peers: $PERSISTENT_PEERS"
+  echo "  Private Peer IDs: $PRIVATE_PEER_IDS"
+  echo "  P2P: ${P2P_ADDRESS}:${P2P_PORT}"
+  echo "  RPC: ${RPC_ADDRESS}:${RPC_PORT}"
+fi
+echo "==========================================="
+
+exec /app/shardeumd start --home $NODE_HOME --chain-id $CHAIN_ID $OPTIONS
