@@ -50,7 +50,7 @@ if [ "$missing" = "1" ]; then exit 1; fi
 # ============================================
 # INITIALIZE NODE IF NEEDED
 # ============================================
-if [ ! -e "$NODE_HOME/data/state.db" ]; then
+if [ ! -e "$NODE_HOME/config/genesis.json" ]; then
   echo "=== Initializing node: $MONIKER ==="
   /app/shardeumd init $MONIKER --home $NODE_HOME
 fi
@@ -82,6 +82,14 @@ case $SHARDEUM_NETWORK in
 esac
 
 # ============================================
+# CONFIGURE SENTRY-SPECIFIC SETTINGS
+# ============================================
+if [ "$NODE_TYPE" = "SENTRY" ]; then
+  echo "=== Configuring sentry settings in config.toml ==="
+  sed -i 's/addr_book_strict = true/addr_book_strict = false/' "$NODE_HOME/config/config.toml"
+fi
+
+# ============================================
 # BUILD START OPTIONS
 # ============================================
 case $NODE_TYPE in
@@ -109,8 +117,7 @@ case $NODE_TYPE in
              --p2p.persistent_peers ${PERSISTENT_PEERS} \
              --p2p.private_peer_ids ${PRIVATE_PEER_IDS} \
              --p2p.unconditional_peer_ids ${PRIVATE_PEER_IDS} \
-             --p2p.pex true \
-             --p2p.addr_book_strict false \
+             --p2p.pex \
              --p2p.laddr tcp://${P2P_ADDRESS}:${P2P_PORT} \
              --rpc.laddr tcp://${RPC_ADDRESS}:${RPC_PORT} \
              --evm.evm-chain-id ${EVM_CHAIN_ID} \
