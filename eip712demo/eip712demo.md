@@ -4,6 +4,42 @@ This directory contains a prototype implementation and testing tools for EIP-712
 
 **Note:** These files are intended to be migrated to a separate repository but can be tested here for now.
 
+## Architecture Overview
+
+```mermaid
+flowchart TB
+    subgraph Client["Client Side"]
+        WebDemo["MetaMask Web Demo<br/>(metamask-eip712-delegate.html)"]
+        Helpers["EIP-712 Helpers<br/>(eip712-helpers.js)"]
+        MetaMask["MetaMask Wallet"]
+        SignedTx["signed-tx1.json"]
+
+        WebDemo --> Helpers
+        Helpers --> MetaMask
+        MetaMask -->|"EIP-712 Signature"| SignedTx
+    end
+
+    subgraph Tools["CLI Tools"]
+        Broadcast["broadcast-eip712<br/>(main.go)"]
+        DebugSuite["debug_suite.go"]
+        LogReport["log_report.go"]
+    end
+
+    subgraph Chain["Shardeum Chain"]
+        REST["REST API<br/>:1317"]
+        AnteHandler["Ante Handlers<br/>(EIP-712 Verification)"]
+        Modules["Cosmos Modules<br/>(staking, gov, dist)"]
+        Logs["Node Logs"]
+    end
+
+    SignedTx -->|"Input"| Broadcast
+    SignedTx -->|"Input"| DebugSuite
+    Broadcast -->|"POST /cosmos/tx/v1beta1/txs"| REST
+    REST --> AnteHandler
+    AnteHandler --> Modules
+    Logs -->|"Input"| LogReport
+```
+
 ## Directory Structure
 
 ```
@@ -210,6 +246,18 @@ RESULT at line 281: ✅✅✅ EIP-712 SIGNATURE VERIFICATION SUCCEEDED! ✅✅�
 
 ## Testing Workflow
 
+```mermaid
+flowchart LR
+    A["1. Start Network"] --> B["2. Create Signed TX"]
+    B --> C["3. Verify Locally"]
+    C --> D["4. Broadcast"]
+    D --> E["5. Verify on Chain"]
+    E --> F{"Success?"}
+    F -->|Yes| G["Done ✅"]
+    F -->|No| H["6. Analyze Logs"]
+    H --> B
+```
+
 ### 1. Start Local Network
 
 ```bash
@@ -293,11 +341,53 @@ Look for:
 
 ### EIP-712 Signature Flow
 
+```mermaid
+sequenceDiagram
+    participant User
+    participant WebDemo as Web Demo
+    participant Helpers as eip712-helpers.js
+    participant MetaMask
+    participant File as signed-tx1.json
+
+    User->>WebDemo: Enter delegation details
+    WebDemo->>Helpers: createMsgDelegate()
+    Helpers->>Helpers: createEIP712TypedData()
+    Helpers->>MetaMask: eth_signTypedData_v4
+    Note over MetaMask: Display structured data<br/>for user review
+    User->>MetaMask: Approve signature
+    MetaMask->>MetaMask: Sign with secp256k1
+    MetaMask->>Helpers: Return signature (R||S||V)
+    Helpers->>WebDemo: Formatted signature
+    WebDemo->>File: Save JSON bundle
+```
+
 1. **Client Side (MetaMask)**
    - User initiates Cosmos transaction (e.g., delegate)
    - Transaction converted to EIP-712 typed data
    - User signs with MetaMask (secp256k1 signature)
    - Signature format: 65 bytes (R||S||V)
+
+### Broadcast Flow
+
+```mermaid
+sequenceDiagram
+    participant CLI as broadcast-eip712
+    participant REST as REST API :1317
+    participant Ante as Ante Handler
+    participant Chain as Cosmos Modules
+
+    CLI->>CLI: Parse signed-tx1.json
+    CLI->>CLI: Recover pubkey from signature
+    CLI->>REST: GET /cosmos/auth/v1beta1/accounts/{addr}
+    REST->>CLI: Account info (sequence, account_number)
+    CLI->>CLI: Build TxRaw with ExtensionOptionsWeb3Tx
+    CLI->>REST: POST /cosmos/tx/v1beta1/txs
+    REST->>Ante: Process transaction
+    Note over Ante: Extract EIP-712 signature<br/>Reconstruct typed data<br/>Calculate hash (decimal chainId)<br/>Recover & verify pubkey
+    Ante->>Chain: Execute message
+    Chain->>REST: Result
+    REST->>CLI: TX Hash or Error
+```
 
 2. **Chain Side (Ante Handlers)**
    - Transaction arrives with `ExtensionOptionsWeb3Tx`
@@ -307,6 +397,40 @@ Look for:
    - Recovers public key from signature
    - Verifies signature using **compressed** public key
    - Sets context flag to skip standard Cosmos sig verification
+
+### Debug & Verification Flow
+
+```mermaid
+flowchart LR
+    subgraph Input
+        SignedTx["signed-tx1.json"]
+        NodeLog["node.log"]
+    end
+
+    subgraph DebugSuite["debug_suite.go"]
+        Parse["Parse signature"]
+        Verify["Verify signature<br/>(multiple methods)"]
+        Recover["Recover pubkey"]
+        Compare["Compare addresses"]
+    end
+
+    subgraph LogReport["log_report.go"]
+        Scan["Scan log entries"]
+        Extract["Extract TX attempts"]
+        Display["Display results"]
+    end
+
+    SignedTx --> Parse
+    Parse --> Verify
+    Verify --> Recover
+    Recover --> Compare
+    Compare -->|"✅ PASS / ❌ FAIL"| Results1["Check Summary"]
+
+    NodeLog --> Scan
+    Scan --> Extract
+    Extract --> Display
+    Display --> Results2["TX Analysis"]
+```
 
 3. **Key Fixes Implemented**
    - **ChainId Format**: Use decimal string (`"8117"`) not hex (`"0x1fb5"`)
