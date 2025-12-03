@@ -7,12 +7,13 @@ MONIKER=${MONIKER:-docker}
 # ============================================
 # DETERMINE NODE HOME DIRECTORY
 # ============================================
+# Cosmos SDK convention for node home
+NODE_HOME="/app/.shardeumd"
+
+# Validate NODE_TYPE
 case $NODE_TYPE in
-  API)
-    NODE_HOME="/app"
-    ;;
-  SENTRY)
-    NODE_HOME="/app/.shardeumd"
+  API|SENTRY)
+    echo "Node type: $NODE_TYPE"
     ;;
   *)
     echo "ERROR: NODE_TYPE must be 'API' or 'SENTRY'"
@@ -34,15 +35,14 @@ for ENVAR in SHARDEUM_NETWORK CHAIN_ID EVM_CHAIN_ID SEEDS; do
   fi
 done
 
-# Sentry-specific required vars
+# Sentry-specific vars (optional - for initial sync without validator)
 if [ "$NODE_TYPE" = "SENTRY" ]; then
-  for ENVAR in PERSISTENT_PEERS PRIVATE_PEER_IDS; do
-    eval value=\$$ENVAR
-    if [ -z "$value" ]; then
-      echo "ERROR: Missing required env variable '$ENVAR' for SENTRY node"
-      missing=1
-    fi
-  done
+  if [ -z "$PERSISTENT_PEERS" ]; then
+    echo "WARNING: PERSISTENT_PEERS not set - sentry will sync from seeds only"
+  fi
+  if [ -z "$PRIVATE_PEER_IDS" ]; then
+    echo "WARNING: PRIVATE_PEER_IDS not set - no peer hiding configured"
+  fi
 fi
 
 if [ "$missing" = "1" ]; then exit 1; fi
@@ -99,6 +99,8 @@ case $NODE_TYPE in
              --rpc.laddr tcp://0.0.0.0:26657 \
              --api.enable \
              --api.address tcp://0.0.0.0:1317 \
+             --grpc.enable \
+             --grpc.address 0.0.0.0:9090 \
              --json-rpc.enable \
              --json-rpc.address 0.0.0.0:8545 \
              --json-rpc.ws-address 0.0.0.0:8546 \
@@ -114,14 +116,19 @@ case $NODE_TYPE in
     RPC_ADDRESS=${RPC_ADDRESS:-127.0.0.1}
 
     OPTIONS="--p2p.seeds ${SEEDS} \
-             --p2p.persistent_peers ${PERSISTENT_PEERS} \
-             --p2p.private_peer_ids ${PRIVATE_PEER_IDS} \
-             --p2p.unconditional_peer_ids ${PRIVATE_PEER_IDS} \
-             --p2p.pex \
+             --p2p.pex=true \
              --p2p.laddr tcp://${P2P_ADDRESS}:${P2P_PORT} \
              --rpc.laddr tcp://${RPC_ADDRESS}:${RPC_PORT} \
              --evm.evm-chain-id ${EVM_CHAIN_ID} \
              --pruning nothing"
+    # Add validator connection options only if set
+    if [ -n "$PERSISTENT_PEERS" ]; then
+      OPTIONS="$OPTIONS --p2p.persistent_peers ${PERSISTENT_PEERS}"
+    fi
+    if [ -n "$PRIVATE_PEER_IDS" ]; then
+      OPTIONS="$OPTIONS --p2p.private_peer_ids ${PRIVATE_PEER_IDS}"
+      OPTIONS="$OPTIONS --p2p.unconditional_peer_ids ${PRIVATE_PEER_IDS}"
+    fi
     ;;
 esac
 
