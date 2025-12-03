@@ -7,13 +7,12 @@ MONIKER=${MONIKER:-docker}
 # ============================================
 # DETERMINE NODE HOME DIRECTORY
 # ============================================
-# Cosmos SDK convention for node home
-NODE_HOME="/app/.shardeumd"
-
-# Validate NODE_TYPE
 case $NODE_TYPE in
-  API|SENTRY)
-    echo "Node type: $NODE_TYPE"
+  API)
+    NODE_HOME="/app"
+    ;;
+  SENTRY)
+    NODE_HOME="/app/.shardeumd"
     ;;
   *)
     echo "ERROR: NODE_TYPE must be 'API' or 'SENTRY'"
