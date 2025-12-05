@@ -171,6 +171,7 @@ which accepts a path for the resulting pprof file.
 	cmd.Flags().String(srvflags.Transport, "socket", "Transport protocol: socket, grpc")
 	cmd.Flags().String(srvflags.TraceStore, "", "Enable KVStore tracing to an output file")
 	cmd.Flags().String(server.FlagMinGasPrices, "", "Minimum gas prices to accept for transactions; Any fee in a tx must meet this minimum (e.g. 20000000000aatom)") //nolint:lll
+	cmd.Flags().Uint64(server.FlagQueryGasLimit, 0, "Maximum gas that can be used in a query call")
 	cmd.Flags().IntSlice(server.FlagUnsafeSkipUpgrades, []int{}, "Skip a set of upgrade heights to continue the old binary")
 	cmd.Flags().Uint64(server.FlagHaltHeight, 0, "Block height at which to gracefully halt the chain and shutdown the node")
 	cmd.Flags().Uint64(server.FlagHaltTime, 0, "Minimum block time (in Unix seconds) at which to gracefully halt the chain and shutdown the node")
@@ -506,12 +507,12 @@ func startInProcess(svrCtx *server.Context, clientCtx client.Context, opts Start
 	apiEnable := svrCtx.Viper.GetBool("api.enable")
 	apiAddress := svrCtx.Viper.GetString("api.address")
 	logger.Info("API configuration", "enable", apiEnable, "address", apiAddress, "isSet", svrCtx.Viper.IsSet("api.address"))
-	
+
 	config.Config.API.Enable = apiEnable
 	if svrCtx.Viper.IsSet("api.address") {
 		config.Config.API.Address = apiAddress
 	}
-	
+
 	logger.Info("Final API configuration", "enable", config.Config.API.Enable, "address", config.Config.API.Address)
 	logger.Info("About to call startAPIServer", "enable", config.Config.API.Enable, "address", config.Config.API.Address)
 
