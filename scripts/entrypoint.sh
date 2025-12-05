@@ -21,6 +21,58 @@ case $NODE_TYPE in
 esac
 
 # ============================================
+# LOGGING CONFIGURATION
+# ============================================
+LOG_DIR="${NODE_HOME}/logs"
+LOG_FILE="${LOG_DIR}/node.log"
+LOG_MAX_SIZE_MB=${LOG_MAX_SIZE_MB:-100}      # Max size before rotation (default 100MB)
+LOG_MAX_FILES=${LOG_MAX_FILES:-5}             # Number of rotated files to keep
+
+mkdir -p "$LOG_DIR"
+
+# Log rotation function - rotates when file exceeds max size
+rotate_logs() {
+  if [ -f "$LOG_FILE" ]; then
+    FILE_SIZE=$(stat -c%s "$LOG_FILE" 2>/dev/null || stat -f%z "$LOG_FILE" 2>/dev/null || echo "0")
+    MAX_SIZE=$((LOG_MAX_SIZE_MB * 1024 * 1024))
+    
+    if [ "$FILE_SIZE" -gt "$MAX_SIZE" ]; then
+      echo "$(date -Iseconds) Rotating logs (size: $FILE_SIZE bytes)" >> "$LOG_FILE"
+      
+      # Rotate existing logs
+      i=$((LOG_MAX_FILES - 1))
+      while [ $i -gt 0 ]; do
+        prev=$((i - 1))
+        [ -f "${LOG_FILE}.$prev" ] && mv "${LOG_FILE}.$prev" "${LOG_FILE}.$i"
+        i=$((i - 1))
+      done
+      
+      # Move current log to .0
+      mv "$LOG_FILE" "${LOG_FILE}.0"
+      
+      # Compress old logs (if gzip available)
+      if command -v gzip >/dev/null 2>&1; then
+        for f in ${LOG_FILE}.[1-9]*; do
+          [ -f "$f" ] && [ ! -f "$f.gz" ] && gzip "$f" &
+        done
+      fi
+    fi
+  fi
+}
+
+# Background log rotation checker (runs every 5 minutes)
+start_log_rotator() {
+  (
+    while true; do
+      sleep 300
+      rotate_logs
+    done
+  ) &
+  LOG_ROTATOR_PID=$!
+  echo "Log rotator started (PID: $LOG_ROTATOR_PID)"
+}
+
+# ============================================
 # VALIDATE REQUIRED ENVIRONMENT VARIABLES
 # ============================================
 missing=0
@@ -142,6 +194,9 @@ echo "  EVM Chain ID: $EVM_CHAIN_ID"
 echo "  Network: $SHARDEUM_NETWORK"
 echo "  Seeds: $SEEDS"
 echo "  Home: $NODE_HOME"
+echo "  Log File: $LOG_FILE"
+echo "  Log Max Size: ${LOG_MAX_SIZE_MB}MB"
+echo "  Log Max Files: $LOG_MAX_FILES"
 if [ "$NODE_TYPE" = "SENTRY" ]; then
   echo "  Persistent Peers: $PERSISTENT_PEERS"
   echo "  Private Peer IDs: $PRIVATE_PEER_IDS"
@@ -150,4 +205,9 @@ if [ "$NODE_TYPE" = "SENTRY" ]; then
 fi
 echo "==========================================="
 
-exec /app/shardeumd start --home $NODE_HOME --chain-id $CHAIN_ID $OPTIONS
+# Start log rotation in background
+start_log_rotator
+
+# Run node with logs going to BOTH stdout AND file (using tee)
+# This preserves docker logs functionality while also writing to persistent disk
+exec /app/shardeumd start --home $NODE_HOME --chain-id $CHAIN_ID $OPTIONS 2>&1 | tee -a "$LOG_FILE"
