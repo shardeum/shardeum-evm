@@ -72,7 +72,7 @@ type stakingRewards struct {
 func (suite *ICS20RecursivePrecompileCallsTestSuite) prepareStakingRewards(ctx sdk.Context, stkRs ...stakingRewards) (sdk.Context, error) {
 	for _, r := range stkRs {
 		// set distribution module account balance which pays out the rewards
-		bondDenom, err := suite.chainA.App.(*evmd.EVMD).StakingKeeper.BondDenom(suite.chainA.GetContext())
+		bondDenom, err := suite.chainA.App.(*shardeumd.ShardeumApp).StakingKeeper.BondDenom(suite.chainA.GetContext())
 		suite.Require().NoError(err)
 		coins := sdk.NewCoins(sdk.NewCoin(bondDenom, r.RewardAmt))
 		if err := suite.mintCoinsForDistrMod(ctx, coins); err != nil {
@@ -81,7 +81,7 @@ func (suite *ICS20RecursivePrecompileCallsTestSuite) prepareStakingRewards(ctx s
 
 		// allocate rewards to validator
 		allocatedRewards := sdk.NewDecCoins(sdk.NewDecCoin(bondDenom, r.RewardAmt))
-		if err := suite.chainA.App.(*evmd.EVMD).GetDistrKeeper().AllocateTokensToValidator(ctx, r.Validator, allocatedRewards); err != nil {
+		if err := suite.chainA.App.(*shardeumd.ShardeumApp).GetDistrKeeper().AllocateTokensToValidator(ctx, r.Validator, allocatedRewards); err != nil {
 			return ctx, err
 		}
 	}
@@ -90,7 +90,7 @@ func (suite *ICS20RecursivePrecompileCallsTestSuite) prepareStakingRewards(ctx s
 
 func (suite *ICS20RecursivePrecompileCallsTestSuite) mintCoinsForDistrMod(ctx sdk.Context, amount sdk.Coins) error {
 	// Mint tokens for the distribution module to simulate fee accrued
-	if err := suite.chainA.App.(*evmd.EVMD).GetBankKeeper().MintCoins(
+	if err := suite.chainA.App.(*shardeumd.ShardeumApp).GetBankKeeper().MintCoins(
 		ctx,
 		minttypes.ModuleName,
 		amount,
@@ -98,7 +98,7 @@ func (suite *ICS20RecursivePrecompileCallsTestSuite) mintCoinsForDistrMod(ctx sd
 		return err
 	}
 
-	return suite.chainA.App.(*evmd.EVMD).GetBankKeeper().SendCoinsFromModuleToModule(
+	return suite.chainA.App.(*shardeumd.ShardeumApp).GetBankKeeper().SendCoinsFromModuleToModule(
 		ctx,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
@@ -112,7 +112,7 @@ func (suite *ICS20RecursivePrecompileCallsTestSuite) setupContractForTesting(
 	contractData evmtypes.CompiledContract,
 	senderAcc evmibctesting.SenderAccount,
 ) {
-	evmAppA := suite.chainA.App.(*evmd.EVMD)
+	evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 	ctxA := suite.chainA.GetContext()
 	senderAddr := senderAcc.SenderAccount.GetAddress()
 	senderEVMAddr := common.BytesToAddress(senderAddr.Bytes())
@@ -214,11 +214,11 @@ func (suite *ICS20RecursivePrecompileCallsTestSuite) setupContractForTesting(
 }
 
 func (suite *ICS20RecursivePrecompileCallsTestSuite) SetupTest() {
-	suite.coordinator = evmibctesting.NewCoordinator(suite.T(), 2, 0, integration.SetupEvmd)
+	suite.coordinator = evmibctesting.NewCoordinator(suite.T(), 2, 0, integration.SetupShardeum)
 	suite.chainA = suite.coordinator.GetChain(evmibctesting.GetEvmChainID(1))
 	suite.chainB = suite.coordinator.GetChain(evmibctesting.GetEvmChainID(2))
 
-	evmAppA := suite.chainA.App.(*evmd.EVMD)
+	evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 	suite.chainAPrecompile = ics20.NewPrecompile(
 		evmAppA.BankKeeper,
 		*evmAppA.StakingKeeper,
@@ -235,7 +235,7 @@ func (suite *ICS20RecursivePrecompileCallsTestSuite) SetupTest() {
 	avail := evmAppA.Erc20Keeper.IsNativePrecompileAvailable(suite.chainA.GetContext(), common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517"))
 	suite.Require().True(avail)
 
-	evmAppB := suite.chainB.App.(*evmd.EVMD)
+	evmAppB := suite.chainB.App.(*shardeumd.ShardeumApp)
 	suite.chainBPrecompile = ics20.NewPrecompile(
 		evmAppB.BankKeeper,
 		*evmAppB.StakingKeeper,
@@ -296,7 +296,7 @@ func (suite *ICS20RecursivePrecompileCallsTestSuite) TestHandleMsgTransfer() {
 				suite.setupContractForTesting(contractAddr, contractData, senderAcc)
 			},
 			func(querier distributionkeeper.Querier, valAddr string, eventAmount int) {
-				evmAppA := suite.chainA.App.(*evmd.EVMD)
+				evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 				bondDenom, err := evmAppA.StakingKeeper.BondDenom(suite.chainA.GetContext())
 				suite.Require().NoError(err)
 				contractBondDenomBalance := evmAppA.BankKeeper.GetBalance(suite.chainA.GetContext(), nativeErc20.ContractAddr.Bytes(), bondDenom)
@@ -344,7 +344,7 @@ func (suite *ICS20RecursivePrecompileCallsTestSuite) TestHandleMsgTransfer() {
 				suite.setupContractForTesting(contractAddr, contractData, senderAcc)
 			},
 			func(querier distributionkeeper.Querier, valAddr string, eventAmount int) {
-				evmAppA := suite.chainA.App.(*evmd.EVMD)
+				evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 				bondDenom, err := evmAppA.StakingKeeper.BondDenom(suite.chainA.GetContext())
 				suite.Require().NoError(err)
 				contractBondDenomBalance := evmAppA.BankKeeper.GetBalance(suite.chainA.GetContext(), nativeErc20.ContractAddr.Bytes(), bondDenom)
@@ -376,7 +376,7 @@ func (suite *ICS20RecursivePrecompileCallsTestSuite) TestHandleMsgTransfer() {
 
 			tc.malleate(senderAccount)
 
-			evmAppA := suite.chainA.App.(*evmd.EVMD)
+			evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 
 			// Get balance helper function
 			GetBalance := func(addr sdk.AccAddress) sdk.Coin {
@@ -483,7 +483,7 @@ func (suite *ICS20RecursivePrecompileCallsTestSuite) TestHandleMsgTransfer() {
 			suite.Require().Equal(transferAmount.String(), chainAEscrowBalance.Amount.String())
 
 			// check that voucher exists on chain B
-			evmAppB := suite.chainB.App.(*evmd.EVMD)
+			evmAppB := suite.chainB.App.(*shardeumd.ShardeumApp)
 			chainBDenom := transfertypes.NewDenom(originalCoin.Denom, traceAToB)
 			chainBBalance := evmAppB.BankKeeper.GetBalance(
 				suite.chainB.GetContext(),
@@ -545,7 +545,7 @@ func (suite *ICS20RecursivePrecompileCallsTestSuite) TestContractICS20TransferWi
 	suite.chainA.NextBlock()
 	suite.Require().NoError(err)
 
-	evmAppA := suite.chainA.App.(*evmd.EVMD)
+	evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 	ctxA := suite.chainA.GetContext()
 
 	// Register both ERC20 contracts
@@ -763,7 +763,7 @@ func (suite *ICS20RecursivePrecompileCallsTestSuite) TestContractICS20TransferRe
 	suite.chainA.NextBlock()
 	suite.Require().NoError(err)
 
-	evmAppA := suite.chainA.App.(*evmd.EVMD)
+	evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 	ctxA := suite.chainA.GetContext()
 
 	// Get deployer address for CallEVM

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/shardeum/shardeum-evm"
+	srvflags "github.com/shardeum/shardeum-evm/server/flags"
 	shardeumd "github.com/shardeum/shardeum-evm/shardeumd"
 	testconfig "github.com/shardeum/shardeum-evm/testutil/config"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
@@ -43,6 +44,8 @@ func CreateShardeum(chainID string, evmChainID uint64, customBaseAppOptions ...f
 		nil,
 		loadLatest,
 		appOptions,
+		evmChainID,
+		testconfig.EvmAppOptions,
 		baseAppOptions...,
 	)
 }

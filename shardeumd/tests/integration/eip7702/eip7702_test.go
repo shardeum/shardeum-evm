@@ -8,5 +8,5 @@ import (
 )
 
 func TestEIP7702IntegrationTestSuite(t *testing.T) {
-	eip7702.TestEIP7702IntegrationTestSuite(t, integration.CreateEvmd)
+	eip7702.TestEIP7702IntegrationTestSuite(t, integration.CreateShardeum)
 }

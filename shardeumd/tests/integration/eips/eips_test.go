@@ -8,5 +8,5 @@ import (
 )
 
 func TestEIPs(t *testing.T) {
-	eips.RunTests(t, integration.CreateEvmd)
+	eips.RunTests(t, integration.CreateShardeum)
 }

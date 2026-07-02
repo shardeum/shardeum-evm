@@ -13,7 +13,6 @@ import (
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/crypto/hd"
 	"github.com/shardeum/shardeum-evm/rpc/types"
-	types "github.com/shardeum/shardeum-evm/rpc/types"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/utils"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"

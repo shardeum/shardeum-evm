@@ -104,7 +104,7 @@ func (s *IntegrationTestSuite) setupTestSuite() {
 	keyring := testkeyring.New(3)
 	customGenesis := network.CustomGenesisState{}
 	// mint some coin to fee collector
-	coins := sdk.NewCoins(sdk.NewCoin(testconstants.ExampleAttoDenom, sdkmath.NewInt(InitialTestBalance)))
+	coins := sdk.NewCoins(sdk.NewCoin(testconstants.ShardeumAttoDenom, sdkmath.NewInt(InitialTestBalance)))
 	balances := []banktypes.Balance{
 		{
 			Address: authtypes.NewModuleAddress(authtypes.FeeCollectorName).String(),

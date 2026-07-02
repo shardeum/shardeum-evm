@@ -38,7 +38,7 @@ type AutoFlushTestSuite struct {
 }
 
 func (suite *AutoFlushTestSuite) SetupTest() {
-	suite.coordinator = evmibctesting.NewCoordinator(suite.T(), 1, 0, integration.SetupEvmd)
+	suite.coordinator = evmibctesting.NewCoordinator(suite.T(), 1, 0, integration.SetupShardeum)
 	suite.chain = suite.coordinator.GetChain(evmibctesting.GetEvmChainID(1))
 }
 
@@ -48,7 +48,7 @@ func TestAutoFlushTestSuite(t *testing.T) {
 
 // Helper: Deploy and setup ERC20 token
 func (suite *AutoFlushTestSuite) deployAndRegisterERC20(name, symbol string) (common.Address, evmtypes.CompiledContract) {
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 
 	// Deploy ERC20
 	erc20ContractData := contracts.ERC20MinterBurnerDecimalsContract
@@ -74,7 +74,7 @@ func (suite *AutoFlushTestSuite) deployAndRegisterERC20(name, symbol string) (co
 
 // Helper: Get validator address
 func (suite *AutoFlushTestSuite) getValidatorAddress() string {
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 	ctx := suite.chain.GetContext()
 
 	vals, err := evmApp.StakingKeeper.GetAllValidators(ctx)
@@ -86,7 +86,7 @@ func (suite *AutoFlushTestSuite) getValidatorAddress() string {
 
 // Helper: Mint tokens to address
 func (suite *AutoFlushTestSuite) mintTokens(tokenAddr common.Address, erc20Data evmtypes.CompiledContract, recipient common.Address, amount *big.Int) {
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 	deployerAddr := common.BytesToAddress(suite.chain.SenderPrivKey.PubKey().Address().Bytes())
 
 	stateDB := testutil.NewStateDB(suite.chain.GetContext(), evmApp.EVMKeeper)
@@ -109,7 +109,7 @@ func (suite *AutoFlushTestSuite) mintTokens(tokenAddr common.Address, erc20Data 
 
 // Helper: Fund contract with native tokens
 func (suite *AutoFlushTestSuite) fundContractNative(contractAddr sdk.AccAddress, amount sdkmath.Int) {
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 	bondDenom, err := evmApp.StakingKeeper.BondDenom(suite.chain.GetContext())
 	suite.Require().NoError(err)
 
@@ -140,7 +140,7 @@ func (suite *AutoFlushTestSuite) verifyState(
 	expectedNativeBalances map[string]sdkmath.Int, // bech32 address -> balance
 	expectedAccountsCreated int,
 ) {
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 	ctx := suite.chain.GetContext()
 
 	// Check event count
@@ -183,7 +183,7 @@ func (suite *AutoFlushTestSuite) verifyState(
 func (suite *AutoFlushTestSuite) TestScenario1_TransferDelegateTransfer() {
 	suite.SetupTest()
 
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 	ctx := suite.chain.GetContext()
 
 	// Deploy test contract
@@ -273,7 +273,7 @@ func (suite *AutoFlushTestSuite) TestScenario1_TransferDelegateTransfer() {
 func (suite *AutoFlushTestSuite) TestScenario2_TransferDelegateRevertTransfer() {
 	suite.SetupTest()
 
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 	ctx := suite.chain.GetContext()
 
 	// Deploy test contract
@@ -360,7 +360,7 @@ func (suite *AutoFlushTestSuite) TestScenario2_TransferDelegateRevertTransfer() 
 func (suite *AutoFlushTestSuite) TestScenario3_NativeTransferDelegateNativeTransfer() {
 	suite.SetupTest()
 
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 	ctx := suite.chain.GetContext()
 
 	// Deploy test contract
@@ -456,7 +456,7 @@ func (suite *AutoFlushTestSuite) TestScenario3_NativeTransferDelegateNativeTrans
 func (suite *AutoFlushTestSuite) TestScenario4_NativeTransferDelegateRevertNativeTransfer() {
 	suite.SetupTest()
 
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 	ctx := suite.chain.GetContext()
 
 	// Deploy test contract
@@ -559,7 +559,7 @@ func (suite *AutoFlushTestSuite) TestScenario4_NativeTransferDelegateRevertNativ
 func (suite *AutoFlushTestSuite) TestScenario5_DelegateCreateDelegate() {
 	suite.SetupTest()
 
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 	ctx := suite.chain.GetContext()
 
 	// Deploy test contract
@@ -624,7 +624,7 @@ func (suite *AutoFlushTestSuite) TestScenario5_DelegateCreateDelegate() {
 func (suite *AutoFlushTestSuite) TestScenario6_DelegateCreateRevertDelegate() {
 	suite.SetupTest()
 
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 	ctx := suite.chain.GetContext()
 
 	// Deploy test contract
@@ -689,7 +689,7 @@ func (suite *AutoFlushTestSuite) TestScenario6_DelegateCreateRevertDelegate() {
 func (suite *AutoFlushTestSuite) TestScenario7_CreateRevertDelegateCreateRevert() {
 	suite.SetupTest()
 
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 	ctx := suite.chain.GetContext()
 
 	// Deploy test contract
@@ -769,7 +769,7 @@ func (suite *AutoFlushTestSuite) TestScenario7_CreateRevertDelegateCreateRevert(
 func (suite *AutoFlushTestSuite) TestScenario8_CreateDelegateRevertSend() {
 	suite.SetupTest()
 
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 	ctx := suite.chain.GetContext()
 
 	// Deploy test contract
@@ -829,7 +829,7 @@ func (suite *AutoFlushTestSuite) TestScenario8_CreateDelegateRevertSend() {
 func (suite *AutoFlushTestSuite) TestScenario9_CreateRevertDelegateCreateSuccess() {
 	suite.SetupTest()
 
-	evmApp := suite.chain.App.(*evmd.EVMD)
+	evmApp := suite.chain.App.(*shardeumd.ShardeumApp)
 
 	// Deploy test contract
 	contractData, err := contracts.LoadContractCreationTester()

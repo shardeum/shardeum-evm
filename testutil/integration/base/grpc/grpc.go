@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"github.com/shardeum/shardeum-evm/testutil/integration/base/network"
-	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
@@ -30,10 +29,6 @@ type Handler interface {
 	GetSpendableBalance(address sdk.AccAddress, denom string) (*banktypes.QuerySpendableBalanceByDenomResponse, error)
 	GetAllBalances(address sdk.AccAddress) (*banktypes.QueryAllBalancesResponse, error)
 	GetTotalSupply() (*banktypes.QueryTotalSupplyResponse, error)
-
-	// PreciseBank methods
-	Remainder() (*precisebanktypes.QueryRemainderResponse, error)
-	FractionalBalance(address sdk.AccAddress) (*precisebanktypes.QueryFractionalBalanceResponse, error)
 
 	// Staking methods
 	GetDelegation(delegatorAddress string, validatorAddress string) (*stakingtypes.QueryDelegationResponse, error)

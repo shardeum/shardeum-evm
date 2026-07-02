@@ -34,7 +34,7 @@ func TestBalanceHandlerTestSuite(t *testing.T) {
 
 func (s *BalanceHandlerTestSuite) SetupTest() {
 	// Create coordinator with one chain
-	s.coordinator = evmibctesting.NewCoordinator(s.T(), 1, 0, integration.SetupEvmd)
+	s.coordinator = evmibctesting.NewCoordinator(s.T(), 1, 0, integration.SetupShardeum)
 	s.chain = s.coordinator.GetChain(evmibctesting.GetEvmChainID(1))
 }
 

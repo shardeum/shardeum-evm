@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/shardeum/shardeum-evm/contracts"
 	"github.com/shardeum/shardeum-evm/ibc"
+	ics20precompile "github.com/shardeum/shardeum-evm/precompiles/ics20"
 	"github.com/shardeum/shardeum-evm/shardeumd"
 	"github.com/shardeum/shardeum-evm/shardeumd/tests/integration"
 	"github.com/shardeum/shardeum-evm/testutil"
@@ -19,9 +20,10 @@ import (
 	"github.com/shardeum/shardeum-evm/x/erc20"
 	erc20Keeper "github.com/shardeum/shardeum-evm/x/erc20/keeper"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
-	testutil2 "github.com/shardeum/shardeum-evm/x/ibc/callbacks/testutil"
-	types2 "github.com/shardeum/shardeum-evm/x/ibc/callbacks/types"
-	types3 "github.com/shardeum/shardeum-evm/x/vm/types"
+	ibctestutil "github.com/shardeum/shardeum-evm/x/ibc/callbacks/testutil"
+	callbacktypes "github.com/shardeum/shardeum-evm/x/ibc/callbacks/types"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
+	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	testifysuite "github.com/stretchr/testify/suite"
 
 	ibctransfer "github.com/cosmos/ibc-go/v10/modules/apps/transfer"
@@ -68,7 +70,7 @@ func (suite *MiddlewareTestSuite) SetupTest() {
 	suite.Require().True(found)
 
 	// Setup ICS20 precompile for evmChainA
-	evmAppA := suite.evmChainA.App.(*evmd.EVMD)
+	evmAppA := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 	suite.evmChainAPrecompile = ics20precompile.NewPrecompile(
 		evmAppA.BankKeeper,
 		*evmAppA.StakingKeeper,
@@ -89,7 +91,7 @@ func (suite *MiddlewareTestSuite) transferViaPrecompile(
 	timeoutTimestamp uint64,
 	memo string,
 ) (uint64, error) {
-	evmApp := suite.evmChainA.App.(*evmd.EVMD)
+	evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 
 	// Convert sender to address type
 	senderAddr := sdk.MustAccAddressFromBech32(sender)
@@ -457,7 +459,7 @@ func (suite *MiddlewareTestSuite) TestOnRecvPacketWithCallback() {
 			)
 
 			// Validate successful callback
-			evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 			singleTokenRepresentation, err := types.NewTokenPairSTRv2(voucherDenom)
 			suite.Require().NoError(err)
 			erc20Contract := singleTokenRepresentation.GetERC20Contract()
@@ -618,7 +620,7 @@ func (suite *MiddlewareTestSuite) TestOnRecvPacket() {
 
 				voucherDenom := testutil.GetVoucherDenomFromPacketData(data, packet.GetDestPort(), packet.GetDestChannel())
 
-				evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+				evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 				voucherCoin := evmApp.BankKeeper.GetBalance(ctxA, receiver, voucherDenom)
 				suite.Require().Equal(sendAmt.String(), voucherCoin.Amount.String())
 
@@ -646,46 +648,33 @@ func (suite *MiddlewareTestSuite) TestOnRecvPacket() {
 
 // TestOnRecvPacketNativeErc20 checks receiving a native ERC20 token.
 func (suite *MiddlewareTestSuite) TestOnRecvPacketNativeErc20() {
-	suite.SetupTest()
-	nativeErc20 := SetupNativeErc20(suite.T(), suite.evmChainA, suite.evmChainA.SenderAccounts[0])
-
-	evmCtx := suite.evmChainA.GetContext()
-	evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
-
-	// Scenario: Native ERC20 token transfer from evmChainA to chainB
-	timeoutHeight := clienttypes.NewHeight(1, 110)
-	path := suite.path
-	chainBAccount := suite.chainB.SenderAccount.GetAddress()
-
-	sendAmt := math.NewIntFromBigInt(nativeErc20.InitialBal).Quo(math.NewInt(2))
-	senderEthAddr := nativeErc20.Account
-	sender := sdk.AccAddress(senderEthAddr.Bytes())
-
-	// Transfer half the initial balance out
-	// Sender transfers 50 out (escrowed)
-	msg := transfertypes.NewMsgTransfer(
-		path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID,
-		sdk.NewCoin(nativeErc20.Denom, sendAmt),
-		sender.String(), chainBAccount.String(),
-		timeoutHeight, 0, "",
-	)
-
-	_, err := suite.evmChainA.SendMsgs(msg)
-	suite.Require().NoError(err) // message committed
-
-	// Balance after transfer should be initial balance - sendAmt
-	balAfterTransfer := evmApp.Erc20Keeper.BalanceOf(evmCtx, nativeErc20.ContractAbi, nativeErc20.ContractAddr, senderEthAddr)
-	suite.Require().Equal(
-		new(big.Int).Sub(nativeErc20.InitialBal, sendAmt.BigInt()).String(),
-		balAfterTransfer.String(),
-	)
-
-	// Now try to convert sendAmt to ERC20
-	convertMsg := types.MsgConvertERC20{
-		ContractAddress: nativeErc20.ContractAddr.String(),
-		Amount:          sendAmt,
-		Receiver:        sender.String(),
-		Sender:          senderEthAddr.String(),
+	testCases := []struct {
+		name                 string
+		setupRecipient       func(suite *MiddlewareTestSuite) (string, common.Address)
+		withCallback         bool
+		expectedRecipientEVM common.Address
+	}{
+		{
+			name: "recipient with callback",
+			setupRecipient: func(suite *MiddlewareTestSuite) (string, common.Address) {
+				recipient := callbacktypes.GenerateIsolatedAddress(
+					suite.path.EndpointA.ChannelID,
+					suite.chainB.SenderAccount.GetAddress().String(),
+				).String()
+				return recipient, common.Address{}
+			},
+			withCallback:         true,
+			expectedRecipientEVM: common.Address{},
+		},
+		{
+			name: "hex recipient without callback",
+			setupRecipient: func(suite *MiddlewareTestSuite) (string, common.Address) {
+				evmAddr := common.BytesToAddress(suite.evmChainA.SenderAccount.GetAddress().Bytes())
+				return evmAddr.Hex(), evmAddr
+			},
+			withCallback:         false,
+			expectedRecipientEVM: common.Address{},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -694,7 +683,7 @@ func (suite *MiddlewareTestSuite) TestOnRecvPacketNativeErc20() {
 			nativeErc20 := SetupNativeErc20(suite.T(), suite.evmChainA, suite.evmChainA.SenderAccounts[0])
 
 			evmCtx := suite.evmChainA.GetContext()
-			evmApp := suite.evmChainA.App.(*evmd.EVMD)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 
 			// Scenario: Native ERC20 token transfer from evmChainA to chainB
 			timeoutHeight := clienttypes.NewHeight(1, 110)
@@ -1185,7 +1174,7 @@ func (suite *MiddlewareTestSuite) TestOnAcknowledgementPacketWithCallback() {
 			suite.SetupTest()
 
 			ctxA := suite.evmChainA.GetContext()
-			evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 
 			bondDenom, err := evmApp.StakingKeeper.BondDenom(ctxA)
 			suite.Require().NoError(err)
@@ -1417,7 +1406,7 @@ func (suite *MiddlewareTestSuite) TestOnAcknowledgementPacket() {
 			suite.SetupTest()
 
 			ctxA := suite.evmChainA.GetContext()
-			evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 
 			bondDenom, err := evmApp.StakingKeeper.BondDenom(ctxA)
 			suite.Require().NoError(err)
@@ -1569,7 +1558,7 @@ func (suite *MiddlewareTestSuite) TestOnAcknowledgementPacketNativeErc20() {
 			nativeErc20 := SetupNativeErc20(suite.T(), suite.evmChainA, suite.evmChainA.SenderAccounts[0])
 
 			evmCtx := suite.evmChainA.GetContext()
-			evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 
 			timeoutHeight := clienttypes.NewHeight(1, 110)
 			path := suite.path
@@ -1704,7 +1693,7 @@ func (suite *MiddlewareTestSuite) TestOnTimeoutPacket() {
 			suite.SetupTest()
 
 			ctxA := suite.evmChainA.GetContext()
-			evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 			bondDenom, err := evmApp.StakingKeeper.BondDenom(ctxA)
 			suite.Require().NoError(err)
 
@@ -2022,7 +2011,7 @@ func (suite *MiddlewareTestSuite) TestOnTimeoutPacketWithCallback() {
 			suite.SetupTest()
 
 			ctxA := suite.evmChainA.GetContext()
-			evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 
 			bondDenom, err := evmApp.StakingKeeper.BondDenom(ctxA)
 			suite.Require().NoError(err)
@@ -2227,7 +2216,7 @@ func (suite *MiddlewareTestSuite) TestOnTimeoutPacketNativeErc20() {
 			nativeErc20 := SetupNativeErc20(suite.T(), suite.evmChainA, suite.evmChainA.SenderAccounts[0])
 
 			evmCtx := suite.evmChainA.GetContext()
-			evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 
 			timeoutHeight := clienttypes.NewHeight(1, 110)
 			path := suite.path

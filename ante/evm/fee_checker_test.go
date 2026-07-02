@@ -5,10 +5,7 @@ import (
 	"testing"
 
 	"github.com/shardeum/shardeum-evm/ante/evm"
-	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 	"github.com/shardeum/shardeum-evm/ante/types"
-	types "github.com/shardeum/shardeum-evm/ante/types"
-	"github.com/shardeum/shardeum-evm/config"
 	"github.com/shardeum/shardeum-evm/encoding"
 	"github.com/shardeum/shardeum-evm/testutil/config"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"

@@ -165,10 +165,10 @@ func VerifyBalanceChanges(
 			account.IntegerDelta, account.FractionalDelta, account.AccountType.String(), grpcHandler)
 	}
 
-	res, err := grpcHandler.Remainder()
-	Expect(err).ToNot(HaveOccurred(), "failed to get precisebank module remainder")
-	actualRemainder := res.Remainder.Amount.BigInt()
-	Expect(actualRemainder).To(Equal(expectedRemainder))
+	// The precisebank remainder concept does not apply to shardeum's 18-decimal
+	// ashm (no precisebank module). expectedRemainder is retained in the
+	// signature for source compatibility with upstream callers.
+	_ = expectedRemainder
 }
 
 // GetAccountBalance returns the AccountBalanceInfo for a given account type
@@ -189,15 +189,12 @@ func GetBalanceSnapshot(addr sdk.AccAddress, grpcHandler grpc.Handler) (*Balance
 		return nil, fmt.Errorf("failed to get integer balance: %w", err)
 	}
 
-	// Get fractional balance using the new grpcHandler method
-	fracRes, err := grpcHandler.FractionalBalance(addr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get fractional balance: %w", err)
-	}
-
+	// Fractional balances only exist when the base denom has fewer than 18
+	// decimals (the precisebank module). Shardeum uses 18-decimal ashm without
+	// precisebank, so the fractional balance is always zero.
 	return &BalanceSnapshot{
 		IntegerBalance:    intRes.Balance.Amount.BigInt(),
-		FractionalBalance: fracRes.FractionalBalance.Amount.BigInt(),
+		FractionalBalance: big.NewInt(0),
 	}, nil
 }
 

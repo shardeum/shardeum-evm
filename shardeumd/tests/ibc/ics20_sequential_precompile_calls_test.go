@@ -37,11 +37,11 @@ type ICS20SequentialPrecompileCallsTestSuite struct {
 }
 
 func (suite *ICS20SequentialPrecompileCallsTestSuite) SetupTest() {
-	suite.coordinator = evmibctesting.NewCoordinator(suite.T(), 2, 0, integration.SetupEvmd)
+	suite.coordinator = evmibctesting.NewCoordinator(suite.T(), 2, 0, integration.SetupShardeum)
 	suite.chainA = suite.coordinator.GetChain(evmibctesting.GetEvmChainID(1))
 	suite.chainB = suite.coordinator.GetChain(evmibctesting.GetEvmChainID(2))
 
-	evmAppA := suite.chainA.App.(*evmd.EVMD)
+	evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 	suite.chainAPrecompile = ics20.NewPrecompile(
 		evmAppA.BankKeeper,
 		*evmAppA.StakingKeeper,
@@ -57,7 +57,7 @@ func (suite *ICS20SequentialPrecompileCallsTestSuite) SetupTest() {
 	avail := evmAppA.Erc20Keeper.IsNativePrecompileAvailable(suite.chainA.GetContext(), common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517"))
 	suite.Require().True(avail)
 
-	evmAppB := suite.chainB.App.(*evmd.EVMD)
+	evmAppB := suite.chainB.App.(*shardeumd.ShardeumApp)
 	suite.chainBPrecompile = ics20.NewPrecompile(
 		evmAppB.BankKeeper,
 		*evmAppB.StakingKeeper,
@@ -75,7 +75,7 @@ func (suite *ICS20SequentialPrecompileCallsTestSuite) TestReceiveAndSendTwice() 
 	pathAToB := evmibctesting.NewTransferPath(suite.chainA, suite.chainB)
 	pathAToB.Setup()
 
-	evmAppA := suite.chainA.App.(*evmd.EVMD)
+	evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 	// Deployer has MINTER_ROLE - use it for minting
 	deployerAddr := common.BytesToAddress(suite.chainA.SenderPrivKey.PubKey().Address().Bytes())
 	// Use a different account for the actual test tx
