@@ -10,7 +10,6 @@ import (
 	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"
-	"github.com/shardeum/shardeum-evm/types"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -25,11 +24,11 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 )
 
-var evmCodec codec.ProtoCodecMarshaler
+var evmCodec codec.Codec
 
 func init() {
 	registry := codectypes.NewInterfaceRegistry()
-	types.RegisterInterfaces(registry)
+	eip712.RegisterInterfaces(registry)
 	evmCodec = codec.NewProtoCodec(registry)
 }
 
@@ -177,7 +176,7 @@ func VerifySignature(
 			return errorsmod.Wrap(errortypes.ErrNoSignatures, "tx doesn't contain any msgs to verify signature")
 		}
 
-		txBytes := legacytx.StdSignBytes(
+		txBytes := legacytx.StdSignBytes( //nolint:staticcheck // checking legacy type
 			signerData.ChainID,
 			signerData.AccountNumber,
 			signerData.Sequence,
@@ -203,7 +202,7 @@ func VerifySignature(
 			return errorsmod.Wrap(errortypes.ErrUnknownExtensionOptions, "tx doesn't contain expected amount of extension options")
 		}
 
-		extOpt, ok := opts[0].GetCachedValue().(*types.ExtensionOptionsWeb3Tx)
+		extOpt, ok := opts[0].GetCachedValue().(*eip712.ExtensionOptionsWeb3Tx)
 		if !ok {
 			return errorsmod.Wrap(errortypes.ErrUnknownExtensionOptions, "unknown extension option")
 		}

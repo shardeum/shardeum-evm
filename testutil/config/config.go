@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/shardeum/shardeum-evm/types"
+	types "github.com/shardeum/shardeum-evm/crypto/hd"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,13 +15,13 @@ var ChainsCoinInfo = map[uint64]evmtypes.EvmCoinInfo{
 		Denom:         ShardeumChainDenom,
 		ExtendedDenom: ShardeumChainDenom,
 		DisplayDenom:  ShardeumDisplayDenom,
-		Decimals:      evmtypes.EighteenDecimals,
+		Decimals:      evmtypes.EighteenDecimals.Uint32(),
 	},
 	EVMChainID: {
 		Denom:         ShardeumChainDenom,
 		ExtendedDenom: ShardeumChainDenom,
 		DisplayDenom:  ShardeumDisplayDenom,
-		Decimals:      evmtypes.EighteenDecimals,
+		Decimals:      evmtypes.EighteenDecimals.Uint32(),
 	},
 }
 

@@ -1,12 +1,13 @@
 package main
 
 import (
-	_ "embed"
 	"flag"
 	"log"
 
 	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/report"
 	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/runner"
+
+	_ "embed"
 )
 
 func main() {

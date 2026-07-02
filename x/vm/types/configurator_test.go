@@ -17,7 +17,7 @@ func TestEVMConfigurator(t *testing.T) {
 
 	err = evmConfigurator.Configure()
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "sealed", "expected different error")
+	require.Contains(t, err.Error(), "already sealed", "expected different error")
 }
 
 func TestExtendedEips(t *testing.T) {

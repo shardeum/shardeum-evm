@@ -3,6 +3,7 @@ package constants_test
 import (
 	"testing"
 
+	"github.com/shardeum/shardeum-evm/config"
 	"github.com/shardeum/shardeum-evm/testutil/config"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/stretchr/testify/require"

@@ -107,7 +107,7 @@ func (f *Filter) Logs(_ context.Context, logLimit int, blockLimit int64) (logs [
 			return nil, err
 		}
 
-		bloom, err := f.backend.BlockBloom(blockRes)
+		bloom, err := f.backend.BlockBloomFromCometBlock(blockRes)
 		if err != nil {
 			return nil, err
 		}
@@ -176,7 +176,7 @@ func (f *Filter) Logs(_ context.Context, logLimit int, blockLimit int64) (logs [
 			return nil, fmt.Errorf("failed to fetch block result from CometBFT: %w", err)
 		}
 
-		bloom, err := f.backend.BlockBloom(blockRes)
+		bloom, err := f.backend.BlockBloomFromCometBlock(blockRes)
 		if err != nil {
 			return nil, fmt.Errorf("failed to query block bloom filter from block results: %w", err)
 		}

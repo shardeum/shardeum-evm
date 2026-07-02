@@ -3,10 +3,9 @@ package p256
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/shardeumd/tests/integration"
 	"github.com/shardeum/shardeum-evm/tests/integration/precompiles/p256"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestP256PrecompileTestSuite(t *testing.T) {

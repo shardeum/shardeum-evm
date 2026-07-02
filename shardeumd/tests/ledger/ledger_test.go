@@ -4,17 +4,16 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/shardeum/shardeum-evm/crypto/hd"
+	"github.com/shardeum/shardeum-evm/encoding"
+	"github.com/shardeum/shardeum-evm/server/config"
+	"github.com/shardeum/shardeum-evm/shardeumd/tests/ledger/mocks"
+	"github.com/shardeum/shardeum-evm/testutil"
+	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	"github.com/spf13/cobra"
 
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
-
-	"github.com/shardeum/shardeum-evm/crypto/hd"
-	"github.com/shardeum/shardeum-evm/encoding"
-	"github.com/shardeum/shardeum-evm/shardeumd/tests/ledger/mocks"
-	"github.com/shardeum/shardeum-evm/server/config"
-	"github.com/shardeum/shardeum-evm/testutil"
-	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 
 	"cosmossdk.io/math"
 

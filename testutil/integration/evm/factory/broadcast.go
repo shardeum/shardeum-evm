@@ -1,9 +1,12 @@
 package factory
 
 import (
+	"encoding/json"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/shardeum/shardeum-evm/precompiles/testutil"
+	"github.com/shardeum/shardeum-evm/server/config"
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
@@ -98,4 +101,37 @@ func (tf *IntegrationTxFactory) CallContractAndCheckLogs(
 	}
 
 	return res, ethRes, testutil.CheckLogs(logCheckArgs)
+}
+
+// QueryContract executes a read-only contract call using eth_call without affecting account nonces.
+func (tf *IntegrationTxFactory) QueryContract(
+	txArgs evmtypes.EvmTxArgs,
+	callArgs testutiltypes.CallArgs,
+	gasCap uint64,
+) (*evmtypes.MsgEthereumTxResponse, error) {
+	input, err := GenerateContractCallArgs(callArgs)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "failed to generate contract call args")
+	}
+
+	txArgs.Input = input
+	if gasCap == 0 {
+		gasCap = config.DefaultGasCap
+	}
+
+	// ensure the call has enough intrinsic gas by setting the tx gas limit
+	callArgsWithGas := txArgs
+	callArgsWithGas.GasLimit = gasCap
+	txData := callArgsWithGas.ToTxData()
+	args, err := json.Marshal(txData)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "failed to marshal eth_call arguments")
+	}
+
+	res, err := tf.grpcHandler.EthCall(args, gasCap)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "failed to execute eth_call")
+	}
+
+	return res, nil
 }

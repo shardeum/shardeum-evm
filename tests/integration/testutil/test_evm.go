@@ -6,7 +6,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/shardeum/shardeum-evm/contracts"
 	testfactory "github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
 	testhandler "github.com/shardeum/shardeum-evm/testutil/integration/evm/grpc"

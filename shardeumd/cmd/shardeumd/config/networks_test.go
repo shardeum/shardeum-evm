@@ -13,8 +13,8 @@ import (
 
 type NetworkConfigTestSuite struct {
 	suite.Suite
-	tempDir    string
-	configDir  string
+	tempDir     string
+	configDir   string
 	originalEnv map[string]string
 }
 
@@ -28,13 +28,13 @@ func (suite *NetworkConfigTestSuite) SetupTest() {
 	suite.Require().NoError(err)
 	suite.tempDir = tempDir
 	suite.configDir = filepath.Join(tempDir, "configs")
-	err = os.MkdirAll(suite.configDir, 0755)
+	err = os.MkdirAll(suite.configDir, 0o755)
 	suite.Require().NoError(err)
 
 	// Create standard network config files for testing
 	suite.createStandardNetworkConfigs()
 
-    // Save original environment variables
+	// Save original environment variables
 	suite.originalEnv = make(map[string]string)
 	envVars := []string{
 		"SHARDEUM_NETWORK",
@@ -46,19 +46,19 @@ func (suite *NetworkConfigTestSuite) SetupTest() {
 		"SHARDEUM_REST_PORT",
 		"SHARDEUM_JSON_RPC_PORT",
 		"SHARDEUM_WEBSOCKET_PORT",
-        "SHARDEUM_GRPC_PORT",
-        "SHARDEUM_CONFIG_DIR",
+		"SHARDEUM_GRPC_PORT",
+		"SHARDEUM_CONFIG_DIR",
 	}
 
-    for _, envVar := range envVars {
+	for _, envVar := range envVars {
 		suite.originalEnv[envVar] = os.Getenv(envVar)
 		os.Unsetenv(envVar)
 	}
 
-    // Ensure binary resolves configs from our test configs directory
-    os.Setenv("SHARDEUM_CONFIG_DIR", suite.configDir)
+	// Ensure binary resolves configs from our test configs directory
+	os.Setenv("SHARDEUM_CONFIG_DIR", suite.configDir)
 
-    // Change working directory to temp dir for tests
+	// Change working directory to temp dir for tests
 	originalWd, _ := os.Getwd()
 	os.Chdir(tempDir)
 	suite.T().Cleanup(func() {
@@ -84,7 +84,7 @@ func (suite *NetworkConfigTestSuite) createTestConfig(name string, config Networ
 	configPath := filepath.Join(suite.configDir, name+".json")
 	data, err := json.MarshalIndent(config, "", "  ")
 	suite.Require().NoError(err)
-	err = os.WriteFile(configPath, data, 0644)
+	err = os.WriteFile(configPath, data, 0o644)
 	suite.Require().NoError(err)
 }
 
@@ -165,7 +165,7 @@ func (suite *NetworkConfigTestSuite) createStandardNetworkConfigs() {
 func (suite *NetworkConfigTestSuite) TestBuiltinNetworks() {
 	// Test that all builtin networks can be loaded from JSON files
 	expectedNetworks := []string{"mainnet", "testnet", "devnet", "local"}
-	
+
 	for _, network := range expectedNetworks {
 		config, err := GetNetworkConfig(network)
 		suite.Require().NoError(err, "Builtin network %s should be loadable", network)
@@ -346,7 +346,7 @@ func (suite *NetworkConfigTestSuite) TestUpdateChainsCoinInfo() {
 	for _, networkName := range builtinNetworks {
 		config, err := GetNetworkConfig(networkName)
 		suite.Require().NoError(err)
-		
+
 		coinInfo, exists := ChainsCoinInfo[config.EVMChainID]
 		suite.Require().True(exists, "ChainsCoinInfo should contain EVM chain ID %d", config.EVMChainID)
 		suite.Require().Equal(config.BaseDenom, coinInfo.Denom)
@@ -359,7 +359,7 @@ func (suite *NetworkConfigTestSuite) TestUpdateChainsCoinInfo() {
 func (suite *NetworkConfigTestSuite) TestLoadNetworkConfigFromFile_InvalidJSON() {
 	// Create invalid JSON file
 	invalidConfigPath := filepath.Join(suite.configDir, "invalid.json")
-	err := os.WriteFile(invalidConfigPath, []byte("invalid json"), 0644)
+	err := os.WriteFile(invalidConfigPath, []byte("invalid json"), 0o644)
 	suite.Require().NoError(err)
 
 	// Should return error for invalid JSON
@@ -381,11 +381,11 @@ func TestNetworkConstants(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "network-constants-test")
 	require.NoError(t, err)
 	defer os.RemoveAll(tempDir)
-	
+
 	configDir := filepath.Join(tempDir, "configs")
-	err = os.MkdirAll(configDir, 0755)
+	err = os.MkdirAll(configDir, 0o755)
 	require.NoError(t, err)
-	
+
 	// Create local.json config file
 	localConfig := NetworkConfig{
 		Name:         "local",
@@ -406,9 +406,9 @@ func TestNetworkConstants(t *testing.T) {
 	configPath := filepath.Join(configDir, "local.json")
 	data, err := json.MarshalIndent(localConfig, "", "  ")
 	require.NoError(t, err)
-	err = os.WriteFile(configPath, data, 0644)
+	err = os.WriteFile(configPath, data, 0o644)
 	require.NoError(t, err)
-	
+
 	// Change to temp directory
 	originalWd, _ := os.Getwd()
 	err = os.Chdir(tempDir)
@@ -443,11 +443,11 @@ func TestNetworkConstants_EnvironmentOverride(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "network-override-test")
 	require.NoError(t, err)
 	defer os.RemoveAll(tempDir)
-	
+
 	configDir := filepath.Join(tempDir, "configs")
-	err = os.MkdirAll(configDir, 0755)
+	err = os.MkdirAll(configDir, 0o755)
 	require.NoError(t, err)
-	
+
 	// Create testnet.json config file
 	testnetConfig := NetworkConfig{
 		Name:         "testnet",
@@ -468,9 +468,9 @@ func TestNetworkConstants_EnvironmentOverride(t *testing.T) {
 	configPath := filepath.Join(configDir, "testnet.json")
 	data, err := json.MarshalIndent(testnetConfig, "", "  ")
 	require.NoError(t, err)
-	err = os.WriteFile(configPath, data, 0644)
+	err = os.WriteFile(configPath, data, 0o644)
 	require.NoError(t, err)
-	
+
 	// Change to temp directory
 	originalWd, _ := os.Getwd()
 	err = os.Chdir(tempDir)
@@ -500,8 +500,8 @@ func BenchmarkApplyEnvOverrides(b *testing.B) {
 	tempDir, _ := os.MkdirTemp("", "benchmark-test")
 	defer os.RemoveAll(tempDir)
 	configDir := filepath.Join(tempDir, "configs")
-	os.MkdirAll(configDir, 0755)
-	
+	os.MkdirAll(configDir, 0o755)
+
 	testConfig := NetworkConfig{
 		Name:         "testnet",
 		ChainID:      "shardeum-testnet",
@@ -520,12 +520,12 @@ func BenchmarkApplyEnvOverrides(b *testing.B) {
 	}
 	configPath := filepath.Join(configDir, "testnet.json")
 	data, _ := json.MarshalIndent(testConfig, "", "  ")
-	os.WriteFile(configPath, data, 0644)
-	
+	os.WriteFile(configPath, data, 0o644)
+
 	originalWd, _ := os.Getwd()
 	os.Chdir(tempDir)
 	defer os.Chdir(originalWd)
-	
+
 	for i := 0; i < b.N; i++ {
 		_ = applyEnvOverrides(testConfig)
 	}

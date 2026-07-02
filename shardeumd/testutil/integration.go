@@ -3,10 +3,10 @@ package testutil
 import (
 	"strconv"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/shardeum/shardeum-evm"
 	"github.com/shardeum/shardeum-evm/crypto/ethsecp256k1"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"

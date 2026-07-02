@@ -3,9 +3,8 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/tests/integration/x/ibc"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestIBCKeeperTestSuite(t *testing.T) {

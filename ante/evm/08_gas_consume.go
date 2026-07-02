@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
-	"github.com/shardeum/shardeum-evm/types"
+	antetypes "github.com/shardeum/shardeum-evm/ante/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	errorsmod "cosmossdk.io/errors"
@@ -98,7 +98,7 @@ func GetMsgPriority(
 
 // TODO: (@fedekunze) Why is this necessary? This seems to be a duplicate from the CheckGasWanted function.
 func CheckBlockGasLimit(ctx sdktypes.Context, gasWanted uint64, minPriority int64) (sdktypes.Context, error) {
-	blockGasLimit := types.BlockGasLimit(ctx)
+	blockGasLimit := antetypes.BlockGasLimit(ctx)
 
 	// return error if the tx gas is greater than the block limit (max gas)
 
@@ -121,7 +121,7 @@ func CheckBlockGasLimit(ctx sdktypes.Context, gasWanted uint64, minPriority int6
 	// FIXME: use a custom gas configuration that doesn't add any additional gas and only
 	// takes into account the gas consumed at the end of the EVM transaction.
 	ctx = ctx.
-		WithGasMeter(types.NewInfiniteGasMeterWithLimit(gasWanted)).
+		WithGasMeter(evmtypes.NewInfiniteGasMeterWithLimit(gasWanted)).
 		WithPriority(minPriority)
 
 	return ctx, nil

@@ -11,14 +11,14 @@ import (
 
 // NetworkConfig defines the configuration for a specific network
 type NetworkConfig struct {
-	Name         string           `json:"name"`
-	ChainID      string           `json:"chain_id"`
-	EVMChainID   uint64           `json:"evm_chain_id"`
-	BaseDenom    string           `json:"base_denom"`
-	DisplayDenom string           `json:"display_denom"`
+	Name         string            `json:"name"`
+	ChainID      string            `json:"chain_id"`
+	EVMChainID   uint64            `json:"evm_chain_id"`
+	BaseDenom    string            `json:"base_denom"`
+	DisplayDenom string            `json:"display_denom"`
 	Decimals     evmtypes.Decimals `json:"decimals"`
-	Bech32Prefix string           `json:"bech32_prefix"`
-	Ports        NetworkPorts     `json:"ports"`
+	Bech32Prefix string            `json:"bech32_prefix"`
+	Ports        NetworkPorts      `json:"ports"`
 }
 
 // NetworkPorts defines the port configuration for a network
@@ -88,7 +88,7 @@ func applyEnvOverrides(config NetworkConfig) NetworkConfig {
 
 // getNetworkConfigPath returns the path to the network configuration file
 func getNetworkConfigPath(network string) string {
-    	// 1) Explicit env dir
+	// 1) Explicit env dir
 	if configDir := os.Getenv("SHARDEUM_CONFIG_DIR"); configDir != "" {
 		p := filepath.Join(configDir, "environments", fmt.Sprintf("%s.json", network))
 		if _, err := os.Stat(p); err == nil {
@@ -115,7 +115,7 @@ func getNetworkConfigPath(network string) string {
 		}
 	}
 
-    return filepath.Join("config/environments", fmt.Sprintf("%s.json", network))
+	return filepath.Join("config/environments", fmt.Sprintf("%s.json", network))
 }
 
 // loadNetworkConfigFromFile loads network configuration from a JSON file
@@ -172,7 +172,7 @@ func UpdateChainsCoinInfo() {
 				Denom:         config.BaseDenom,
 				ExtendedDenom: config.BaseDenom,
 				DisplayDenom:  config.DisplayDenom,
-				Decimals:      config.Decimals,
+				Decimals:      config.Decimals.Uint32(),
 			}
 		}
 	}

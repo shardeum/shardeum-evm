@@ -13,16 +13,16 @@ import (
 
 type IntegrationTestSuite struct {
 	suite.Suite
-	tempDir      string
-	configsDir   string
-	configDir    string
-	repoRoot     string
-	originalWd   string
-	mockBinary   string
-	originalEnv  map[string]string
-	startScript  string
+	tempDir       string
+	configsDir    string
+	configDir     string
+	repoRoot      string
+	originalWd    string
+	mockBinary    string
+	originalEnv   map[string]string
+	startScript   string
 	addNodeScript string
-	setNetScript string
+	setNetScript  string
 }
 
 func TestIntegrationTestSuite(t *testing.T) {
@@ -72,9 +72,9 @@ func (suite *IntegrationTestSuite) SetupTest() {
 
 	suite.configsDir = filepath.Join(tempDir, "configs")
 	suite.configDir = filepath.Join(tempDir, "config")
-	err = os.MkdirAll(suite.configsDir, 0755)
+	err = os.MkdirAll(suite.configsDir, 0o755)
 	suite.Require().NoError(err)
-	err = os.MkdirAll(suite.configDir, 0755)
+	err = os.MkdirAll(suite.configDir, 0o755)
 	suite.Require().NoError(err)
 
 	// Create mock binary
@@ -82,10 +82,10 @@ func (suite *IntegrationTestSuite) SetupTest() {
 
 	// Save environment
 	suite.originalEnv = make(map[string]string)
-    envVars := []string{
+	envVars := []string{
 		"SHARDEUM_NETWORK", "SHARDEUM_CHAIN_ID", "SHARDEUM_EVM_CHAIN_ID",
 		"SHARDEUM_BASE_DENOM", "SHARDEUM_DISPLAY_DENOM",
-        "BINARY", "SKIP_BUILD", "SHARDEUM_CONFIG_DIR",
+		"BINARY", "SKIP_BUILD", "SHARDEUM_CONFIG_DIR",
 	}
 	for _, envVar := range envVars {
 		suite.originalEnv[envVar] = os.Getenv(envVar)
@@ -172,7 +172,7 @@ EOF
         ;;
 esac`
 
-	err := os.WriteFile(suite.mockBinary, []byte(mockScript), 0755)
+	err := os.WriteFile(suite.mockBinary, []byte(mockScript), 0o755)
 	suite.Require().NoError(err)
 }
 
@@ -194,8 +194,8 @@ func (suite *IntegrationTestSuite) createNetworkConfigs() {
 	}
 
 	// Create default fallback genesis
-	err := os.WriteFile(filepath.Join(suite.configDir, "genesis.json"), 
-		[]byte(`{"chain_id":"shardeum-testnet"}`), 0644)
+	err := os.WriteFile(filepath.Join(suite.configDir, "genesis.json"),
+		[]byte(`{"chain_id":"shardeum-testnet"}`), 0o644)
 	suite.Require().NoError(err)
 }
 
@@ -219,7 +219,7 @@ func (suite *IntegrationTestSuite) createTestConfig(network, chainID string, evm
 }`, network, chainID, evmChainID, network)
 
 	configPath := filepath.Join(suite.configsDir, network+".json")
-	err := os.WriteFile(configPath, []byte(config), 0644)
+	err := os.WriteFile(configPath, []byte(config), 0o644)
 	suite.Require().NoError(err)
 }
 
@@ -237,7 +237,7 @@ func (suite *IntegrationTestSuite) createTestGenesis(network, chainID string) {
 }`, chainID)
 
 	genesisPath := filepath.Join(suite.configDir, network+"-genesis.json")
-	err := os.WriteFile(genesisPath, []byte(genesis), 0644)
+	err := os.WriteFile(genesisPath, []byte(genesis), 0o644)
 	suite.Require().NoError(err)
 }
 
@@ -247,7 +247,7 @@ func (suite *IntegrationTestSuite) runCommand(name string, args ...string) (stri
 	cmd.Env = append(os.Environ(),
 		"BINARY="+suite.mockBinary,
 		"SKIP_BUILD=1",
-        "SHARDEUM_CONFIG_DIR="+suite.configsDir,
+		"SHARDEUM_CONFIG_DIR="+suite.configsDir,
 	)
 	output, err := cmd.CombinedOutput()
 	return string(output), err
@@ -257,7 +257,7 @@ func (suite *IntegrationTestSuite) runCommand(name string, args ...string) (stri
 
 func (suite *IntegrationTestSuite) TestCompleteNetworkDeploymentWorkflow() {
 	suite.T().Log("Testing complete network deployment workflow")
-	
+
 	// Setup
 	suite.createNetworkConfigs()
 
@@ -269,10 +269,10 @@ func (suite *IntegrationTestSuite) TestCompleteNetworkDeploymentWorkflow() {
 		echo "CHAIN_ID=$SHARDEUM_CHAIN_ID"
 		echo "EVM_CHAIN_ID=$SHARDEUM_EVM_CHAIN_ID"
 	`, suite.tempDir, suite.setNetScript))
-	
+
 	output, err := cmd.CombinedOutput()
 	suite.Require().NoError(err)
-	
+
 	outputStr := string(output)
 	suite.Require().Contains(outputStr, "NETWORK=testnet")
 	suite.Require().Contains(outputStr, "CHAIN_ID=shardeum-testnet")
@@ -280,11 +280,11 @@ func (suite *IntegrationTestSuite) TestCompleteNetworkDeploymentWorkflow() {
 
 	// Step 2: Simulate node initialization (what start_network.sh does)
 	nodeDir := filepath.Join(suite.tempDir, ".testnet", "node0")
-	err = os.MkdirAll(nodeDir, 0755)
+	err = os.MkdirAll(nodeDir, 0o755)
 	suite.Require().NoError(err)
 
 	// Initialize node
-	initOutput, err := suite.runCommand(suite.mockBinary, "init", "node0", 
+	initOutput, err := suite.runCommand(suite.mockBinary, "init", "node0",
 		"--chain-id", "shardeum-testnet", "--home", nodeDir)
 	suite.Require().NoError(err)
 	suite.Require().Contains(initOutput, "Initializing node")
@@ -298,7 +298,7 @@ func (suite *IntegrationTestSuite) TestCompleteNetworkDeploymentWorkflow() {
 	if _, err := os.Stat(networkGenesis); err == nil {
 		genesisContent, err := os.ReadFile(networkGenesis)
 		suite.Require().NoError(err)
-		err = os.WriteFile(genesisPath, genesisContent, 0644)
+		err = os.WriteFile(genesisPath, genesisContent, 0o644)
 		suite.Require().NoError(err)
 	}
 
@@ -312,12 +312,12 @@ func (suite *IntegrationTestSuite) TestCompleteNetworkDeploymentWorkflow() {
 
 func (suite *IntegrationTestSuite) TestNetworkSwitchingIntegration() {
 	suite.T().Log("Testing network switching integration")
-	
+
 	suite.createNetworkConfigs()
 
 	networks := []struct {
-		name     string
-		chainID  string
+		name       string
+		chainID    string
 		evmChainID string
 	}{
 		{"mainnet", "shardeum-1", "8119"},
@@ -328,7 +328,7 @@ func (suite *IntegrationTestSuite) TestNetworkSwitchingIntegration() {
 
 	for _, network := range networks {
 		suite.T().Logf("Testing network: %s", network.name)
-		
+
 		// Set network environment
 		cmd := exec.Command("bash", "-c", fmt.Sprintf(`
 			cd %s
@@ -337,10 +337,10 @@ func (suite *IntegrationTestSuite) TestNetworkSwitchingIntegration() {
 			echo "CHAIN_ID=$SHARDEUM_CHAIN_ID"
 			echo "EVM_CHAIN_ID=$SHARDEUM_EVM_CHAIN_ID"
 		`, suite.tempDir, suite.setNetScript, network.name))
-		
+
 		output, err := cmd.CombinedOutput()
 		suite.Require().NoError(err)
-		
+
 		outputStr := string(output)
 		suite.Require().Contains(outputStr, "NETWORK="+network.name)
 		suite.Require().Contains(outputStr, "CHAIN_ID="+network.chainID)
@@ -362,7 +362,7 @@ func (suite *IntegrationTestSuite) TestNetworkSwitchingIntegration() {
 
 func (suite *IntegrationTestSuite) TestEnvironmentVariablePrecedenceIntegration() {
 	suite.T().Log("Testing environment variable precedence integration")
-	
+
 	suite.createNetworkConfigs()
 
 	// Test that set_network.sh overrides pre-existing environment variables
@@ -376,10 +376,10 @@ func (suite *IntegrationTestSuite) TestEnvironmentVariablePrecedenceIntegration(
 		echo "CHAIN_ID=$SHARDEUM_CHAIN_ID"
 		echo "EVM_CHAIN_ID=$SHARDEUM_EVM_CHAIN_ID"
 	`, suite.tempDir, suite.setNetScript))
-	
+
 	output, err := cmd.CombinedOutput()
 	suite.Require().NoError(err)
-	
+
 	outputStr := string(output)
 	// set_network.sh testnet should override to testnet
 	suite.Require().Contains(outputStr, "NETWORK=testnet")
@@ -392,13 +392,13 @@ func (suite *IntegrationTestSuite) TestEnvironmentVariablePrecedenceIntegration(
 
 func (suite *IntegrationTestSuite) TestErrorHandlingIntegration() {
 	suite.T().Log("Testing error handling integration")
-	
+
 	// Test 1: Invalid network configuration
 	suite.createTestConfig("testnet", "test-chain", 8119)
-	
+
 	// Create invalid JSON
 	invalidPath := filepath.Join(suite.configsDir, "invalid.json")
-	err := os.WriteFile(invalidPath, []byte("invalid json"), 0644)
+	err := os.WriteFile(invalidPath, []byte("invalid json"), 0o644)
 	suite.Require().NoError(err)
 
 	output, err := suite.runCommand("bash", suite.startScript, "1", "--network", "invalid")
@@ -422,16 +422,16 @@ func (suite *IntegrationTestSuite) TestErrorHandlingIntegration() {
 
 func (suite *IntegrationTestSuite) TestGenesisFileSelectionIntegration() {
 	suite.T().Log("Testing genesis file selection integration")
-	
+
 	suite.createNetworkConfigs()
 
 	// Test that network-specific genesis files are used
 	expectedChainIDs := map[string]string{
 		"mainnet": "shardeum-1",
-		"testnet": "shardeum-testnet", 
+		"testnet": "shardeum-testnet",
 		"devnet":  "shardeum-devnet",
 	}
-	
+
 	for network, expectedChainID := range expectedChainIDs {
 		// Verify genesis file exists
 		genesisFile := fmt.Sprintf("%s-genesis.json", network)
@@ -449,7 +449,7 @@ func (suite *IntegrationTestSuite) TestGenesisFileSelectionIntegration() {
 
 func (suite *IntegrationTestSuite) TestPortConfigurationIntegration() {
 	suite.T().Log("Testing port configuration integration")
-	
+
 	suite.createNetworkConfigs()
 
 	// Test that set_network.sh sets port environment variables using predefined testnet
@@ -462,10 +462,10 @@ func (suite *IntegrationTestSuite) TestPortConfigurationIntegration() {
 		echo "WEBSOCKET_PORT=$SHARDEUM_WEBSOCKET_PORT"
 		echo "GRPC_PORT=$SHARDEUM_GRPC_PORT"
 	`, suite.tempDir, suite.setNetScript))
-	
+
 	output, err := cmd.CombinedOutput()
 	suite.Require().NoError(err)
-	
+
 	outputStr := string(output)
 	suite.Require().Contains(outputStr, "RPC_PORT=26657")
 	suite.Require().Contains(outputStr, "REST_PORT=1317")
@@ -478,19 +478,19 @@ func (suite *IntegrationTestSuite) TestPortConfigurationIntegration() {
 
 func (suite *IntegrationTestSuite) TestMultiNodeSetupIntegration() {
 	suite.T().Log("Testing multi-node setup integration")
-	
+
 	suite.createNetworkConfigs()
 
 	// Simulate setting up multiple nodes
 	baseDir := filepath.Join(suite.tempDir, ".testnet")
-	err := os.MkdirAll(baseDir, 0755)
+	err := os.MkdirAll(baseDir, 0o755)
 	suite.Require().NoError(err)
 
 	// Initialize 3 nodes
 	for i := 0; i < 3; i++ {
 		nodeID := fmt.Sprintf("node%d", i)
 		nodeDir := filepath.Join(baseDir, nodeID)
-		
+
 		// Initialize node
 		output, err := suite.runCommand(suite.mockBinary, "init", nodeID,
 			"--chain-id", "shardeum-testnet", "--home", nodeDir)
@@ -509,11 +509,11 @@ func (suite *IntegrationTestSuite) TestMultiNodeSetupIntegration() {
 
 func (suite *IntegrationTestSuite) TestPerformanceIntegration() {
 	suite.T().Log("Testing performance integration")
-	
+
 	suite.createNetworkConfigs()
 
 	start := time.Now()
-	
+
 	// Test that operations complete in reasonable time
 	operations := []func(){
 		func() {

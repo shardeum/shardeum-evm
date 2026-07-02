@@ -9,10 +9,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/stretchr/testify/suite"
-
-	cosmosevmnetwork "github.com/shardeum/shardeum-evm/shardeumd/tests/network"
 	"github.com/shardeum/shardeum-evm/server/config"
+	cosmosevmnetwork "github.com/shardeum/shardeum-evm/shardeumd/tests/network"
+	"github.com/stretchr/testify/suite"
 )
 
 type IntegrationTestSuite struct {

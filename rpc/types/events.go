@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/shardeum/shardeum-evm/types"
+	"github.com/shardeum/shardeum-evm/server/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"

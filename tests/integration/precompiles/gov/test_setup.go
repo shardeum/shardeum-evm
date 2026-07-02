@@ -3,6 +3,7 @@ package gov
 import (
 	"time"
 
+	evmaddress "github.com/shardeum/shardeum-evm/encoding/address"
 	"github.com/shardeum/shardeum-evm/precompiles/gov"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
@@ -13,7 +14,6 @@ import (
 
 	"cosmossdk.io/math"
 
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -137,13 +137,11 @@ func (s *PrecompileTestSuite) SetupTest() {
 	s.network = nw
 
 	govKeeper := s.network.App.GetGovKeeper()
-	if s.precompile, err = gov.NewPrecompile(
+	s.precompile = gov.NewPrecompile(
 		govkeeper.NewMsgServerImpl(&govKeeper),
 		govkeeper.NewQueryServer(&govKeeper),
 		s.network.App.GetBankKeeper(),
 		s.network.App.AppCodec(),
-		address.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
-	); err != nil {
-		panic(err)
-	}
+		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+	)
 }

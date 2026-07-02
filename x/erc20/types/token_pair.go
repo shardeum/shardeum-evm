@@ -2,7 +2,6 @@ package types
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 	"github.com/shardeum/shardeum-evm/utils"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -55,7 +54,7 @@ func (tp TokenPair) Validate() error {
 		return err
 	}
 
-	return cosmosevmtypes.ValidateAddress(tp.Erc20Address)
+	return utils.ValidateAddress(tp.Erc20Address)
 }
 
 // IsNativeCoin returns true if the owner of the ERC20 contract is the

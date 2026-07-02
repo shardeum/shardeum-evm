@@ -4,22 +4,23 @@ import (
 	"fmt"
 	"maps"
 
-	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-
-	channelkeeper "github.com/cosmos/ibc-go/v10/modules/core/04-channel/keeper"
 	bankprecompile "github.com/shardeum/shardeum-evm/precompiles/bank"
 	"github.com/shardeum/shardeum-evm/precompiles/bech32"
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 	"github.com/shardeum/shardeum-evm/precompiles/p256"
 	erc20Keeper "github.com/shardeum/shardeum-evm/x/erc20/keeper"
-	transferkeeper "github.com/shardeum/shardeum-evm/x/ibc/transfer/keeper"
 	evmkeeper "github.com/shardeum/shardeum-evm/x/vm/keeper"
 
+	transferkeeper "github.com/cosmos/ibc-go/v10/modules/apps/transfer/keeper"
+	channelkeeper "github.com/cosmos/ibc-go/v10/modules/core/04-channel/keeper"
+
 	"cosmossdk.io/core/address"
+
 	"github.com/cosmos/cosmos-sdk/codec"
+	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
@@ -96,10 +97,7 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate bech32 precompile: %w", err))
 	}
 
-	bankPrecompile, err := bankprecompile.NewPrecompile(bankKeeper, erc20Keeper)
-	if err != nil {
-		panic(fmt.Errorf("failed to instantiate bank precompile: %w", err))
-	}
+	bankPrecompile := bankprecompile.NewPrecompile(bankKeeper, erc20Keeper)
 
 	// Stateless precompiles
 	precompiles[bech32Precompile.Address()] = bech32Precompile

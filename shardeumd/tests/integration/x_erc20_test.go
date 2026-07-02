@@ -3,9 +3,8 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/tests/integration/x/erc20"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestERC20GenesisTestSuite(t *testing.T) {

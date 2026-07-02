@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
+	evmaddress "github.com/shardeum/shardeum-evm/encoding/address"
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 	"github.com/shardeum/shardeum-evm/precompiles/distribution"
 	"github.com/shardeum/shardeum-evm/precompiles/testutil"
@@ -15,7 +16,6 @@ import (
 
 	"cosmossdk.io/math"
 
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -676,7 +676,7 @@ func (s *PrecompileTestSuite) TestDepositValidatorRewardsPoolMethod() {
 				s.Require().True(success, "expected true, got false")
 
 				val := s.network.GetValidators()[0]
-				valCodec := address.NewBech32Codec("cosmosvaloper")
+				valCodec := evmaddress.NewEvmCodec("cosmosvaloper")
 				valBz, err := valCodec.StringToBytes(val.GetOperator())
 				s.Require().NoError(err)
 

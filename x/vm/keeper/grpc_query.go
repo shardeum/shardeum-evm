@@ -16,7 +16,8 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	ethparams "github.com/ethereum/go-ethereum/params"
-	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
+	"github.com/shardeum/shardeum-evm/utils"
 	evmante "github.com/shardeum/shardeum-evm/x/vm/ante"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
@@ -49,7 +50,7 @@ func (k Keeper) Account(c context.Context, req *types.QueryAccountRequest) (*typ
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := cosmosevmtypes.ValidateAddress(req.Address); err != nil {
+	if err := utils.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument, err.Error(),
 		)
@@ -72,7 +73,7 @@ func (k Keeper) CosmosAccount(c context.Context, req *types.QueryCosmosAccountRe
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := cosmosevmtypes.ValidateAddress(req.Address); err != nil {
+	if err := utils.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument, err.Error(),
 		)
@@ -142,7 +143,7 @@ func (k Keeper) Balance(c context.Context, req *types.QueryBalanceRequest) (*typ
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := cosmosevmtypes.ValidateAddress(req.Address); err != nil {
+	if err := utils.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			types.ErrZeroAddress.Error(),
@@ -164,7 +165,7 @@ func (k Keeper) Storage(c context.Context, req *types.QueryStorageRequest) (*typ
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := cosmosevmtypes.ValidateAddress(req.Address); err != nil {
+	if err := utils.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			types.ErrZeroAddress.Error(),
@@ -190,7 +191,7 @@ func (k Keeper) Code(c context.Context, req *types.QueryCodeRequest) (*types.Que
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := cosmosevmtypes.ValidateAddress(req.Address); err != nil {
+	if err := utils.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			types.ErrZeroAddress.Error(),
@@ -203,7 +204,7 @@ func (k Keeper) Code(c context.Context, req *types.QueryCodeRequest) (*types.Que
 	acct := k.GetAccountWithoutBalance(ctx, address)
 
 	var code []byte
-	if acct != nil && acct.IsContract() {
+	if acct != nil && acct.HasCodeHash() {
 		code = k.GetCode(ctx, common.BytesToHash(acct.CodeHash))
 	}
 
@@ -226,6 +227,14 @@ func (k Keeper) Params(c context.Context, _ *types.QueryParamsRequest) (*types.Q
 func (k Keeper) EthCall(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	var overrides *rpctypes.StateOverride
+	if len(req.Overrides) > 0 {
+		overrides = new(rpctypes.StateOverride)
+		if err := json.Unmarshal(req.Overrides, overrides); err != nil {
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid state overrides format: %s", err.Error()))
+		}
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
@@ -253,7 +262,8 @@ func (k Keeper) EthCall(c context.Context, req *types.EthCallRequest) (*types.Ms
 	txConfig := statedb.NewEmptyTxConfig()
 
 	// pass false to not commit StateDB
-	res, err := k.ApplyMessageWithConfig(ctx, *msg, nil, false, cfg, txConfig, false)
+	stateDB := statedb.New(ctx, &k, txConfig)
+	res, err := k.ApplyMessageWithConfig(ctx, stateDB, *msg, nil, false, false, cfg, txConfig, false, overrides)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -393,7 +403,8 @@ func (k Keeper) EstimateGasInternal(c context.Context, req *types.EthCallRequest
 			tmpCtx = buildTraceCtx(tmpCtx, msg.GasLimit)
 		}
 		// pass false to not commit StateDB
-		rsp, err = k.ApplyMessageWithConfig(tmpCtx, *msg, nil, false, cfg, txConfig, false)
+		stateDB := statedb.New(tmpCtx, &k, txConfig)
+		rsp, err = k.ApplyMessageWithConfig(tmpCtx, stateDB, *msg, nil, false, false, cfg, txConfig, false, nil)
 		if err != nil {
 			if errors.Is(err, core.ErrIntrinsicGas) || errors.Is(err, core.ErrFloorDataGas) {
 				return true, nil, nil // Special case, raise gas limit
@@ -412,7 +423,7 @@ func (k Keeper) EstimateGasInternal(c context.Context, req *types.EthCallRequest
 	// unused access list items). Ever so slightly wasteful, but safer overall.
 	if len(msg.Data) == 0 && msg.To != nil {
 		acct := k.GetAccountWithoutBalance(ctx, *msg.To)
-		if acct == nil || !acct.IsContract() {
+		if acct == nil || !acct.HasCodeHash() {
 			failed, _, err := executable(ethparams.TxGas)
 			if err == nil && !failed {
 				return &types.EstimateGasResponse{Gas: ethparams.TxGas}, nil
@@ -488,7 +499,8 @@ func (k Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*typ
 	// get the context of block beginning
 	requestedHeight := req.BlockNumber
 	if requestedHeight < 1 {
-		// 0 is a special value in `ContextWithHeight`
+		// In Ethereum, the genesis block height is 0, but in CometBFT, the genesis block height is 1.
+		// So here we set the minimum requested height to 1.
 		requestedHeight = 1
 	}
 
@@ -544,7 +556,8 @@ func (k Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*typ
 		ctx = buildTraceCtx(ctx, msg.GasLimit)
 		// we ignore the error here. this endpoint, ideally, is called internally from the ETH backend, which will call this query
 		// using all previous txs in the trace transaction's block. some of those _could_ be invalid transactions.
-		rsp, _ := k.ApplyMessageWithConfig(ctx, *msg, nil, true, cfg, txConfig, false)
+		stateDB := statedb.New(ctx, &k, txConfig)
+		rsp, _ := k.ApplyMessageWithConfig(ctx, stateDB, *msg, nil, true, false, cfg, txConfig, false, nil)
 		if rsp != nil {
 			ctx.GasMeter().ConsumeGas(rsp.GasUsed, "evm predecessor tx")
 			txConfig.LogIndex += uint(len(rsp.Logs))
@@ -588,7 +601,8 @@ func (k Keeper) TraceBlock(c context.Context, req *types.QueryTraceBlockRequest)
 	// get the context of block beginning
 	contextHeight := req.BlockNumber
 	if contextHeight < 1 {
-		// 0 is a special value in `ContextWithHeight`
+		// In Ethereum, the genesis block height is 0, but in CometBFT, the genesis block height is 1.
+		// So here we set the minimum requested height to 1.
 		contextHeight = 1
 	}
 
@@ -644,6 +658,81 @@ func (k Keeper) TraceBlock(c context.Context, req *types.QueryTraceBlockRequest)
 	}, nil
 }
 
+// TraceCall configures a new tracer according to the provided configuration, and
+// executes the given call in the provided environment. The return value will
+// be tracer dependent.
+func (k Keeper) TraceCall(c context.Context, req *types.QueryTraceCallRequest) (*types.QueryTraceCallResponse, error) {
+	if req == nil || req.Args == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if req.TraceConfig != nil && req.TraceConfig.Limit < 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "output limit cannot be negative, got %d", req.TraceConfig.Limit)
+	}
+
+	// get the context of block beginning
+	requestedHeight := req.BlockNumber
+	if requestedHeight < 1 {
+		// In Ethereum, the genesis block height is 0, but in CometBFT, the genesis block height is 1.
+		// So here we set the minimum requested height to 1.
+		requestedHeight = 1
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+	// the caller sets the `ctx.BlockHeight()` to be `requestedHeight - 1`, so we can get the context of block beginning
+	if requestedHeight > ctx.BlockHeight()+1 {
+		return nil, status.Errorf(codes.FailedPrecondition, "requested height [%d] must be less than or equal to current height [%d]", requestedHeight, ctx.BlockHeight())
+	}
+
+	ctx = ctx.WithBlockHeight(requestedHeight)
+	ctx = ctx.WithBlockTime(req.BlockTime)
+	ctx = ctx.WithHeaderHash(common.Hex2Bytes(req.BlockHash))
+
+	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to load evm config: %s", err.Error())
+	}
+
+	// compute and use base fee of the height that is being traced
+	baseFee := k.feeMarketWrapper.CalculateBaseFee(ctx)
+	if baseFee != nil {
+		cfg.BaseFee = baseFee
+	}
+
+	// Get empty tx config
+	txConfig := statedb.NewEmptyTxConfig()
+
+	// Get transaction msg from args
+	var args types.TransactionArgs
+	err = json.Unmarshal(req.Args, &args)
+	if err != nil {
+		return nil, err
+	}
+	nonce := k.GetNonce(ctx, args.GetFrom())
+	args.Nonce = (*hexutil.Uint64)(&nonce)
+	// Fill in default values for missing transaction fields (gas, gasPrice, value, etc.)
+	if err := args.CallDefaults(req.GasCap, baseFee, types.GetEthChainConfig().ChainID); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	msg := args.ToMessage(baseFee, true, true)
+
+	// trace call
+	result, _, err := k.traceTxWithMsg(ctx, cfg, txConfig, msg, req.GetTraceConfig(), false)
+	if err != nil {
+		// error will be returned with detail status from traceTx
+		return nil, err
+	}
+
+	resultData, err := json.Marshal(result)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryTraceCallResponse{
+		Data: resultData,
+	}, nil
+}
+
 // traceTx do trace on one transaction, it returns a tuple: (traceResult, nextLogIndex, error).
 func (k *Keeper) traceTx(
 	ctx sdk.Context,
@@ -654,6 +743,23 @@ func (k *Keeper) traceTx(
 	traceConfig *types.TraceConfig,
 	commitMessage bool,
 ) (*any, uint, error) {
+	msg, err := core.TransactionToMessage(tx, signer, cfg.BaseFee)
+	if err != nil {
+		return nil, 0, status.Error(codes.Internal, err.Error())
+	}
+
+	return k.traceTxWithMsg(ctx, cfg, txConfig, msg, traceConfig, commitMessage)
+}
+
+// traceTxWithMsg do trace on one Ethereum message, it returns a tuple: (traceResult, nextLogIndex, error).
+func (k *Keeper) traceTxWithMsg(
+	ctx sdk.Context,
+	cfg *statedb.EVMConfig,
+	txConfig statedb.TxConfig,
+	msg *core.Message,
+	traceConfig *types.TraceConfig,
+	commitMessage bool,
+) (*interface{}, uint, error) {
 	// Assemble the structured logger or the JavaScript tracer
 	var (
 		tracer           *tracers.Tracer
@@ -662,10 +768,6 @@ func (k *Keeper) traceTx(
 		err              error
 		timeout          = defaultTraceTimeout
 	)
-	msg, err := core.TransactionToMessage(tx, signer, cfg.BaseFee)
-	if err != nil {
-		return nil, 0, status.Error(codes.Internal, err.Error())
-	}
 
 	if traceConfig == nil {
 		traceConfig = &types.TraceConfig{}
@@ -733,7 +835,8 @@ func (k *Keeper) traceTx(
 
 	// Build EVM execution context
 	ctx = buildTraceCtx(ctx, msg.GasLimit)
-	res, err := k.ApplyMessageWithConfig(ctx, *msg, tracer.Hooks, commitMessage, cfg, txConfig, false)
+	stateDB := statedb.New(ctx, k, txConfig)
+	res, err := k.ApplyMessageWithConfig(ctx, stateDB, *msg, tracer.Hooks, commitMessage, false, cfg, txConfig, false, nil)
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())
 	}
@@ -783,5 +886,5 @@ func (k Keeper) Config(_ context.Context, _ *types.QueryConfigRequest) (*types.Q
 // 2. calling BuildEvmExecutionCtx to set up gas configs consistent with Ethereum transaction execution.
 func buildTraceCtx(ctx sdk.Context, gasLimit uint64) sdk.Context {
 	return evmante.BuildEvmExecutionCtx(ctx).
-		WithGasMeter(cosmosevmtypes.NewInfiniteGasMeterWithLimit(gasLimit))
+		WithGasMeter(types.NewInfiniteGasMeterWithLimit(gasLimit))
 }

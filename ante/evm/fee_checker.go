@@ -4,8 +4,8 @@ import (
 	"math"
 
 	"github.com/ethereum/go-ethereum/params"
-	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
-	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/ante/types"
+	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	errorsmod "cosmossdk.io/errors"
@@ -24,7 +24,7 @@ import (
 // - when `ExtensionOptionDynamicFeeTx` is omitted, `tipFeeCap` defaults to `MaxInt64`.
 // - when london hardfork is not enabled, it falls back to SDK default behavior (validator min-gas-prices).
 // - Tx priority is set to `effectiveGasPrice / DefaultPriorityReduction`.
-func NewDynamicFeeChecker(k anteinterfaces.FeeMarketKeeper) authante.TxFeeChecker {
+func NewDynamicFeeChecker(feemarketParams *feemarkettypes.Params) authante.TxFeeChecker {
 	return func(ctx sdk.Context, tx sdk.Tx) (sdk.Coins, int64, error) {
 		feeTx, ok := tx.(sdk.FeeTx)
 		if !ok {
@@ -39,14 +39,14 @@ func NewDynamicFeeChecker(k anteinterfaces.FeeMarketKeeper) authante.TxFeeChecke
 		denom := evmtypes.GetEVMCoinDenom()
 		ethCfg := evmtypes.GetEthChainConfig()
 
-		return FeeChecker(ctx, k, denom, ethCfg, feeTx)
+		return FeeChecker(ctx, feemarketParams, denom, ethCfg, feeTx)
 	}
 }
 
 // FeeChecker returns the effective fee and priority for a given transaction.
 func FeeChecker(
 	ctx sdk.Context,
-	k anteinterfaces.FeeMarketKeeper,
+	feemarketParams *feemarkettypes.Params,
 	denom string,
 	ethConfig *params.ChainConfig,
 	feeTx sdk.FeeTx,
@@ -56,7 +56,7 @@ func FeeChecker(
 		return checkTxFeeWithValidatorMinGasPrices(ctx, feeTx)
 	}
 
-	baseFee := k.GetBaseFee(ctx)
+	baseFee := feemarketParams.BaseFee
 	// if baseFee is nil because it is disabled
 	// or not found, consider it as 0
 	// so the DynamicFeeTx logic can be applied
@@ -86,15 +86,15 @@ func FeeChecker(
 	}
 
 	gas := sdkmath.NewIntFromUint64(feeTx.GetGas())
+
 	if gas.IsZero() {
 		return nil, 0, errorsmod.Wrap(errortypes.ErrInvalidRequest, "gas cannot be zero")
 	}
 
 	feeCoins := feeTx.GetFee()
-	feeAmtDec := sdkmath.LegacyNewDecFromInt(feeCoins.AmountOfNoDenomValidation(denom))
+	feeAmtDec := sdkmath.LegacyNewDecFromInt(feeCoins.AmountOfNoDenomValidation(denom)) //nolint:staticcheck // checking legacy type
 
 	feeCap := feeAmtDec.QuoInt(gas)
-
 	if feeCap.LT(baseFee) {
 		return nil, 0, errorsmod.Wrapf(errortypes.ErrInsufficientFee, "gas prices too low, got: %s%s required: %s%s. Please retry using a higher gas price or a higher fee", feeCap, denom, baseFee, denom)
 	}
@@ -109,7 +109,6 @@ func FeeChecker(
 			Amount: effectivePrice.MulInt(gas).Ceil().RoundInt(),
 		},
 	}
-
 	priorityInt := effectivePrice.Sub(baseFee).QuoInt(evmtypes.DefaultPriorityReduction).TruncateInt()
 	priority := int64(math.MaxInt64)
 

@@ -17,11 +17,11 @@ import (
 	"testing"
 	"time"
 
-	testifysuite "github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/shardeumd"
 	"github.com/shardeum/shardeum-evm/shardeumd/tests/integration"
 	evmibctesting "github.com/shardeum/shardeum-evm/testutil/ibc"
+	testifysuite "github.com/stretchr/testify/suite"
+
 	"github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"

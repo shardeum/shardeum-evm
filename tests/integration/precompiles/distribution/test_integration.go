@@ -1342,11 +1342,11 @@ func TestPrecompileIntegrationTestSuite(t *testing.T, create network.CreateEvmAp
 			// check contract was correctly deployed
 			cAcc := s.network.App.GetEVMKeeper().GetAccount(s.network.GetContext(), contractAddr)
 			Expect(cAcc).ToNot(BeNil(), "contract account should exist")
-			Expect(cAcc.IsContract()).To(BeTrue(), "account should be a contract")
+			isContract := s.network.App.GetEVMKeeper().IsContract(s.network.GetContext(), contractAddr)
+			Expect(isContract).To(BeTrue(), "account should be a contract")
 
 			// Contract delegate
-			stkPrecompile, err := s.getStakingPrecompile()
-			Expect(err).To(BeNil(), "error while getting staking precompile: %v", err)
+			stkPrecompile := s.getStakingPrecompile()
 			// make a delegation with contract as delegator
 			logCheck := testutil.LogCheckArgs{
 				ExpPass:   true,
@@ -1869,8 +1869,7 @@ func TestPrecompileIntegrationTestSuite(t *testing.T, create network.CreateEvmAp
 				Expect(err).To(BeNil())
 				Expect(s.network.NextBlock()).To(BeNil())
 
-				stkPrecompile, err := s.getStakingPrecompile()
-				Expect(err).To(BeNil())
+				stkPrecompile := s.getStakingPrecompile()
 				// make a delegation with contract as delegator
 				logCheck := testutil.LogCheckArgs{
 					ExpPass:   true,
@@ -2056,8 +2055,7 @@ func TestPrecompileIntegrationTestSuite(t *testing.T, create network.CreateEvmAp
 				Expect(err).To(BeNil())
 				Expect(s.network.NextBlock()).To(BeNil())
 
-				stkPrecompile, err := s.getStakingPrecompile()
-				Expect(err).To(BeNil())
+				stkPrecompile := s.getStakingPrecompile()
 				// make a delegation with contract as delegator
 				logCheck := testutil.LogCheckArgs{
 					ExpPass:   true,
@@ -2323,8 +2321,7 @@ func TestPrecompileIntegrationTestSuite(t *testing.T, create network.CreateEvmAp
 				Expect(err).To(BeNil())
 				Expect(s.network.NextBlock()).To(BeNil())
 
-				stkPrecompile, err := s.getStakingPrecompile()
-				Expect(err).To(BeNil())
+				stkPrecompile := s.getStakingPrecompile()
 				// make a delegation with contract as delegator
 				logCheck := testutil.LogCheckArgs{
 					ExpPass:   true,

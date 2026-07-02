@@ -5,7 +5,13 @@ import (
 	"io"
 	"os"
 
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	cosmosevmcmd "github.com/shardeum/shardeum-evm/client"
+	evmdebug "github.com/shardeum/shardeum-evm/client/debug"
+	hd "github.com/shardeum/shardeum-evm/crypto/hd"
+	cosmosevmserver "github.com/shardeum/shardeum-evm/server"
+	srvflags "github.com/shardeum/shardeum-evm/server/flags"
+	"github.com/shardeum/shardeum-evm/shardeumd"
+	shardeumdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -14,12 +20,6 @@ import (
 	cmtcli "github.com/cometbft/cometbft/libs/cli"
 
 	dbm "github.com/cosmos/cosmos-db"
-	cosmosevmcmd "github.com/shardeum/shardeum-evm/client"
-	cosmosevmkeyring "github.com/shardeum/shardeum-evm/crypto/keyring"
-	cosmosevmserver "github.com/shardeum/shardeum-evm/server"
-	srvflags "github.com/shardeum/shardeum-evm/server/flags"
-	"github.com/shardeum/shardeum-evm/shardeumd"
-	shardeumdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/store"
@@ -30,7 +30,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	clientcfg "github.com/cosmos/cosmos-sdk/client/config"
-	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/pruning"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
@@ -45,6 +44,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 )
 
@@ -84,7 +84,7 @@ func NewRootCmd() *cobra.Command {
 		WithHomeDir(shardeumdconfig.MustGetDefaultNodeHome()).
 		WithViper(""). // In simapp, we don't use any prefix for env variables.
 		// Cosmos EVM specific setup
-		WithKeyringOptions(cosmosevmkeyring.Option()).
+		WithKeyringOptions(hd.EthSecp256k1Option()).
 		WithLedgerHasProtobuf(true)
 
 	rootCmd := &cobra.Command{
@@ -180,7 +180,7 @@ func initRootCmd(rootCmd *cobra.Command, evmApp *shardeumd.ShardeumApp) {
 		genutilcli.InitCmd(evmApp.BasicModuleManager, defaultNodeHome),
 		genutilcli.Commands(evmApp.TxConfig(), evmApp.BasicModuleManager, defaultNodeHome),
 		cmtcli.NewCompletionCmd(rootCmd, true),
-		debug.Cmd(),
+		evmdebug.Cmd(),
 		confixcmd.ConfigCommand(),
 		pruning.Cmd(sdkAppCreator, defaultNodeHome),
 		snapshot.Cmd(sdkAppCreator),

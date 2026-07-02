@@ -91,7 +91,7 @@ func (s *PrecompileTestSuite) TestRequiredGas() {
 				s.Require().NoError(err)
 				return input
 			},
-			7760,
+			0x1ec8,
 		},
 		{
 			"success - undelegate transaction with correct gas estimation",
@@ -105,7 +105,7 @@ func (s *PrecompileTestSuite) TestRequiredGas() {
 				s.Require().NoError(err)
 				return input
 			},
-			7760,
+			0x1ec8,
 		},
 	}
 
@@ -380,7 +380,7 @@ func (s *PrecompileTestSuite) TestRun() {
 				s.Require().NoError(err, "failed to pack input")
 				return input
 			},
-			1, // use gas > 0 to avoid doing gas estimation
+			21295, // use enough gas to avoid out of gas error
 			true,
 			false,
 			"write protection",
@@ -390,7 +390,7 @@ func (s *PrecompileTestSuite) TestRun() {
 			func(_ keyring.Key) []byte {
 				return []byte("invalid")
 			},
-			1, // use gas > 0 to avoid doing gas estimation
+			21295, // use enough gas to avoid out of gas error
 			false,
 			false,
 			"no method with id",

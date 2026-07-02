@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	testifysuite "github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/shardeumd"
 	"github.com/shardeum/shardeum-evm/shardeumd/tests/integration"
 	"github.com/shardeum/shardeum-evm/testutil"
@@ -17,6 +15,8 @@ import (
 	erc20Keeper "github.com/shardeum/shardeum-evm/x/erc20/keeper"
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
 	v2 "github.com/shardeum/shardeum-evm/x/erc20/v2"
+	testifysuite "github.com/stretchr/testify/suite"
+
 	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	channeltypesv2 "github.com/cosmos/ibc-go/v10/modules/core/04-channel/v2/types"

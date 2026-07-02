@@ -3,9 +3,8 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/tests/integration/x/precisebank"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestPreciseBankGenesis(t *testing.T) {

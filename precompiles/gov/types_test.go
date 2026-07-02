@@ -6,15 +6,15 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	evmaddress "github.com/shardeum/shardeum-evm/encoding/address"
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 )
 
 func TestNewMsgDeposit(t *testing.T) {
-	addrCodec := authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
+	addrCodec := evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix())
 
 	depositorAddr := common.HexToAddress("0x1234567890123456789012345678901234567890")
 	validCoins := []cmn.Coin{{Denom: "stake", Amount: big.NewInt(1000)}}
@@ -97,7 +97,7 @@ func TestNewMsgDeposit(t *testing.T) {
 }
 
 func TestNewMsgCancelProposal(t *testing.T) {
-	addrCodec := authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
+	addrCodec := evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix())
 
 	proposerAddr := common.HexToAddress("0x1234567890123456789012345678901234567890")
 	proposalID := uint64(1)
@@ -172,7 +172,7 @@ func TestNewMsgCancelProposal(t *testing.T) {
 }
 
 func TestNewMsgVote(t *testing.T) {
-	addrCodec := authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
+	addrCodec := evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix())
 
 	voterAddr := common.HexToAddress("0x1234567890123456789012345678901234567890")
 	proposalID := uint64(1)
@@ -267,7 +267,7 @@ func TestNewMsgVote(t *testing.T) {
 }
 
 func TestParseVoteArgs(t *testing.T) {
-	addrCodec := authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
+	addrCodec := evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix())
 
 	voterAddr := common.HexToAddress("0x1234567890123456789012345678901234567890")
 	proposalID := uint64(1)
@@ -335,7 +335,7 @@ func TestParseVoteArgs(t *testing.T) {
 }
 
 func TestParseDepositArgs(t *testing.T) {
-	addrCodec := authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
+	addrCodec := evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix())
 
 	depositorAddr := common.HexToAddress("0x1234567890123456789012345678901234567890")
 	proposalID := uint64(1)

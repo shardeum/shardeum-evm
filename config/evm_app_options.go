@@ -51,7 +51,6 @@ func EvmAppOptionsWithConfigWithReset(
 		return err
 	}
 
-	ethCfg := evmtypes.DefaultChainConfig(chainID)
 	configurator := evmtypes.NewEVMConfigurator()
 	if withReset {
 		// reset configuration to set the new one
@@ -59,8 +58,6 @@ func EvmAppOptionsWithConfigWithReset(
 	}
 	err := configurator.
 		WithExtendedEips(cosmosEVMActivators).
-		WithChainConfig(ethCfg).
-		// NOTE: we're using the 18 decimals default for the example chain
 		WithEVMCoinInfo(coinInfo).
 		Configure()
 	if err != nil {

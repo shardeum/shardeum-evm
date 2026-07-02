@@ -3,7 +3,7 @@ package shardeumd
 import (
 	"encoding/json"
 
-	"github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
+	config "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"

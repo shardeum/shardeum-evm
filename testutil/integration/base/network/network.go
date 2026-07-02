@@ -4,8 +4,6 @@ import (
 	"testing"
 	"time"
 
-	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
-
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
@@ -39,7 +37,6 @@ type Network interface {
 	GetAuthClient() authtypes.QueryClient
 	GetAuthzClient() authz.QueryClient
 	GetBankClient() banktypes.QueryClient
-	GetPreciseBankClient() precisebanktypes.QueryClient
 	GetStakingClient() stakingtypes.QueryClient
 	GetDistrClient() distrtypes.QueryClient
 

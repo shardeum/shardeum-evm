@@ -53,8 +53,8 @@ func (suite *MsgsTestSuite) SetupTest() {
 	encodingConfig := encoding.MakeConfig(suite.chainID.Uint64())
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 
-	err := config.EvmAppOptions(9001)
-	suite.Require().NoError(err)
+	configurator := types.NewEVMConfigurator()
+	configurator.ResetTestConfig()
 }
 
 func (suite *MsgsTestSuite) TestMsgEthereumTx_Constructor() {

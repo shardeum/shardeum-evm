@@ -1,6 +1,7 @@
 package staking
 
 import (
+	evmaddress "github.com/shardeum/shardeum-evm/encoding/address"
 	"github.com/shardeum/shardeum-evm/precompiles/staking"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/factory"
@@ -11,7 +12,6 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -80,13 +80,11 @@ func (s *PrecompileTestSuite) SetupTest() {
 	s.keyring = keyring
 	s.network = nw
 
-	if s.precompile, err = staking.NewPrecompile(
+	s.precompile = staking.NewPrecompile(
 		*s.network.App.GetStakingKeeper(),
 		stakingkeeper.NewMsgServerImpl(s.network.App.GetStakingKeeper()),
 		stakingkeeper.NewQuerier(s.network.App.GetStakingKeeper()),
 		s.network.App.GetBankKeeper(),
-		address.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
-	); err != nil {
-		panic(err)
-	}
+		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+	)
 }

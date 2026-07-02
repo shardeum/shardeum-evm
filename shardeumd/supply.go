@@ -10,8 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const (
@@ -66,19 +67,19 @@ func setCachedValue(cache *atomic.Value, value *big.Int) {
 
 // Module accounts to exclude from circulating supply
 var excludedModules = map[string]bool{
-//	"bonded_tokens_pool":     true,		//bonded will get counted in circulating supply
-//	"not_bonded_tokens_pool": true,     //Holds tokens that are unbonding or delegated to unbonding/unbonded validators. counts for circulating supply
-	"distribution":           true,		//rewards or commission waiting to be claimed
-	"gov":                    true,
-	"fee_collector":          true,
-	"mint":                   true,
-	"ibc-transfer":           true,
-	"staking":                true,
-	"transfer":               true,
-	"erc20":                  true,
-	"evm":                    true,
-	"feemarket":              true,
-	"precisebank":            true,
+	//	"bonded_tokens_pool":     true,		//bonded will get counted in circulating supply
+	//	"not_bonded_tokens_pool": true,     //Holds tokens that are unbonding or delegated to unbonding/unbonded validators. counts for circulating supply
+	"distribution":  true, // rewards or commission waiting to be claimed
+	"gov":           true,
+	"fee_collector": true,
+	"mint":          true,
+	"ibc-transfer":  true,
+	"staking":       true,
+	"transfer":      true,
+	"erc20":         true,
+	"evm":           true,
+	"feemarket":     true,
+	"precisebank":   true,
 }
 
 // Network-specific non-circulating addresses (foundation, team, ecosystem, sale cold storage)

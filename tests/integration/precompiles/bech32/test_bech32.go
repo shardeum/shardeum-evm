@@ -4,8 +4,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/uint256"
+	"github.com/shardeum/shardeum-evm/config"
 	"github.com/shardeum/shardeum-evm/precompiles/bech32"
-	"github.com/shardeum/shardeum-evm/testutil/config"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

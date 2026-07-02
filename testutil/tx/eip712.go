@@ -8,7 +8,6 @@ import (
 	"github.com/shardeum/shardeum-evm"
 	cryptocodec "github.com/shardeum/shardeum-evm/crypto/codec"
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"
-	"github.com/shardeum/shardeum-evm/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -73,11 +72,10 @@ func PrepareEIP712CosmosTx(
 		return nil, err
 	}
 
-	// using nolint:all because the staticcheck nolint is not working as expected
-	fee := legacytx.NewStdFee(txArgs.Gas, txArgs.Fees) //nolint:all
+	fee := legacytx.NewStdFee(txArgs.Gas, txArgs.Fees) //nolint:staticcheck // check against deprecated type
 
 	msgs := txArgs.Msgs
-	data := legacytx.StdSignBytes(ctx.ChainID(), accNumber, nonce, 0, fee, msgs, "")
+	data := legacytx.StdSignBytes(ctx.ChainID(), accNumber, nonce, 0, fee, msgs, "") //nolint:staticcheck // check against deprecated type
 
 	typedDataArgs := typedDataArgs{
 		chainID:        args.EVMChainID,
@@ -163,7 +161,7 @@ func signCosmosEIP712Tx(
 func createTypedData(args typedDataArgs, useLegacy bool) (apitypes.TypedData, error) {
 	if useLegacy {
 		registry := codectypes.NewInterfaceRegistry()
-		types.RegisterInterfaces(registry)
+		eip712.RegisterInterfaces(registry)
 		cryptocodec.RegisterInterfaces(registry)
 		evmCodec := codec.NewProtoCodec(registry)
 

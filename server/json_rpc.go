@@ -15,7 +15,7 @@ import (
 	"github.com/shardeum/shardeum-evm/rpc"
 	"github.com/shardeum/shardeum-evm/rpc/stream"
 	serverconfig "github.com/shardeum/shardeum-evm/server/config"
-	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	"github.com/shardeum/shardeum-evm/server/types"
 	"golang.org/x/sync/errgroup"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
@@ -37,7 +37,7 @@ func StartJSONRPC(
 	clientCtx client.Context,
 	g *errgroup.Group,
 	config *serverconfig.Config,
-	indexer cosmosevmtypes.EVMTxIndexer,
+	indexer types.EVMTxIndexer,
 	app AppWithPendingTxStream,
 	mempool *evmmempool.ExperimentalEVMMempool,
 ) (*http.Server, error) {

@@ -7,17 +7,16 @@ import (
 	"testing"
 
 	"github.com/shardeum/shardeum-evm/encoding"
+	evmaddress "github.com/shardeum/shardeum-evm/encoding/address"
 	"github.com/shardeum/shardeum-evm/ethereum/eip712"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
-	"github.com/shardeum/shardeum-evm/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -80,7 +79,7 @@ func TestLedgerPreprocessing(t *testing.T) {
 		require.True(t, ok)
 		require.True(t, len(hasExtOptsTx.GetExtensionOptions()) == 1)
 
-		expectedExt := types.ExtensionOptionsWeb3Tx{
+		expectedExt := eip712.ExtensionOptionsWeb3Tx{
 			TypedDataChainID: 9001,
 			FeePayer:         feePayerAddress,
 			FeePayerSig:      tc.expectedSignatureBytes,
@@ -106,9 +105,7 @@ func TestLedgerPreprocessing(t *testing.T) {
 		// Verify tx fields are unchanged
 		tx := tc.txBuilder.GetTx()
 
-		addrCodec := address.Bech32Codec{
-			Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
-		}
+		addrCodec := evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32AccountAddrPrefix())
 
 		txFeePayer, err := addrCodec.BytesToString(tx.FeePayer())
 		require.NoError(t, err)

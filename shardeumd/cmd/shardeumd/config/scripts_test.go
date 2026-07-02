@@ -69,9 +69,9 @@ func (suite *ScriptsTestSuite) SetupTest() {
 
 	suite.configsDir = filepath.Join(tempDir, "configs")
 	suite.configDir = filepath.Join(tempDir, "config")
-	err = os.MkdirAll(suite.configsDir, 0755)
+	err = os.MkdirAll(suite.configsDir, 0o755)
 	suite.Require().NoError(err)
-	err = os.MkdirAll(suite.configDir, 0755)
+	err = os.MkdirAll(suite.configDir, 0o755)
 	suite.Require().NoError(err)
 
 	// Create mock binary
@@ -143,7 +143,7 @@ case "$1" in
         ;;
 esac`
 
-	err := os.WriteFile(suite.mockBinary, []byte(mockScript), 0755)
+	err := os.WriteFile(suite.mockBinary, []byte(mockScript), 0o755)
 	suite.Require().NoError(err)
 }
 
@@ -167,7 +167,7 @@ func (suite *ScriptsTestSuite) createTestConfig(network, chainID string, evmChai
 }`, network, chainID, evmChainID, network)
 
 	configPath := filepath.Join(suite.configsDir, network+".json")
-	err := os.WriteFile(configPath, []byte(config), 0644)
+	err := os.WriteFile(configPath, []byte(config), 0o644)
 	suite.Require().NoError(err)
 }
 
@@ -182,20 +182,20 @@ func (suite *ScriptsTestSuite) createTestGenesis(network, chainID string) {
 }`, chainID)
 
 	genesisPath := filepath.Join(suite.configDir, network+"-genesis.json")
-	err := os.WriteFile(genesisPath, []byte(genesis), 0644)
+	err := os.WriteFile(genesisPath, []byte(genesis), 0o644)
 	suite.Require().NoError(err)
 }
 
 func (suite *ScriptsTestSuite) runScript(script string, args ...string) (string, error) {
 	cmd := exec.Command("bash", append([]string{script}, args...)...)
 	cmd.Dir = suite.tempDir
-	
+
 	// Set environment for the command
 	cmd.Env = append(os.Environ(),
 		"BINARY="+suite.mockBinary,
 		"SKIP_BUILD=1",
 	)
-	
+
 	output, err := cmd.CombinedOutput()
 	return string(output), err
 }
@@ -213,14 +213,14 @@ func (suite *ScriptsTestSuite) TestStartNetworkWithValidNetwork() {
 	// Create test config and genesis using predefined values
 	suite.createTestConfig("testnet", "shardeum-testnet", 8119)
 	suite.createTestGenesis("testnet", "shardeum-testnet")
-	
+
 	// Copy genesis to default location for fallback
-	err := os.WriteFile(filepath.Join(suite.configDir, "genesis.json"), []byte(`{"chain_id":"shardeum-testnet"}`), 0644)
+	err := os.WriteFile(filepath.Join(suite.configDir, "genesis.json"), []byte(`{"chain_id":"shardeum-testnet"}`), 0o644)
 	suite.Require().NoError(err)
 
 	// Test with valid network (will fail at some point but should parse args correctly)
 	output, err := suite.runScript(suite.startScript, "1", "--network", "testnet")
-	
+
 	// Should contain network info in output
 	suite.Require().Contains(output, "testnet")
 	suite.Require().Contains(output, "shardeum-testnet")
@@ -240,7 +240,7 @@ func (suite *ScriptsTestSuite) TestStartNetworkWithInvalidNetwork() {
 func (suite *ScriptsTestSuite) TestStartNetworkEnvironmentOverride() {
 	suite.createTestConfig("mainnet", "main-chain", 8119)
 	suite.createTestConfig("testnet", "shardeum-testnet", 8119)
-	
+
 	// Set environment variable
 	os.Setenv("SHARDEUM_NETWORK", "mainnet")
 	defer os.Unsetenv("SHARDEUM_NETWORK")
@@ -318,10 +318,10 @@ func (suite *ScriptsTestSuite) TestSetNetworkWithValidNetwork() {
 		echo "CHAIN_ID=$SHARDEUM_CHAIN_ID" 
 		echo "EVM_CHAIN_ID=$SHARDEUM_EVM_CHAIN_ID"
 	`, suite.tempDir, suite.setNetScript))
-	
+
 	output, err := cmd.CombinedOutput()
 	suite.Require().NoError(err)
-	
+
 	outputStr := string(output)
 	suite.Require().Contains(outputStr, "NETWORK=testnet")
 	suite.Require().Contains(outputStr, "CHAIN_ID=shardeum-testnet")
@@ -343,9 +343,9 @@ func (suite *ScriptsTestSuite) TestEndToEndWorkflow() {
 	// Setup test environment
 	suite.createTestConfig("testnet", "shardeum-testnet", 8119)
 	suite.createTestGenesis("testnet", "shardeum-testnet")
-	
+
 	// Copy genesis to default location
-	err := os.WriteFile(filepath.Join(suite.configDir, "genesis.json"), []byte(`{"chain_id":"shardeum-testnet"}`), 0644)
+	err := os.WriteFile(filepath.Join(suite.configDir, "genesis.json"), []byte(`{"chain_id":"shardeum-testnet"}`), 0o644)
 	suite.Require().NoError(err)
 
 	// Step 1: Use set_network.sh to set environment (simulate sourcing)
@@ -355,7 +355,7 @@ func (suite *ScriptsTestSuite) TestEndToEndWorkflow() {
 		echo "ENV_SET=true"
 		echo "NETWORK=$SHARDEUM_NETWORK"
 	`, suite.tempDir, suite.setNetScript))
-	
+
 	output, err := cmd.CombinedOutput()
 	suite.Require().NoError(err)
 	suite.Require().Contains(string(output), "ENV_SET=true")
@@ -366,7 +366,7 @@ func (suite *ScriptsTestSuite) TestEndToEndWorkflow() {
 	suite.Require().NoError(err2)
 	suite.Require().Contains(output2, "Usage:")
 
-	// Step 3: Verify add_node.sh can use the configuration  
+	// Step 3: Verify add_node.sh can use the configuration
 	output3, err3 := suite.runScript(suite.addNodeScript, "node5", "--help")
 	suite.Require().NoError(err3)
 	suite.Require().Contains(output3, "Usage:")
@@ -397,10 +397,10 @@ func (suite *ScriptsTestSuite) TestNetworkSwitching() {
 			echo "CHAIN_ID=$SHARDEUM_CHAIN_ID"
 			echo "EVM_CHAIN_ID=$SHARDEUM_EVM_CHAIN_ID"
 		`, suite.tempDir, suite.setNetScript, network.name))
-		
+
 		output, err := cmd.CombinedOutput()
 		suite.Require().NoError(err)
-		
+
 		outputStr := string(output)
 		suite.Require().Contains(outputStr, "NETWORK="+network.name)
 		suite.Require().Contains(outputStr, "CHAIN_ID="+network.chainID)
@@ -421,10 +421,10 @@ func (suite *ScriptsTestSuite) TestEnvironmentVariablePrecedence() {
 		echo "NETWORK=$SHARDEUM_NETWORK"
 		echo "CHAIN_ID=$SHARDEUM_CHAIN_ID"
 	`, suite.tempDir, suite.setNetScript))
-	
+
 	output, err := cmd.CombinedOutput()
 	suite.Require().NoError(err)
-	
+
 	outputStr := string(output)
 	// set_network.sh testnet should override to testnet
 	suite.Require().Contains(outputStr, "NETWORK=testnet")
@@ -435,7 +435,7 @@ func (suite *ScriptsTestSuite) TestEnvironmentVariablePrecedence() {
 func (suite *ScriptsTestSuite) TestJSONValidation() {
 	// Create invalid JSON config
 	invalidConfig := filepath.Join(suite.configsDir, "invalid.json")
-	err := os.WriteFile(invalidConfig, []byte("invalid json"), 0644)
+	err := os.WriteFile(invalidConfig, []byte("invalid json"), 0o644)
 	suite.Require().NoError(err)
 
 	// Test that scripts handle invalid JSON gracefully
@@ -452,18 +452,18 @@ func (suite *ScriptsTestSuite) TestScriptPerformance() {
 	// Time how long help commands take (should be fast)
 	start := suite.T().Name()
 	suite.T().Log("Starting performance test:", start)
-	
+
 	output, err := suite.runScript(suite.startScript, "--help")
 	suite.Require().NoError(err)
 	suite.Require().Contains(output, "Usage:")
 
-	output, err = suite.runScript(suite.addNodeScript, "--help") 
+	output, err = suite.runScript(suite.addNodeScript, "--help")
 	suite.Require().NoError(err)
 	suite.Require().Contains(output, "Usage:")
 
 	output, err = suite.runScript(suite.setNetScript)
 	suite.Require().Error(err) // Expected for no args
 	suite.Require().Contains(output, "Usage:")
-	
+
 	suite.T().Log("Performance test completed")
 }
