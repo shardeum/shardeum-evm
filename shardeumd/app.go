@@ -230,10 +230,10 @@ func NewShardeumApp(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 
-	// initialize the Cosmos EVM application configuration
-	if err := evmAppOptions(evmChainID); err != nil {
-		panic(err)
-	}
+	// NOTE: the EVM coin info + configurator is applied during the vm module's
+	// InitGenesis (SetGlobalConfigVariables), matching upstream cosmos/evm
+	// v0.6.0. We intentionally do NOT configure it here at app-creation time to
+	// avoid configuring the global EVM configurator twice.
 
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
