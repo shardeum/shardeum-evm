@@ -6,7 +6,6 @@ import (
 	"github.com/shardeum/shardeum-evm"
 	srvflags "github.com/shardeum/shardeum-evm/server/flags"
 	shardeumd "github.com/shardeum/shardeum-evm/shardeumd"
-	testconfig "github.com/shardeum/shardeum-evm/testutil/config"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 
@@ -45,7 +44,6 @@ func CreateShardeum(chainID string, evmChainID uint64, customBaseAppOptions ...f
 		loadLatest,
 		appOptions,
 		evmChainID,
-		testconfig.EvmAppOptions,
 		baseAppOptions...,
 	)
 }
@@ -60,7 +58,6 @@ func SetupShardeum() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		true,
 		simutils.EmptyAppOptions{},
 		constants.ShardeumEIP155ChainID,
-		testconfig.EvmAppOptions,
 	)
 	// disable base fee for testing
 	genesisState := app.DefaultGenesis()

@@ -64,7 +64,7 @@ func GetBlockGasLimit(appOpts servertypes.AppOptions, logger log.Logger) uint64 
 	homeDir := cast.ToString(appOpts.Get(flags.FlagHome))
 	if homeDir == "" {
 		logger.Error("home directory not found in app options - this is required for proper configuration")
-		panic("GetBlockGasLimit: home directory not found in app options")
+		return math.MaxUint64
 	}
 
 	// Try to get network-specific genesis path

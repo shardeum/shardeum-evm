@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	evmante "github.com/shardeum/shardeum-evm/ante"
 	antetypes "github.com/shardeum/shardeum-evm/ante/types"
-	evmconfig "github.com/shardeum/shardeum-evm/config"
 	evmosencoding "github.com/shardeum/shardeum-evm/encoding"
 	evmaddress "github.com/shardeum/shardeum-evm/encoding/address"
 	evmmempool "github.com/shardeum/shardeum-evm/mempool"
@@ -207,7 +206,6 @@ func NewShardeumApp(
 	loadLatest bool,
 	appOpts servertypes.AppOptions,
 	evmChainID uint64,
-	evmAppOptions evmconfig.EVMOptionsFn,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *ShardeumApp {
 	encodingConfig := evmosencoding.MakeConfig(evmChainID)

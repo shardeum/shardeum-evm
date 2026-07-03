@@ -761,7 +761,6 @@ func NewTestNetworkFixture() sdknetwork.TestFixture {
 		true,
 		simtestutil.EmptyAppOptions{},
 		shardeumdconfig.ShardeumChainID(),
-		shardeumdconfig.EvmAppOptions,
 	)
 
 	appCtr := func(val sdknetwork.ValidatorI) servertypes.Application {
@@ -772,7 +771,6 @@ func NewTestNetworkFixture() sdknetwork.TestFixture {
 			true,
 			simtestutil.EmptyAppOptions{},
 			shardeumdconfig.ShardeumChainID(),
-			shardeumdconfig.EvmAppOptions,
 		)
 	}
 

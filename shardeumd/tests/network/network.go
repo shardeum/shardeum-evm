@@ -24,7 +24,6 @@ import (
 	configconstants "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 	shardeumdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 	evmtestutil "github.com/shardeum/shardeum-evm/testutil"
-	testconfig "github.com/shardeum/shardeum-evm/testutil/config"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	cosmosevmtypes "github.com/shardeum/shardeum-evm/utils"
 	"github.com/spf13/cobra"
@@ -113,7 +112,7 @@ func DefaultConfig() Config {
 		panic(fmt.Sprintf("failed creating temporary directory: %v", err))
 	}
 	defer os.RemoveAll(dir)
-	tempApp := shardeumd.NewShardeumApp(log.NewNopLogger(), dbm.NewMemDB(), nil, true, simutils.NewAppOptionsWithFlagHome(dir), evmChainID, testconfig.EvmAppOptions, baseapp.SetChainID(chainID))
+	tempApp := shardeumd.NewShardeumApp(log.NewNopLogger(), dbm.NewMemDB(), nil, true, simutils.NewAppOptionsWithFlagHome(dir), evmChainID, baseapp.SetChainID(chainID))
 
 	cfg := Config{
 		Codec:             tempApp.AppCodec(),
@@ -147,7 +146,6 @@ func NewAppConstructor(chainID string, evmChainID uint64) AppConstructor {
 			val.Ctx.Logger, dbm.NewMemDB(), nil, true,
 			simutils.NewAppOptionsWithFlagHome(val.Ctx.Config.RootDir),
 			evmChainID,
-			configconstants.EvmAppOptions,
 			baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
 			baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
 			baseapp.SetChainID(chainID),

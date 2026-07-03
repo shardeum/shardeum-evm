@@ -97,7 +97,6 @@ func (a appCreator) newApp(
 		true,
 		simtestutil.EmptyAppOptions{},
 		shardeumdconfig.ShardeumChainID(),
-		shardeumdconfig.EvmAppOptions,
 		baseappOptions...,
 	)
 }
@@ -140,7 +139,6 @@ func (a appCreator) appExport(
 		loadLatest,
 		appOpts,
 		shardeumdconfig.ShardeumChainID(),
-		shardeumdconfig.EvmAppOptions,
 	)
 
 	if height != -1 {

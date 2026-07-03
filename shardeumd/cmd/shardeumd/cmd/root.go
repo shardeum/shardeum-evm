@@ -54,17 +54,18 @@ func NewRootCmd() *cobra.Command {
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
 	// and the CLI options for the modules
 	// add keyring to autocli opts
-	noOpEvmAppOptions := func(_ uint64) error {
-		return nil
-	}
 	tempApp := shardeumd.NewShardeumApp(
 		log.NewNopLogger(),
 		dbm.NewMemDB(),
 		nil,
 		true,
 		simtestutil.EmptyAppOptions{},
-		shardeumdconfig.ShardeumChainID(),
-		noOpEvmAppOptions,
+		// Use the placeholder EVM chain ID (0 -> DefaultEVMChainID) here, not the
+		// real network's ID: SetChainConfig only allows a real chain ID to be set
+		// once per process, and permits overriding a value that still equals
+		// DefaultEVMChainID. The real app construction later in this process sets
+		// the actual network chain ID; matching upstream evmd's tempApp behavior.
+		0,
 	)
 
 	encodingConfig := sdktestutil.TestEncodingConfig{
@@ -145,12 +146,6 @@ func NewRootCmd() *cobra.Command {
 
 	if err := autoCliOpts.EnhanceRootCommand(rootCmd); err != nil {
 		panic(err)
-	}
-
-	if initClientCtx.ChainID != "" {
-		if err := shardeumdconfig.EvmAppOptions(shardeumdconfig.ShardeumChainID()); err != nil {
-			panic(err)
-		}
 	}
 
 	return rootCmd
@@ -321,7 +316,6 @@ func newApp(
 		logger, db, traceStore, true,
 		appOpts,
 		shardeumdconfig.ShardeumChainID(),
-		shardeumdconfig.EvmAppOptions,
 		baseappOptions...,
 	)
 }
@@ -362,13 +356,13 @@ func appExport(
 	}
 
 	if height != -1 {
-		shardeumApp = shardeumd.NewShardeumApp(logger, db, traceStore, false, appOpts, shardeumdconfig.ShardeumChainID(), shardeumdconfig.EvmAppOptions, baseapp.SetChainID(chainID))
+		shardeumApp = shardeumd.NewShardeumApp(logger, db, traceStore, false, appOpts, shardeumdconfig.ShardeumChainID(), baseapp.SetChainID(chainID))
 
 		if err := shardeumApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		shardeumApp = shardeumd.NewShardeumApp(logger, db, traceStore, true, appOpts, shardeumdconfig.ShardeumChainID(), shardeumdconfig.EvmAppOptions, baseapp.SetChainID(chainID))
+		shardeumApp = shardeumd.NewShardeumApp(logger, db, traceStore, true, appOpts, shardeumdconfig.ShardeumChainID(), baseapp.SetChainID(chainID))
 	}
 
 	return shardeumApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)

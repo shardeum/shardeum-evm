@@ -57,7 +57,7 @@ func setup(withGenesis bool, invCheckPeriod uint, chainID string, evmChainID uin
 	appOptions[flags.FlagHome] = defaultNodeHome
 	appOptions[server.FlagInvCheckPeriod] = invCheckPeriod
 
-	app := NewShardeumApp(log.NewNopLogger(), db, nil, true, appOptions, shardeumdconfig.ShardeumChainID(), shardeumdconfig.EvmAppOptions, baseapp.SetChainID(chainID))
+	app := NewShardeumApp(log.NewNopLogger(), db, nil, true, appOptions, shardeumdconfig.ShardeumChainID(), baseapp.SetChainID(chainID))
 	if withGenesis {
 		return app, app.DefaultGenesis()
 	}
@@ -139,7 +139,6 @@ func SetupTestingApp(chainID string) func() (ibctesting.TestingApp, map[string]j
 			db, nil, true,
 			simtestutil.NewAppOptionsWithFlagHome(defaultNodeHome),
 			shardeumdconfig.ShardeumChainID(),
-			shardeumdconfig.EvmAppOptions,
 			baseapp.SetChainID(chainID),
 		)
 		return app, app.DefaultGenesis()
