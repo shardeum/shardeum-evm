@@ -14,7 +14,7 @@ if [ $# -eq 0 ]; then
   echo "Usage: source $0 <network>"
   echo ""
   echo "Available networks:"
-  ls -1 "$REPO_ROOT/configs"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
+  ls -1 "$REPO_ROOT/config/environments"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
   echo ""
   echo "Examples:"
   echo "  source $0 mainnet"
@@ -25,20 +25,21 @@ if [ $# -eq 0 ]; then
 fi
 
 NETWORK="$1"
-CONFIG_FILE="$REPO_ROOT/configs/$NETWORK.json"
+CONFIG_FILE="$REPO_ROOT/config/environments/$NETWORK.json"
 
 # Verify network configuration exists
 if [ ! -f "$CONFIG_FILE" ]; then
   echo "Error: Network configuration file not found: $CONFIG_FILE"
   echo ""
   echo "Available networks:"
-  ls -1 "$REPO_ROOT/configs"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
+  ls -1 "$REPO_ROOT/config/environments"/*.json 2>/dev/null | xargs -n1 basename | sed 's/.json$//' | sed 's/^/  /' || echo "  No network configurations found"
   return 1 2>/dev/null || exit 1
 fi
 
 # Load network configuration and set environment variables
 echo "Setting environment variables for $NETWORK network..."
 
+export SHARDEUM_CONFIG_DIR="$REPO_ROOT/config"
 export SHARDEUM_NETWORK="$NETWORK"
 export SHARDEUM_CHAIN_ID=$(jq -r '.chain_id' "$CONFIG_FILE")
 export SHARDEUM_EVM_CHAIN_ID=$(jq -r '.evm_chain_id' "$CONFIG_FILE")
@@ -51,6 +52,7 @@ export SHARDEUM_WEBSOCKET_PORT=$(jq -r '.ports.websocket' "$CONFIG_FILE")
 export SHARDEUM_GRPC_PORT=$(jq -r '.ports.grpc' "$CONFIG_FILE")
 
 echo "Environment variables set:"
+echo "  SHARDEUM_CONFIG_DIR=$SHARDEUM_CONFIG_DIR"
 echo "  SHARDEUM_NETWORK=$SHARDEUM_NETWORK"
 echo "  SHARDEUM_CHAIN_ID=$SHARDEUM_CHAIN_ID"
 echo "  SHARDEUM_EVM_CHAIN_ID=$SHARDEUM_EVM_CHAIN_ID"

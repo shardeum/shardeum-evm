@@ -68,6 +68,11 @@ ldflags += -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
   ldflags += -w -s
 endif
+# LDFLAGS here refers to Go's -ldflags (symbol overrides via -X), not C/linker
+# flags. Make auto-imports any shell env var of the same name (e.g. Homebrew's
+# LDFLAGS="-L/opt/homebrew/opt/openssl@3/lib"), which the Go linker rejects.
+# Reset it so only an explicit `make build LDFLAGS=...` can extend ldflags.
+LDFLAGS :=
 ldflags += $(LDFLAGS)
 ldflags := $(strip $(ldflags))
 
@@ -383,10 +388,10 @@ test-rpc-compat-stop:
 
 start-network: build
 	@echo "Starting Shardeum network..."
-	@SKIP_BUILD=1 BINARY=./build/shardeumd ./scripts/start_network.sh $(or $(NODES),4) --network $(or $(NETWORK),local)
+	@SKIP_BUILD=1 BINARY=./build/shardeumd SHARDEUM_CONFIG_DIR=$(or $(SHARDEUM_CONFIG_DIR),$(CURDIR)/config) ./scripts/start_network.sh $(or $(NODES),4) --network $(or $(NETWORK),local)
 
 add-node: build
-	@SKIP_BUILD=1 BINARY=./build/shardeumd ./scripts/add_node.sh $(NODE_ID) --network $(or $(NETWORK),local) $(if $(SEED_RPC),--seed-rpc $(SEED_RPC)) $(if $(NODE_TYPE),--node-type $(NODE_TYPE))
+	@SKIP_BUILD=1 BINARY=./build/shardeumd SHARDEUM_CONFIG_DIR=$(or $(SHARDEUM_CONFIG_DIR),$(CURDIR)/config) ./scripts/add_node.sh $(NODE_ID) --network $(or $(NETWORK),local) $(if $(SEED_RPC),--seed-rpc $(SEED_RPC)) $(if $(NODE_TYPE),--node-type $(NODE_TYPE))
 
 create-validator: build
 	@SKIP_BUILD=1 BINARY=./build/shardeumd ./scripts/create_validator.sh $(NODE_ID) --network $(or $(NETWORK),local) $(if $(VALIDATOR_KEY),--validator-key $(VALIDATOR_KEY)) $(if $(AMOUNT),--amount $(AMOUNT)) $(if $(MONIKER),--moniker "$(MONIKER)")
