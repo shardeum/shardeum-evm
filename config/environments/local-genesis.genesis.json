@@ -128,7 +128,7 @@
         "min_deposit": [
           {
             "denom": "ashm",
-            "amount": "430000000000000000000000"
+            "amount": "100000000000000000000"
           }
         ],
         "max_deposit_period": "600s",
@@ -148,7 +148,7 @@
         "expedited_min_deposit": [
           {
             "denom": "ashm",
-            "amount": "1290000000000000000000000"
+            "amount": "300000000000000000000"
           }
         ]
       },
