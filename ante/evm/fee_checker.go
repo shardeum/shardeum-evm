@@ -4,7 +4,7 @@ import (
 	"math"
 
 	"github.com/ethereum/go-ethereum/params"
-	cosmosevmtypes "github.com/shardeum/shardeum-evm/ante/types"
+	antetypes "github.com/shardeum/shardeum-evm/ante/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
@@ -70,7 +70,7 @@ func FeeChecker(
 	// get the priority tip cap from the extension option.
 	if hasExtOptsTx, ok := feeTx.(authante.HasExtensionOptionsTx); ok {
 		for _, opt := range hasExtOptsTx.GetExtensionOptions() {
-			if extOpt, ok := opt.GetCachedValue().(*cosmosevmtypes.ExtensionOptionDynamicFeeTx); ok {
+			if extOpt, ok := opt.GetCachedValue().(*antetypes.ExtensionOptionDynamicFeeTx); ok {
 				maxPriorityPrice = extOpt.MaxPriorityPrice
 				if maxPriorityPrice.IsNil() {
 					maxPriorityPrice = sdkmath.LegacyZeroDec()

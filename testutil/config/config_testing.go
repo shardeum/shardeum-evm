@@ -4,7 +4,6 @@
 package config
 
 import (
-	evmconfig "github.com/shardeum/shardeum-evm/config"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
@@ -54,10 +53,4 @@ var TestChainsCoinInfo = map[uint64]evmtypes.EvmCoinInfo{
 		DisplayDenom:  ShardeumDisplayDenom,
 		Decimals:      evmtypes.EighteenDecimals.Uint32(),
 	},
-}
-
-// EvmAppOptions allows to setup the global configuration
-// for the Cosmos EVM chain.
-func EvmAppOptions(chainID uint64) error {
-	return evmconfig.EvmAppOptionsWithConfigWithReset(chainID, TestChainsCoinInfo, cosmosEVMActivators, true)
 }
