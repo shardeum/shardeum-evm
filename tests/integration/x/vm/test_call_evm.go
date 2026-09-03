@@ -9,6 +9,8 @@ import (
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func (s *KeeperTestSuite) TestCallEVM() {
@@ -71,6 +73,22 @@ func (s *KeeperTestSuite) TestCallEVM() {
 func (s *KeeperTestSuite) TestCallEVMWithData() {
 	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
 	wcosmosEVMContract := common.HexToAddress("0xD4949664cD82660AaE99bEdc034a0deA8A0bd517")
+
+	// Deployments run from a dedicated EOA rather than a module account.
+	// It also fails in practice: contract creation bumps the sender's nonce,
+	// SetAccount writes nonce and balance together, and the EVM commit path may
+	// not write a module account's balance.
+	deployer := common.BytesToAddress([]byte("vm-test-deployer"))
+	// The sender's sequence is read before the message runs, so the account has to exist.
+	ensureDeployer := func() {
+		ctx := s.Network.GetContext()
+		ak := s.Network.App.GetAccountKeeper()
+		accAddr := sdk.AccAddress(deployer.Bytes())
+		if ak.GetAccount(ctx, accAddr) == nil {
+			ak.SetAccount(ctx, ak.NewAccountWithAddress(ctx, accAddr))
+		}
+	}
+
 	testCases := []struct {
 		name     string
 		from     common.Address
@@ -143,8 +161,9 @@ func (s *KeeperTestSuite) TestCallEVMWithData() {
 		},
 		{
 			name: "deploy",
-			from: types.ModuleAddress,
+			from: deployer,
 			malleate: func() []byte {
+				ensureDeployer()
 				ctorArgs, _ := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("", "test", "test", uint8(18))
 				data := append(contracts.ERC20MinterBurnerDecimalsContract.Bin, ctorArgs...) //nolint:gocritic
 				return data
@@ -156,8 +175,9 @@ func (s *KeeperTestSuite) TestCallEVMWithData() {
 		},
 		{
 			name: "fail deploy",
-			from: types.ModuleAddress,
+			from: deployer,
 			malleate: func() []byte {
+				ensureDeployer()
 				params := s.Network.App.GetEVMKeeper().GetParams(s.Network.GetContext())
 				params.AccessControl.Create = evmtypes.AccessControlType{
 					AccessType: evmtypes.AccessTypeRestricted,
@@ -170,12 +190,13 @@ func (s *KeeperTestSuite) TestCallEVMWithData() {
 			deploy:   true,
 			useNilDB: false,
 			expPass:  false,
-			expError: "",
+			expError: "does not have permission to deploy contracts",
 		},
 		{
 			name: "fail deploy with nil statedb",
-			from: types.ModuleAddress,
+			from: deployer,
 			malleate: func() []byte {
+				ensureDeployer()
 				ctorArgs, _ := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("", "test", "test", uint8(18))
 				data := append(contracts.ERC20MinterBurnerDecimalsContract.Bin, ctorArgs...) //nolint:gocritic
 				return data

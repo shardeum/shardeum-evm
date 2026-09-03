@@ -2243,7 +2243,8 @@ func TestPrecompileIntegrationTestSuite(t *testing.T, create network.CreateEvmAp
 							before bool
 							after  bool
 							msgAmt *big.Int
-						}) {
+						},
+						) {
 							args.MethodName = "testDelegateWithTransfer"
 							args.Args = []interface{}{
 								common.BytesToAddress(bondedTokensPoolAccAddr),
