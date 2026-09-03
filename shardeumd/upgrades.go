@@ -10,13 +10,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 )
 
-// UpgradeName defines the on-chain upgrade name for the sample ShardeumApp upgrade
-// from v0.4.0 to v0.5.0.
+// UpgradeName defines the on-chain upgrade name for the Shardeum resync onto
+// cosmos/evm v0.6.3.
 //
-// NOTE: This upgrade defines a reference implementation of what an upgrade
-// could look like when an application is migrating from ShardeumApp version
-// v0.4.0 to v0.5.x
-const UpgradeName = "v0.5.0-to-v0.6.0"
+// NOTE: the live chains are v0.4.0-era. They never executed the v0.4.0->v0.5.0
+// upgrade (that handler was dead reference scaffolding), so this upgrade jumps
+// straight from v0.4.0-era state to v0.6.3, skipping v0.5.0 and v0.6.0-v0.6.2.
+// The name must match the name used in the MsgSoftwareUpgrade proposal and in
+// each node's cosmovisor upgrades/<name>/bin directory.
+const UpgradeName = "v0.4.0-to-v0.6.3"
 
 func (app ShardeumApp) RegisterUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
