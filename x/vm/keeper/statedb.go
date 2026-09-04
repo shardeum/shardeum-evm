@@ -9,10 +9,12 @@ import (
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
@@ -113,6 +115,17 @@ func (k *Keeper) SetBalance(ctx sdk.Context, addr common.Address, amount *uint25
 		return nil
 	}
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
+
+	// Reject balance writes to module accounts. The EVM balance mirror must never
+	// mint or burn against a module account: doing so would corrupt module-level
+	// supply/escrow invariants (this is the module-account guard from the Aug-2026
+	// security series, ported standalone without the LockedCoins mirror).
+	if acct := k.accountKeeper.GetAccount(ctx, cosmosAddr); acct != nil {
+		if _, isModule := acct.(sdk.ModuleAccountI); isModule {
+			return errorsmod.Wrapf(errortypes.ErrUnauthorized, "%s is not allowed to receive funds", cosmosAddr)
+		}
+	}
+
 	coin := k.bankWrapper.SpendableCoin(ctx, cosmosAddr, types.GetEVMCoinDenom())
 
 	balance := coin.Amount.BigInt()

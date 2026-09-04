@@ -589,7 +589,9 @@ func NewShardeumApp(
 		evidence.NewAppModule(app.EvidenceKeeper),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
-		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
+		// Vesting msg server intentionally not registered: blocks runtime creation of
+		// vesting accounts so LockedCoins stays provably zero (see vesting_nomsgserver.go).
+		noMsgServerVestingModule{vesting.NewAppModule(app.AccountKeeper, app.BankKeeper)},
 		// IBC modules
 		ibc.NewAppModule(app.IBCKeeper),
 		ibctm.NewAppModule(tmLightClientModule),
@@ -761,6 +763,7 @@ func NewShardeumApp(
 		abciProposalHandler := baseapp.NewDefaultProposalHandler(evmMempool, app)
 		abciProposalHandler.SetSignerExtractionAdapter(evmmempool.NewEthSignerExtractionAdapter(sdkmempool.NewDefaultSignerExtractionAdapter()))
 		app.SetPrepareProposal(abciProposalHandler.PrepareProposalHandler())
+		app.SetProcessProposal(abciProposalHandler.ProcessProposalHandler())
 	}
 
 	// In v0.46, the SDK introduces _postHandlers_. PostHandlers are like
