@@ -1,6 +1,7 @@
 package shardeumd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -355,11 +356,15 @@ func CalculateCirculatingSupply(sdkCtx sdk.Context, app *ShardeumApp) (result *b
 	}
 
 	// 3. Get balances of non-circulating addresses (foundation, team, ecosystem, sale cold storage)
+	// A missing map entry means this binary has no cold storage list for the
+	// chain it is running on. Treating that as "nothing to exclude" would
+	// silently report circulating == total, so fail loudly instead. Networks
+	// that genuinely have no cold storage carry an explicit empty entry.
 	chainID := sdkCtx.ChainID()
-	nonCircAddresses := networkNonCircAddresses[chainID]
-
-	// Debug: Log chain ID and address count
-	_ = fmt.Sprintf("ChainID: %s, Cold storage addresses: %d", chainID, len(nonCircAddresses))
+	nonCircAddresses, known := networkNonCircAddresses[chainID]
+	if !known {
+		return big.NewInt(0), fmt.Errorf("no cold storage address list configured for chain ID %q", chainID)
+	}
 
 	excludedAddressBalance := big.NewInt(0)
 	for _, addrStr := range nonCircAddresses {
@@ -458,12 +463,17 @@ func formatSupplyResponse(w http.ResponseWriter, r *http.Request, supply *big.In
 			Result: decimalStr,
 		}
 
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Encode first: once the status line is written the header is flushed
+		// and a later http.Error can no longer change it.
+		var buf bytes.Buffer
+		if err := json.NewEncoder(&buf).Encode(response); err != nil {
 			http.Error(w, fmt.Sprintf("Failed to encode JSON: %v", err), http.StatusInternalServerError)
 			return
 		}
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(buf.Bytes())
 	} else {
 		// Return plain text response (default) - whole number without decimals
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
