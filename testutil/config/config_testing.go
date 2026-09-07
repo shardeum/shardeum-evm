@@ -4,7 +4,6 @@
 package config
 
 import (
-	evmconfig "github.com/shardeum/shardeum-evm/config"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
@@ -16,48 +15,42 @@ var TestChainsCoinInfo = map[uint64]evmtypes.EvmCoinInfo{
 		Denom:         ShardeumChainDenom,
 		ExtendedDenom: ShardeumChainDenom,
 		DisplayDenom:  ShardeumDisplayDenom,
-		Decimals:      evmtypes.EighteenDecimals,
+		Decimals:      evmtypes.EighteenDecimals.Uint32(),
 	},
 	SixDecimalsChainID: {
 		Denom:         "utest",
 		ExtendedDenom: "atest",
 		DisplayDenom:  "test",
-		Decimals:      evmtypes.SixDecimals,
+		Decimals:      evmtypes.SixDecimals.Uint32(),
 	},
 	TwelveDecimalsChainID: {
 		Denom:         "ptest2",
 		ExtendedDenom: "atest2",
 		DisplayDenom:  "test2",
-		Decimals:      evmtypes.TwelveDecimals,
+		Decimals:      evmtypes.TwelveDecimals.Uint32(),
 	},
 	TwoDecimalsChainID: {
 		Denom:         "ctest3",
 		ExtendedDenom: "atest3",
 		DisplayDenom:  "test3",
-		Decimals:      evmtypes.TwoDecimals,
+		Decimals:      evmtypes.TwoDecimals.Uint32(),
 	},
 	TestChainID1: {
 		Denom:         ShardeumChainDenom,
 		ExtendedDenom: ShardeumChainDenom,
 		DisplayDenom:  ShardeumChainDenom,
-		Decimals:      evmtypes.EighteenDecimals,
+		Decimals:      evmtypes.EighteenDecimals.Uint32(),
 	},
 	TestChainID2: {
 		Denom:         ShardeumChainDenom,
 		ExtendedDenom: ShardeumChainDenom,
 		DisplayDenom:  ShardeumChainDenom,
-		Decimals:      evmtypes.EighteenDecimals,
+		Decimals:      evmtypes.EighteenDecimals.Uint32(),
 	},
 	EVMChainID: {
 		Denom:         ShardeumChainDenom,
 		ExtendedDenom: ShardeumChainDenom,
 		DisplayDenom:  ShardeumDisplayDenom,
-		Decimals:      evmtypes.EighteenDecimals,
+		Decimals:      evmtypes.EighteenDecimals.Uint32(),
 	},
-}
-
-// EvmAppOptions allows to setup the global configuration
-// for the Cosmos EVM chain.
-func EvmAppOptions(chainID uint64) error {
-	return evmconfig.EvmAppOptionsWithConfigWithReset(chainID, TestChainsCoinInfo, cosmosEVMActivators, true)
 }

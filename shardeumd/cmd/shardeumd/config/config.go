@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/shardeum/shardeum-evm/types"
+	types "github.com/shardeum/shardeum-evm/crypto/hd"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -19,44 +19,44 @@ func InitializeChainsCoinInfo() {
 		Denom:         GetSafeDenom(),
 		ExtendedDenom: GetSafeDenom(),
 		DisplayDenom:  GetSafeDisplayDenom(),
-		Decimals:      evmtypes.EighteenDecimals,
+		Decimals:      evmtypes.EighteenDecimals.Uint32(),
 	}
-	
+
 	ChainsCoinInfo[SixDecimalsChainID] = evmtypes.EvmCoinInfo{
 		Denom:         "utest",
 		ExtendedDenom: "atest",
 		DisplayDenom:  "test",
-		Decimals:      evmtypes.SixDecimals,
+		Decimals:      evmtypes.SixDecimals.Uint32(),
 	}
-	
+
 	ChainsCoinInfo[TwelveDecimalsChainID] = evmtypes.EvmCoinInfo{
 		Denom:         GetSafeDenom(),
 		ExtendedDenom: GetSafeDenom(),
 		DisplayDenom:  GetSafeDisplayDenom(),
-		Decimals:      evmtypes.TwelveDecimals,
+		Decimals:      evmtypes.TwelveDecimals.Uint32(),
 	}
-	
+
 	ChainsCoinInfo[TwoDecimalsChainID] = evmtypes.EvmCoinInfo{
 		Denom:         GetSafeDenom(),
 		ExtendedDenom: GetSafeDenom(),
 		DisplayDenom:  GetSafeDisplayDenom(),
-		Decimals:      evmtypes.TwoDecimals,
+		Decimals:      evmtypes.TwoDecimals.Uint32(),
 	}
-	
+
 	ChainsCoinInfo[TestChainID1] = evmtypes.EvmCoinInfo{
 		Denom:         GetSafeDenom(),
 		ExtendedDenom: GetSafeDenom(),
 		DisplayDenom:  GetSafeDisplayDenom(),
-		Decimals:      evmtypes.EighteenDecimals,
+		Decimals:      evmtypes.EighteenDecimals.Uint32(),
 	}
-	
+
 	ChainsCoinInfo[TestChainID2] = evmtypes.EvmCoinInfo{
 		Denom:         GetSafeDenom(),
 		ExtendedDenom: GetSafeDenom(),
 		DisplayDenom:  GetSafeDisplayDenom(),
-		Decimals:      evmtypes.EighteenDecimals,
+		Decimals:      evmtypes.EighteenDecimals.Uint32(),
 	}
-	
+
 	// Update with network configurations from JSON files
 	UpdateChainsCoinInfo()
 }

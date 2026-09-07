@@ -4,7 +4,7 @@ import (
 	"math/big"
 
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
-	"github.com/shardeum/shardeum-evm/types"
+	"github.com/shardeum/shardeum-evm/utils"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/math"
@@ -21,15 +21,15 @@ func DefaultInitialAmounts() InitialAmounts {
 	baseCoinInfo := testconstants.ExampleChainCoinInfo[defaultChain]
 
 	return InitialAmounts{
-		Base: GetInitialAmount(baseCoinInfo.Decimals),
-		Evm:  GetInitialAmount(baseCoinInfo.Decimals),
+		Base: GetInitialAmount(evmtypes.Decimals(baseCoinInfo.Decimals)),
+		Evm:  GetInitialAmount(evmtypes.Decimals(baseCoinInfo.Decimals)),
 	}
 }
 
 func DefaultInitialBondedAmount() math.Int {
 	baseCoinInfo := testconstants.ExampleChainCoinInfo[defaultChain]
 
-	return GetInitialBondedAmount(baseCoinInfo.Decimals)
+	return GetInitialBondedAmount(evmtypes.Decimals(baseCoinInfo.Decimals))
 }
 
 func GetInitialAmount(decimals evmtypes.Decimals) math.Int {
@@ -54,7 +54,7 @@ func GetInitialBondedAmount(decimals evmtypes.Decimals) math.Int {
 	// initialBondedAmount represents the amount of tokens that each validator will
 	// have initially bonded expressed in the 18 decimals representation.
 	sdk.DefaultPowerReduction = math.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil))
-	initialBondedAmount := sdk.TokensFromConsensusPower(1, types.AttoPowerReduction)
+	initialBondedAmount := sdk.TokensFromConsensusPower(1, utils.AttoPowerReduction)
 
 	return initialBondedAmount.Quo(decimals.ConversionFactor())
 }

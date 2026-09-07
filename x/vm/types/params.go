@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/shardeum/shardeum-evm/types"
+	"github.com/shardeum/shardeum-evm/utils"
 
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v10/modules/core/24-host"
@@ -19,8 +19,12 @@ import (
 var (
 	// DefaultEVMDenom is the default value for the evm denom
 	DefaultEVMDenom = "ashm"
+	// DefaultEVMExtendedDenom is the default value for the evm extended denom
+	DefaultEVMExtendedDenom = "ashm"
+	// DefaultEVMDisplayDenom is the default value for the display denom in the bank metadata
+	DefaultEVMDisplayDenom = "shm"
 	// DefaultEVMChainID is the default value for the evm chain ID
-	DefaultEVMChainID = "shardeum_8119-1"
+	DefaultEVMChainID uint64 = 262144
 	// DefaultEVMDecimals is the default value for the evm denom decimal precision
 	DefaultEVMDecimals uint64 = 18
 	// DefaultStaticPrecompiles defines the default active precompiles.
@@ -63,12 +67,13 @@ func NewParams(
 // DefaultParams returns default evm parameters
 func DefaultParams() Params {
 	return Params{
-		EvmDenom:                DefaultEVMDenom,
+		EvmDenom:                DefaultEVMExtendedDenom,
 		ExtraEIPs:               DefaultExtraEIPs,
 		ActiveStaticPrecompiles: DefaultStaticPrecompiles,
 		EVMChannels:             DefaultEVMChannels,
 		AccessControl:           DefaultAccessControl,
 		HistoryServeWindow:      DefaultHistoryServeWindow,
+		ExtendedDenomOptions:    &ExtendedDenomOptions{ExtendedDenom: DefaultEVMExtendedDenom},
 	}
 }
 
@@ -167,7 +172,7 @@ func validateAllowlistAddresses(i interface{}) error {
 	}
 
 	for _, address := range addresses {
-		if err := types.ValidateAddress(address); err != nil {
+		if err := utils.ValidateAddress(address); err != nil {
 			return fmt.Errorf("invalid whitelist address: %s", address)
 		}
 	}
@@ -210,7 +215,7 @@ func ValidatePrecompiles(i interface{}) error {
 			return fmt.Errorf("duplicate precompile %s", precompile)
 		}
 
-		if err := types.ValidateAddress(precompile); err != nil {
+		if err := utils.ValidateAddress(precompile); err != nil {
 			return fmt.Errorf("invalid precompile %s", precompile)
 		}
 

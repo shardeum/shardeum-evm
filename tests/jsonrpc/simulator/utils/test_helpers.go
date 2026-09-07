@@ -12,7 +12,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-
 	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/config"
 	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/types"
 )
@@ -390,7 +389,6 @@ func Legacy(rCtx *types.RPCContext, methodName types.RpcName, category string, r
 	// First test if the API is actually implemented
 	var result interface{}
 	err := rCtx.Evmd.RPCClient().Call(&result, string(methodName))
-
 	if err != nil {
 		// Check if it's a "method not found" error (API not implemented)
 		if err.Error() == "the method "+string(methodName)+" does not exist/is not available" ||

@@ -2,25 +2,41 @@ package ibc
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/shardeum/shardeum-evm"
 	"github.com/shardeum/shardeum-evm/contracts"
 	evmibctesting "github.com/shardeum/shardeum-evm/testutil/ibc"
 	testutiltypes "github.com/shardeum/shardeum-evm/testutil/types"
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
+	"github.com/shardeum/shardeum-evm/x/vm/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 
 	errorsmod "cosmossdk.io/errors"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+)
+
+// Event count constants for test assertions
+const (
+	PreciseBankMintEventCount     = 9  // Native transfer with mint operation
+	PreciseBankBurnEventCount     = 9  // Native transfer with burn operation
+	DelegationEventCount          = 3  // Staking delegation events
+	EVMEventCount                 = 5  // EVM transaction wrapper events
+	WithdrawalNoTokensEventCount  = 1  // Withdrawal with no tokens
+	ICS20WithConversionEventCount = 15 // ERC20 conversion (7) + IBC packet (8)
 )
 
 // NativeErc20Info holds details about a deployed ERC20 token.
@@ -39,14 +55,22 @@ func SetupNativeErc20(t *testing.T, chain *evmibctesting.TestChain, senderAcc ev
 	evmCtx := chain.GetContext()
 	evmApp := chain.App.(evm.EvmApp)
 
-	// Deploy new ERC20 contract with default metadata
-	contractAddr, err := evmApp.GetErc20Keeper().DeployERC20Contract(evmCtx, banktypes.Metadata{
+	// Deploy new ERC20 contract with default metadata.
+	// The deployer is a dedicated EOA.
+	deployer := common.BytesToAddress([]byte("erc20-test-deployer"))
+	deployerAccAddr := sdk.AccAddress(deployer.Bytes())
+	if evmApp.GetAccountKeeper().GetAccount(evmCtx, deployerAccAddr) == nil {
+		evmApp.GetAccountKeeper().SetAccount(evmCtx, evmApp.GetAccountKeeper().NewAccountWithAddress(evmCtx, deployerAccAddr))
+	}
+
+	stateDB := statedb.New(evmCtx, evmApp.GetEVMKeeper(), statedb.NewEmptyTxConfig())
+	contractAddr, err := DeployERC20Contract(evmCtx, stateDB, evmApp.GetAccountKeeper(), evmApp.GetEVMKeeper(), banktypes.Metadata{
 		DenomUnits: []*banktypes.DenomUnit{
 			{Denom: "example", Exponent: 18},
 		},
 		Name:   "Example",
 		Symbol: "Ex",
-	})
+	}, deployer)
 	if err != nil {
 		t.Fatalf("ERC20 deployment failed: %v", err)
 	}
@@ -67,12 +91,15 @@ func SetupNativeErc20(t *testing.T, chain *evmibctesting.TestChain, senderAcc ev
 	sendAmt := ibctesting.DefaultCoinAmount
 	senderAddr := senderAcc.SenderAccount.GetAddress()
 
+	stateDB = statedb.New(evmCtx, evmApp.GetEVMKeeper(), statedb.NewEmptyTxConfig())
 	_, err = evmApp.GetEVMKeeper().CallEVM(
 		evmCtx,
+		stateDB,
 		contractAbi,
-		erc20types.ModuleAddress,
+		deployer,
 		contractAddr,
 		true,
+		false,
 		nil,
 		"mint",
 		common.BytesToAddress(senderAddr),
@@ -97,7 +124,8 @@ func SetupNativeErc20(t *testing.T, chain *evmibctesting.TestChain, senderAcc ev
 	}
 }
 
-// SetupNativeErc20 deploys, registers, and mints a native ERC20 token on an EVM-based chain.
+// DeployContract deploys an arbitrary contract on an EVM-based chain.
+// Like DeployERC20Contract, the sender is an EOA rather than a module account.
 func DeployContract(t *testing.T, chain *evmibctesting.TestChain, deploymentData testutiltypes.ContractDeploymentData) (common.Address, error) {
 	t.Helper()
 
@@ -116,10 +144,75 @@ func DeployContract(t *testing.T, chain *evmibctesting.TestChain, deploymentData
 	data := deploymentData.Contract.Bin
 	data = append(data, ctorArgs...)
 
-	_, err = chain.App.(evm.EvmApp).GetEVMKeeper().CallEVMWithData(chain.GetContext(), from, nil, data, true, nil)
+	stateDB := statedb.New(chain.GetContext(), chain.App.(evm.EvmApp).GetEVMKeeper(), statedb.NewEmptyTxConfig())
+
+	_, err = chain.App.(evm.EvmApp).GetEVMKeeper().CallEVMWithData(chain.GetContext(), stateDB, from, nil, data, true, false, nil)
 	if err != nil {
 		return common.Address{}, errorsmod.Wrapf(err, "failed to deploy contract")
 	}
 
 	return crypto.CreateAddress(from, account.Nonce), nil
+}
+
+// DeployERC20Contract creates and deploys an ERC20 contract on the EVM with
+// deployer as owner.
+//
+// deployer must be an EOA. Do not pass a module account.
+// It is also required in practice. Contract creation bumps the sender's nonce,
+// SetAccount persists nonce and balance together, and the EVM commit path is
+// not allowed to write a module account's balance.
+func DeployERC20Contract(
+	ctx sdk.Context,
+	stateDB *statedb.StateDB,
+	accountKeeper erc20types.AccountKeeper,
+	evmKeeper erc20types.EVMKeeper,
+	coinMetadata banktypes.Metadata,
+	deployer common.Address,
+) (common.Address, error) {
+	decimals := uint8(0)
+	if len(coinMetadata.DenomUnits) > 0 {
+		decimalsIdx := len(coinMetadata.DenomUnits) - 1
+		decimals = uint8(coinMetadata.DenomUnits[decimalsIdx].Exponent) //#nosec G115 // exponent will not exceed uint8
+	}
+	ctorArgs, err := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack(
+		"",
+		coinMetadata.Name,
+		coinMetadata.Symbol,
+		decimals,
+	)
+	if err != nil {
+		return common.Address{}, errorsmod.Wrapf(types.ErrABIPack, "coin metadata is invalid %s: %s", coinMetadata.Name, err.Error())
+	}
+
+	data := make([]byte, len(contracts.ERC20MinterBurnerDecimalsContract.Bin)+len(ctorArgs))
+	copy(data[:len(contracts.ERC20MinterBurnerDecimalsContract.Bin)], contracts.ERC20MinterBurnerDecimalsContract.Bin)
+	copy(data[len(contracts.ERC20MinterBurnerDecimalsContract.Bin):], ctorArgs)
+
+	nonce, err := accountKeeper.GetSequence(ctx, deployer.Bytes())
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	contractAddr := crypto.CreateAddress(deployer, nonce)
+	_, err = evmKeeper.CallEVMWithData(ctx, stateDB, deployer, nil, data, true, false, nil)
+	if err != nil {
+		return common.Address{}, errorsmod.Wrapf(err, "failed to deploy contract for %s", coinMetadata.Name)
+	}
+
+	return contractAddr, nil
+}
+
+// PrintEvents prints all events with their attributes for debugging
+func PrintEvents(label string, events []abci.Event) {
+	fmt.Printf("\n========== Events for %s ==========\n", label)
+	fmt.Printf("Total Event Count: %d\n\n", len(events))
+
+	for i, event := range events {
+		fmt.Printf("[%d] Type: %s\n", i, event.Type)
+		for _, attr := range event.Attributes {
+			fmt.Printf("    %s: %s\n", attr.Key, attr.Value)
+		}
+		fmt.Println()
+	}
+	fmt.Printf("========================================\n\n")
 }

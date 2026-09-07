@@ -18,6 +18,14 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/shardeum/shardeum-evm/crypto/hd"
+	"github.com/shardeum/shardeum-evm/server/config"
+	"github.com/shardeum/shardeum-evm/shardeumd"
+	configconstants "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
+	shardeumdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
+	evmtestutil "github.com/shardeum/shardeum-evm/testutil"
+	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
+	cosmosevmtypes "github.com/shardeum/shardeum-evm/utils"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -27,14 +35,6 @@ import (
 	cmtclient "github.com/cometbft/cometbft/rpc/client"
 
 	dbm "github.com/cosmos/cosmos-db"
-	"github.com/shardeum/shardeum-evm/crypto/hd"
-	"github.com/shardeum/shardeum-evm/shardeumd"
-	shardeumdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
-	"github.com/shardeum/shardeum-evm/server/config"
-	testconfig "github.com/shardeum/shardeum-evm/testutil/config"
-	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
-	configconstants "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
-	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
@@ -51,7 +51,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/testutil"
+	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
 	simutils "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -73,32 +73,33 @@ type AppConstructor = func(val Validator) servertypes.Application
 // Config defines the necessary configuration used to bootstrap and start an
 // in-process local testing network.
 type Config struct {
-	KeyringOptions    []keyring.Option // keyring configuration options
-	Codec             codec.Codec
-	LegacyAmino       *codec.LegacyAmino // TODO: Remove!
-	InterfaceRegistry codectypes.InterfaceRegistry
-	TxConfig          client.TxConfig
-	AccountRetriever  client.AccountRetriever
-	AppConstructor    AppConstructor              // the ABCI application constructor
-	GenesisState      cosmosevmtypes.GenesisState // custom gensis state to provide
-	TimeoutCommit     time.Duration               // the consensus commitment timeout
-	AccountTokens     math.Int                    // the amount of unique validator tokens (e.g. 1000node0)
-	StakingTokens     math.Int                    // the amount of tokens each validator has available to stake
-	BondedTokens      math.Int                    // the amount of tokens each validator stakes
-	NumValidators     int                         // the total number of validators to create and bond
-	ChainID           string                      // the network chain-id
-	EVMChainID        uint64
-	BondDenom         string // the staking bond denomination
-	MinGasPrices      string // the minimum gas prices each validator will accept
-	PruningStrategy   string // the pruning strategy each validator will have
-	SigningAlgo       string // signing algorithm for keys
-	RPCAddress        string // RPC listen address (including port)
-	JSONRPCAddress    string // JSON-RPC listen address (including port)
-	APIAddress        string // REST API listen address (including port)
-	GRPCAddress       string // GRPC server listen address (including port)
-	EnableCMTLogging  bool   // enable CometBFT logging to STDOUT
-	CleanupDir        bool   // remove base temporary directory during cleanup
-	PrintMnemonic     bool   // print the mnemonic of first validator as log output for testing
+	KeyringOptions           []keyring.Option // keyring configuration options
+	Codec                    codec.Codec
+	LegacyAmino              *codec.LegacyAmino // TODO: Remove!
+	InterfaceRegistry        codectypes.InterfaceRegistry
+	TxConfig                 client.TxConfig
+	AccountRetriever         client.AccountRetriever
+	AppConstructor           AppConstructor           // the ABCI application constructor
+	GenesisState             evmtestutil.GenesisState // custom gensis state to provide
+	TimeoutCommit            time.Duration            // the consensus commitment timeout
+	AccountTokens            math.Int                 // the amount of unique validator tokens (e.g. 1000node0)
+	StakingTokens            math.Int                 // the amount of tokens each validator has available to stake
+	BondedTokens             math.Int                 // the amount of tokens each validator stakes (used if BondedTokensPerValidator is nil)
+	BondedTokensPerValidator []math.Int               // optional per-validator bonded tokens (overrides BondedTokens if set)
+	NumValidators            int                      // the total number of validators to create and bond
+	ChainID                  string                   // the network chain-id
+	EVMChainID               uint64
+	BondDenom                string // the staking bond denomination
+	MinGasPrices             string // the minimum gas prices each validator will accept
+	PruningStrategy          string // the pruning strategy each validator will have
+	SigningAlgo              string // signing algorithm for keys
+	RPCAddress               string // RPC listen address (including port)
+	JSONRPCAddress           string // JSON-RPC listen address (including port)
+	APIAddress               string // REST API listen address (including port)
+	GRPCAddress              string // GRPC server listen address (including port)
+	EnableCMTLogging         bool   // enable CometBFT logging to STDOUT
+	CleanupDir               bool   // remove base temporary directory during cleanup
+	PrintMnemonic            bool   // print the mnemonic of first validator as log output for testing
 }
 
 // DefaultConfig returns a sane default configuration suitable for nearly all
@@ -111,7 +112,7 @@ func DefaultConfig() Config {
 		panic(fmt.Sprintf("failed creating temporary directory: %v", err))
 	}
 	defer os.RemoveAll(dir)
-	tempApp := shardeumd.NewShardeumApp(log.NewNopLogger(), dbm.NewMemDB(), nil, true, simutils.NewAppOptionsWithFlagHome(dir), evmChainID, testconfig.EvmAppOptions, baseapp.SetChainID(chainID))
+	tempApp := shardeumd.NewShardeumApp(log.NewNopLogger(), dbm.NewMemDB(), nil, true, simutils.NewAppOptionsWithFlagHome(dir), evmChainID, baseapp.SetChainID(chainID))
 
 	cfg := Config{
 		Codec:             tempApp.AppCodec(),
@@ -145,7 +146,6 @@ func NewAppConstructor(chainID string, evmChainID uint64) AppConstructor {
 			val.Ctx.Logger, dbm.NewMemDB(), nil, true,
 			simutils.NewAppOptionsWithFlagHome(val.Ctx.Config.RootDir),
 			evmChainID,
-			testconfig.EvmAppOptions,
 			baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
 			baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
 			baseapp.SetChainID(chainID),
@@ -392,7 +392,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			return nil, err
 		}
 
-		addr, secret, err := testutil.GenerateSaveCoinKey(kb, nodeDirName, "", true, algo)
+		addr, secret, err := sdktestutil.GenerateSaveCoinKey(kb, nodeDirName, "", true, algo)
 		if err != nil {
 			return nil, err
 		}
@@ -429,10 +429,21 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			return nil, err
 		}
 
+		// determine validator bonded tokens
+		bondedTokens := cfg.BondedTokens
+		if len(cfg.BondedTokensPerValidator) > 0 {
+			if i < len(cfg.BondedTokensPerValidator) {
+				bondedTokens = cfg.BondedTokensPerValidator[i]
+			} else {
+				// use last value if not enough entries
+				bondedTokens = cfg.BondedTokensPerValidator[len(cfg.BondedTokensPerValidator)-1]
+			}
+		}
+
 		createValMsg, err := stakingtypes.NewMsgCreateValidator(
 			sdk.ValAddress(addr).String(),
 			valPubKeys[i],
-			sdk.NewCoin(cfg.BondDenom, cfg.BondedTokens),
+			sdk.NewCoin(cfg.BondDenom, bondedTokens),
 			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
 			stakingtypes.NewCommissionRates(commission, math.LegacyOneDec(), math.LegacyOneDec()),
 			math.OneInt(),

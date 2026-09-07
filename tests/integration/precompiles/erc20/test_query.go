@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/shardeum/shardeum-evm/precompiles/erc20"
 	"github.com/shardeum/shardeum-evm/testutil"
-	transferkeeper "github.com/shardeum/shardeum-evm/x/ibc/transfer/keeper"
 
+	transferkeeper "github.com/cosmos/ibc-go/v10/modules/apps/transfer/keeper"
 	"github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 
 	sdkmath "cosmossdk.io/math"

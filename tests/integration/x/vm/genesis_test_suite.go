@@ -34,8 +34,12 @@ func (s *GenesisTestSuite) SetupTest() {
 	if s.options == nil {
 		s.options = []network.ConfigOption{}
 	}
+
+	customGenesis := network.CustomGenesisState{}
+
 	opts := []network.ConfigOption{
 		network.WithPreFundedAccounts(s.keyring.GetAllAccAddrs()...),
+		network.WithCustomGenesis(customGenesis),
 	}
 	opts = append(opts, s.options...)
 	s.network = network.NewUnitTestNetwork(s.create, opts...)

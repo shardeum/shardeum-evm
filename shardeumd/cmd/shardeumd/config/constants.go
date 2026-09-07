@@ -36,7 +36,7 @@ func GetDefaultNetworkConfig() NetworkConfig {
 	if envNetwork := os.Getenv("SHARDEUM_NETWORK"); envNetwork != "" {
 		networkName = envNetwork
 	}
-	
+
 	config, err := GetNetworkConfig(networkName)
 	if err != nil {
 		// Fallback to local configuration if default fails

@@ -6,12 +6,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
 	cmn "github.com/shardeum/shardeum-evm/precompiles/common"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	storetypes "cosmossdk.io/store/types"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // PrecompileAddress of the ICS-20 EVM extension in hex format.
@@ -19,17 +20,31 @@ const PrecompileAddress = "0x0000000000000000000000000000000000000802"
 
 var _ vm.PrecompiledContract = &Precompile{}
 
-// Embed abi json file to the executable binary. Needed when importing as dependency.
-//
-//go:embed abi.json
-var f embed.FS
+var (
+	// Embed abi json file to the executable binary. Needed when importing as dependency.
+	//
+	//go:embed abi.json
+	f   embed.FS
+	ABI abi.ABI
+)
+
+func init() {
+	var err error
+	ABI, err = cmn.LoadABI(f, "abi.json")
+	if err != nil {
+		panic(err)
+	}
+}
 
 type Precompile struct {
 	cmn.Precompile
+
+	abi.ABI
 	bankKeeper     cmn.BankKeeper
 	stakingKeeper  cmn.StakingKeeper
 	transferKeeper cmn.TransferKeeper
 	channelKeeper  cmn.ChannelKeeper
+	erc20Keeper    cmn.ERC20Keeper
 }
 
 // NewPrecompile creates a new ICS-20 Precompile instance as a
@@ -39,31 +54,22 @@ func NewPrecompile(
 	stakingKeeper cmn.StakingKeeper,
 	transferKeeper cmn.TransferKeeper,
 	channelKeeper cmn.ChannelKeeper,
-) (*Precompile, error) {
-	newAbi, err := cmn.LoadABI(f, "abi.json")
-	if err != nil {
-		return nil, err
-	}
-
-	p := &Precompile{
+	erc20Keeper cmn.ERC20Keeper,
+) *Precompile {
+	return &Precompile{
 		Precompile: cmn.Precompile{
-			ABI:                  newAbi,
-			KvGasConfig:          storetypes.KVGasConfig(),
-			TransientKVGasConfig: storetypes.TransientGasConfig(),
+			KvGasConfig:           storetypes.KVGasConfig(),
+			TransientKVGasConfig:  storetypes.TransientGasConfig(),
+			ContractAddress:       common.HexToAddress(evmtypes.ICS20PrecompileAddress),
+			BalanceHandlerFactory: cmn.NewBalanceHandlerFactory(bankKeeper),
 		},
+		ABI:            ABI,
 		bankKeeper:     bankKeeper,
 		transferKeeper: transferKeeper,
 		channelKeeper:  channelKeeper,
 		stakingKeeper:  stakingKeeper,
+		erc20Keeper:    erc20Keeper,
 	}
-
-	// SetAddress defines the address of the ICS-20 compile contract.
-	p.SetAddress(common.HexToAddress(evmtypes.ICS20PrecompileAddress))
-
-	// Set the balance handler for the precompile.
-	p.SetBalanceHandler(bankKeeper)
-
-	return p, nil
 }
 
 // RequiredGas calculates the precompiled contract's base gas rate.
@@ -84,28 +90,19 @@ func (p Precompile) RequiredGas(input []byte) uint64 {
 	return p.Precompile.RequiredGas(input, p.IsTransaction(method))
 }
 
-// Run executes the precompiled contract IBC transfer methods defined in the ABI.
-func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
-	bz, err = p.run(evm, contract, readOnly)
-	if err != nil {
-		return cmn.ReturnRevertError(evm, err)
-	}
-
-	return bz, nil
+func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readonly bool) ([]byte, error) {
+	return p.RunNativeAction(evm, contract, func(ctx sdk.Context) ([]byte, error) {
+		return p.Execute(ctx, evm.StateDB, contract, readonly)
+	})
 }
 
-func (p Precompile) run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
-	ctx, stateDB, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
+func (p Precompile) Execute(ctx sdk.Context, stateDB vm.StateDB, contract *vm.Contract, readOnly bool) ([]byte, error) {
+	method, args, err := cmn.SetupABI(p.ABI, contract, readOnly, p.IsTransaction)
 	if err != nil {
 		return nil, err
 	}
 
-	// Start the balance change handler before executing the precompile.
-	p.GetBalanceHandler().BeforeBalanceChange(ctx)
-
-	// This handles any out of gas errors that may occur during the execution of a precompile tx or query.
-	// It avoids panics and returns the out of gas error so the EVM can continue gracefully.
-	defer cmn.HandleGasError(ctx, contract, initialGas, &err)()
+	var bz []byte
 
 	switch method.Name {
 	// ICS20 transactions
@@ -122,22 +119,7 @@ func (p Precompile) run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz [
 		return nil, fmt.Errorf(cmn.ErrUnknownMethod, method.Name)
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
-	cost := ctx.GasMeter().GasConsumed() - initialGas
-
-	if !contract.UseGas(cost, nil, tracing.GasChangeCallPrecompiledContract) {
-		return nil, vm.ErrOutOfGas
-	}
-
-	// Process the native balance changes after the method execution.
-	if err = p.GetBalanceHandler().AfterBalanceChange(ctx, stateDB); err != nil {
-		return nil, err
-	}
-
-	return bz, nil
+	return bz, err
 }
 
 // IsTransaction checks if the given method name corresponds to a transaction or query.

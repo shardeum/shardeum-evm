@@ -3,10 +3,9 @@ package staking
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/shardeumd/tests/integration"
 	"github.com/shardeum/shardeum-evm/tests/integration/precompiles/staking"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestStakingPrecompileTestSuite(t *testing.T) {

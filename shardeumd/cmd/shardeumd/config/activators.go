@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/ethereum/go-ethereum/core/vm"
-
 	"github.com/shardeum/shardeum-evm/shardeumd/eips"
 )
 

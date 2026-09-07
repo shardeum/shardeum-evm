@@ -4,8 +4,10 @@ import (
 	"fmt"
 
 	"github.com/shardeum/shardeum-evm/x/erc20/types"
-	transferkeeper "github.com/shardeum/shardeum-evm/x/ibc/transfer/keeper"
 
+	transferkeeper "github.com/cosmos/ibc-go/v10/modules/apps/transfer/keeper"
+
+	"cosmossdk.io/core/address"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 
@@ -19,6 +21,7 @@ type Keeper struct {
 	cdc      codec.BinaryCodec
 	// the address capable of executing a MsgUpdateParams message. Typically, this should be the x/gov module account.
 	authority sdk.AccAddress
+	addrCodec address.Codec
 
 	accountKeeper  types.AccountKeeper
 	bankKeeper     types.BankKeeper
@@ -52,6 +55,7 @@ func NewKeeper(
 		evmKeeper:      evmKeeper,
 		stakingKeeper:  sk,
 		transferKeeper: transferKeeper,
+		addrCodec:      ak.AddressCodec(),
 	}
 }
 

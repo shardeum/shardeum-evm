@@ -6,9 +6,9 @@ import (
 	erc20keeper "github.com/shardeum/shardeum-evm/x/erc20/keeper"
 	feemarketkeeper "github.com/shardeum/shardeum-evm/x/feemarket/keeper"
 	"github.com/shardeum/shardeum-evm/x/ibc/callbacks/keeper"
-	transferkeeper "github.com/shardeum/shardeum-evm/x/ibc/transfer/keeper"
 	evmkeeper "github.com/shardeum/shardeum-evm/x/vm/keeper"
 
+	transferkeeper "github.com/cosmos/ibc-go/v10/modules/apps/transfer/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 
 	storetypes "cosmossdk.io/store/types"

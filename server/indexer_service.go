@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	cosmosevmtypes "github.com/shardeum/shardeum-evm/types"
+	servertypes "github.com/shardeum/shardeum-evm/server/types"
 
 	"github.com/cometbft/cometbft/libs/service"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
@@ -22,13 +22,13 @@ const (
 type EVMIndexerService struct {
 	service.BaseService
 
-	txIdxr cosmosevmtypes.EVMTxIndexer
+	txIdxr servertypes.EVMTxIndexer
 	client rpcclient.Client
 }
 
 // NewEVMIndexerService returns a new service instance.
 func NewEVMIndexerService(
-	txIdxr cosmosevmtypes.EVMTxIndexer,
+	txIdxr servertypes.EVMTxIndexer,
 	client rpcclient.Client,
 ) *EVMIndexerService {
 	is := &EVMIndexerService{txIdxr: txIdxr, client: client}

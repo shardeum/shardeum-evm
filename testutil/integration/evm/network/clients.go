@@ -3,8 +3,6 @@ package network
 import (
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
-	precisebankkeeper "github.com/shardeum/shardeum-evm/x/precisebank/keeper"
-	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -91,10 +89,4 @@ func (n *IntegrationNetwork) GetMintClient() minttypes.QueryClient {
 	queryHelper := getQueryHelper(n.GetContext(), n.GetEncodingConfig())
 	minttypes.RegisterQueryServer(queryHelper, mintkeeper.NewQueryServerImpl(n.app.GetMintKeeper()))
 	return minttypes.NewQueryClient(queryHelper)
-}
-
-func (n *IntegrationNetwork) GetPreciseBankClient() precisebanktypes.QueryClient {
-	queryHelper := getQueryHelper(n.GetContext(), n.GetEncodingConfig())
-	precisebanktypes.RegisterQueryServer(queryHelper, precisebankkeeper.NewQueryServerImpl(*n.app.GetPreciseBankKeeper()))
-	return precisebanktypes.NewQueryClient(queryHelper)
 }

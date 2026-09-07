@@ -15,7 +15,7 @@ import (
 	"github.com/shardeum/shardeum-evm/rpc/namespaces/ethereum/txpool"
 	"github.com/shardeum/shardeum-evm/rpc/namespaces/ethereum/web3"
 	"github.com/shardeum/shardeum-evm/rpc/stream"
-	"github.com/shardeum/shardeum-evm/types"
+	servertypes "github.com/shardeum/shardeum-evm/server/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -46,7 +46,7 @@ type APICreator = func(
 	clientCtx client.Context,
 	stream *stream.RPCStream,
 	allowUnprotectedTxs bool,
-	indexer types.EVMTxIndexer,
+	indexer servertypes.EVMTxIndexer,
 	mempool *evmmempool.ExperimentalEVMMempool,
 ) []rpc.API
 
@@ -59,7 +59,7 @@ func init() {
 			clientCtx client.Context,
 			stream *stream.RPCStream,
 			allowUnprotectedTxs bool,
-			indexer types.EVMTxIndexer,
+			indexer servertypes.EVMTxIndexer,
 			mempool *evmmempool.ExperimentalEVMMempool,
 		) []rpc.API {
 			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer, mempool)
@@ -78,7 +78,7 @@ func init() {
 				},
 			}
 		},
-		Web3Namespace: func(*server.Context, client.Context, *stream.RPCStream, bool, types.EVMTxIndexer, *evmmempool.ExperimentalEVMMempool) []rpc.API {
+		Web3Namespace: func(*server.Context, client.Context, *stream.RPCStream, bool, servertypes.EVMTxIndexer, *evmmempool.ExperimentalEVMMempool) []rpc.API {
 			return []rpc.API{
 				{
 					Namespace: Web3Namespace,
@@ -88,7 +88,7 @@ func init() {
 				},
 			}
 		},
-		NetNamespace: func(ctx *server.Context, clientCtx client.Context, _ *stream.RPCStream, _ bool, _ types.EVMTxIndexer, _ *evmmempool.ExperimentalEVMMempool) []rpc.API {
+		NetNamespace: func(ctx *server.Context, clientCtx client.Context, _ *stream.RPCStream, _ bool, _ servertypes.EVMTxIndexer, _ *evmmempool.ExperimentalEVMMempool) []rpc.API {
 			return []rpc.API{
 				{
 					Namespace: NetNamespace,
@@ -102,7 +102,7 @@ func init() {
 			clientCtx client.Context,
 			_ *stream.RPCStream,
 			allowUnprotectedTxs bool,
-			indexer types.EVMTxIndexer,
+			indexer servertypes.EVMTxIndexer,
 			mempool *evmmempool.ExperimentalEVMMempool,
 		) []rpc.API {
 			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer, mempool)
@@ -119,7 +119,7 @@ func init() {
 			clientCtx client.Context,
 			_ *stream.RPCStream,
 			allowUnprotectedTxs bool,
-			indexer types.EVMTxIndexer,
+			indexer servertypes.EVMTxIndexer,
 			mempool *evmmempool.ExperimentalEVMMempool,
 		) []rpc.API {
 			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer, mempool)
@@ -136,7 +136,7 @@ func init() {
 			clientCtx client.Context,
 			_ *stream.RPCStream,
 			allowUnprotectedTxs bool,
-			indexer types.EVMTxIndexer,
+			indexer servertypes.EVMTxIndexer,
 			mempool *evmmempool.ExperimentalEVMMempool,
 		) []rpc.API {
 			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer, mempool)
@@ -153,7 +153,7 @@ func init() {
 			clientCtx client.Context,
 			_ *stream.RPCStream,
 			allowUnprotectedTxs bool,
-			indexer types.EVMTxIndexer,
+			indexer servertypes.EVMTxIndexer,
 			mempool *evmmempool.ExperimentalEVMMempool,
 		) []rpc.API {
 			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer, mempool)
@@ -174,7 +174,7 @@ func GetRPCAPIs(ctx *server.Context,
 	clientCtx client.Context,
 	stream *stream.RPCStream,
 	allowUnprotectedTxs bool,
-	indexer types.EVMTxIndexer,
+	indexer servertypes.EVMTxIndexer,
 	selectedAPIs []string,
 	mempool *evmmempool.ExperimentalEVMMempool,
 ) []rpc.API {

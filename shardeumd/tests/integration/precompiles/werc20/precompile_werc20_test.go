@@ -3,10 +3,9 @@ package werc20
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/shardeumd/tests/integration"
 	"github.com/shardeum/shardeum-evm/tests/integration/precompiles/werc20"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestWERC20PrecompileUnitTestSuite(t *testing.T) {

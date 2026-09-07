@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/shardeum/shardeum-evm/server/config"
 	"github.com/shardeum/shardeum-evm/tests/integration/x/vm"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	"github.com/shardeum/shardeum-evm/testutil/keyring"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -42,13 +41,14 @@ func BenchmarkGasEstimation(b *testing.B) {
 
 	configurator := types.NewEVMConfigurator()
 	configurator.ResetTestConfig()
-	err := configurator.
-		WithChainConfig(chainConfig).
+	err := types.SetChainConfig(chainConfig)
+	require.NoError(b, err)
+	err = configurator.
 		WithEVMCoinInfo(types.EvmCoinInfo{
 			Denom:         denom,
 			ExtendedDenom: extendedDenom,
 			DisplayDenom:  displayDenom,
-			Decimals:      decimals,
+			Decimals:      decimals.Uint32(),
 		}).
 		Configure()
 	require.NoError(b, err)

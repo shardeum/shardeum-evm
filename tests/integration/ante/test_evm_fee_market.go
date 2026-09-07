@@ -5,11 +5,11 @@ import (
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/shardeum/shardeum-evm/ante/evm"
+	"github.com/shardeum/shardeum-evm/ante/types"
 	"github.com/shardeum/shardeum-evm/server/config"
 	"github.com/shardeum/shardeum-evm/testutil"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
-	"github.com/shardeum/shardeum-evm/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	sdkmath "cosmossdk.io/math"
@@ -22,7 +22,9 @@ func (s *EvmAnteTestSuite) TestGasWantedDecorator() {
 	s.WithFeemarketEnabled(true)
 	s.SetupTest()
 	ctx := s.GetNetwork().GetContext()
-	dec := evm.NewGasWantedDecorator(s.GetNetwork().App.GetEVMKeeper(), s.GetNetwork().App.GetFeeMarketKeeper())
+	feeMarketKeeper := s.GetNetwork().App.GetFeeMarketKeeper()
+	params := feeMarketKeeper.GetParams(ctx)
+	dec := evm.NewGasWantedDecorator(s.GetNetwork().App.GetEVMKeeper(), feeMarketKeeper, &params)
 	from, fromPrivKey := utiltx.NewAddrKey()
 	to := utiltx.GenerateAddress()
 	denom := evmtypes.GetEVMCoinDenom()

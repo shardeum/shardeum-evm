@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -13,8 +14,10 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
+	"github.com/shardeum/shardeum-evm/mempool/txpool"
 	rpctypes "github.com/shardeum/shardeum-evm/rpc/types"
-	"github.com/shardeum/shardeum-evm/types"
+	servertypes "github.com/shardeum/shardeum-evm/server/types"
+	"github.com/shardeum/shardeum-evm/utils"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	cmtrpcclient "github.com/cometbft/cometbft/rpc/client"
@@ -78,16 +81,18 @@ func (b *Backend) GetTransactionByHash(txHash common.Hash) (*rpctypes.RPCTransac
 		b.Logger.Error("failed to fetch Base Fee from prunned block. Check node prunning configuration", "height", blockRes.Height, "error", err)
 	}
 
-	height := uint64(res.Height)    //#nosec G115 -- checked for int overflow already
-	index := uint64(res.EthTxIndex) //#nosec G115 -- checked for int overflow already
+	height := uint64(res.Height)                       //#nosec G115 -- checked for int overflow already
+	blockTime := uint64(block.Block.Time.UTC().Unix()) //#nosec G115 -- checked for int overflow already
+	index := uint64(res.EthTxIndex)                    //#nosec G115 -- checked for int overflow already
 	return rpctypes.NewTransactionFromMsg(
 		msg,
 		common.BytesToHash(block.BlockID.Hash.Bytes()),
 		height,
+		blockTime,
 		index,
 		baseFee,
-		b.EvmChainID,
-	)
+		b.ChainConfig(),
+	), nil
 }
 
 // GetTransactionByHashPending find pending tx from mempool
@@ -109,18 +114,15 @@ func (b *Backend) GetTransactionByHashPending(txHash common.Hash) (*rpctypes.RPC
 
 		if msg.Hash() == txHash {
 			// use zero block values since it's not included in a block yet
-			rpctx, err := rpctypes.NewTransactionFromMsg(
+			return rpctypes.NewTransactionFromMsg(
 				msg,
 				common.Hash{},
 				uint64(0),
 				uint64(0),
+				uint64(0),
 				nil,
-				b.EvmChainID,
-			)
-			if err != nil {
-				return nil, err
-			}
-			return rpctx, nil
+				b.ChainConfig(),
+			), nil
 		}
 	}
 
@@ -129,13 +131,7 @@ func (b *Backend) GetTransactionByHashPending(txHash common.Hash) (*rpctypes.RPC
 }
 
 // GetGasUsed returns gasUsed from transaction
-func (b *Backend) GetGasUsed(res *types.TxResult, price *big.Int, gas uint64) uint64 {
-	// patch gasUsed if tx is reverted and happened before height on which fixed was introduced
-	// to return real gas charged
-	// more info at https://github.com/evmos/ethermint/pull/1557
-	if res.Failed && res.Height < b.Cfg.JSONRPC.FixRevertGasRefundHeight {
-		return new(big.Int).Mul(price, new(big.Int).SetUint64(gas)).Uint64()
-	}
+func (b *Backend) GetGasUsed(res *servertypes.TxResult, price *big.Int, gas uint64) uint64 {
 	return res.GasUsed
 }
 
@@ -148,13 +144,20 @@ func (b *Backend) GetTransactionReceipt(hash common.Hash) (map[string]interface{
 	maxRetries := 10
 	baseDelay := 50 * time.Millisecond
 
-	var res *types.TxResult
+	var res *servertypes.TxResult
 	var err error
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		res, err = b.GetTxByEthHash(hash)
 		if err == nil {
 			break // Found the transaction
+		}
+
+		if attempt == maxRetries/2 && b.Mempool != nil {
+			status := b.Mempool.GetTxPool().Status(hash)
+			if status == txpool.TxStatusUnknown {
+				break
+			}
 		}
 
 		if attempt < maxRetries {
@@ -189,8 +192,24 @@ func (b *Backend) GetTransactionReceipt(hash common.Hash) (map[string]interface{
 	}
 
 	ethMsg := tx.GetMsgs()[res.MsgIndex].(*evmtypes.MsgEthereumTx)
-	blockHeaderHash := common.BytesToHash(resBlock.Block.Header.Hash()).Hex()
-	return b.formatTxReceipt(ethMsg, res, blockRes, blockHeaderHash)
+	receipts, err := b.ReceiptsFromCometBlock(resBlock, blockRes, []*evmtypes.MsgEthereumTx{ethMsg})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get receipts from comet block")
+	}
+
+	var signer ethtypes.Signer
+	ethTx := ethMsg.AsTransaction()
+	if ethTx.Protected() {
+		signer = ethtypes.LatestSignerForChainID(ethTx.ChainId())
+	} else {
+		signer = ethtypes.FrontierSigner{}
+	}
+	from, err := ethMsg.GetSenderLegacy(signer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get sender: %w", err)
+	}
+
+	return rpctypes.RPCMarshalReceipt(receipts[0], ethTx, from)
 }
 
 // GetTransactionLogs returns the transaction logs identified by hash.
@@ -213,7 +232,7 @@ func (b *Backend) GetTransactionLogs(hash common.Hash) ([]*ethtypes.Log, error) 
 		b.Logger.Debug("block result not found", "number", res.Height, "error", err.Error())
 		return nil, nil
 	}
-	height, err := types.SafeUint64(resBlockResult.Height)
+	height, err := utils.SafeUint64(resBlockResult.Height)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +293,7 @@ func (b *Backend) GetTransactionByBlockNumberAndIndex(blockNum rpctypes.BlockNum
 // GetTxByEthHash uses `/tx_query` to find transaction by ethereum tx hash
 // TODO: Don't need to convert once hashing is fixed on CometBFT
 // https://github.com/cometbft/cometbft/issues/6539
-func (b *Backend) GetTxByEthHash(hash common.Hash) (*types.TxResult, error) {
+func (b *Backend) GetTxByEthHash(hash common.Hash) (*servertypes.TxResult, error) {
 	if b.Indexer != nil {
 		return b.Indexer.GetByTxHash(hash)
 	}
@@ -291,7 +310,7 @@ func (b *Backend) GetTxByEthHash(hash common.Hash) (*types.TxResult, error) {
 }
 
 // GetTxByTxIndex uses `/tx_query` to find transaction by tx index of valid ethereum txs
-func (b *Backend) GetTxByTxIndex(height int64, index uint) (*types.TxResult, error) {
+func (b *Backend) GetTxByTxIndex(height int64, index uint) (*servertypes.TxResult, error) {
 	int32Index := int32(index) //#nosec G115 -- checked for int overflow already
 	if b.Indexer != nil {
 		return b.Indexer.GetByBlockAndIndex(height, int32Index)
@@ -312,7 +331,7 @@ func (b *Backend) GetTxByTxIndex(height int64, index uint) (*types.TxResult, err
 }
 
 // QueryCometTxIndexer query tx in CometBFT tx indexer
-func (b *Backend) QueryCometTxIndexer(query string, txGetter func(*rpctypes.ParsedTxs) *rpctypes.ParsedTx) (*types.TxResult, error) {
+func (b *Backend) QueryCometTxIndexer(query string, txGetter func(*rpctypes.ParsedTxs) *rpctypes.ParsedTx) (*servertypes.TxResult, error) {
 	resTxs, err := b.ClientCtx.Client.TxSearch(b.Ctx, query, false, nil, nil, "")
 	if err != nil {
 		return nil, err
@@ -378,22 +397,28 @@ func (b *Backend) GetTransactionByBlockAndIndex(block *cmtrpctypes.ResultBlock, 
 		b.Logger.Error("failed to fetch Base Fee from prunned block. Check node prunning configuration", "height", block.Block.Height, "error", err)
 	}
 
-	height := uint64(block.Block.Height) // #nosec G115 -- checked for int overflow already
-	index := uint64(idx)                 // #nosec G115 -- checked for int overflow already
+	height := uint64(block.Block.Height)               // #nosec G115 -- checked for int overflow already
+	blockTime := uint64(block.Block.Time.UTC().Unix()) // #nosec G115 -- checked for int overflow already
+	index := uint64(idx)                               // #nosec G115 -- checked for int overflow already
 	return rpctypes.NewTransactionFromMsg(
 		msg,
-		common.BytesToHash(block.Block.Hash()),
+		common.BytesToHash(block.BlockID.Hash),
 		height,
+		blockTime,
 		index,
 		baseFee,
-		b.EvmChainID,
-	)
+		b.ChainConfig(),
+	), nil
 }
 
 // CreateAccessList returns the list of addresses and storage keys used by the transaction (except for the
 // sender account and precompiles), plus the estimated gas if the access list were added to the transaction.
-func (b *Backend) CreateAccessList(args evmtypes.TransactionArgs, blockNrOrHash rpctypes.BlockNumberOrHash) (*rpctypes.AccessListResult, error) {
-	accessList, gasUsed, vmErr, err := b.createAccessList(args, blockNrOrHash)
+func (b *Backend) CreateAccessList(
+	args evmtypes.TransactionArgs,
+	blockNrOrHash rpctypes.BlockNumberOrHash,
+	overrides *json.RawMessage,
+) (*rpctypes.AccessListResult, error) {
+	accessList, gasUsed, vmErr, err := b.createAccessList(args, blockNrOrHash, overrides)
 	if err != nil {
 		return nil, err
 	}
@@ -414,7 +439,11 @@ func (b *Backend) CreateAccessList(args evmtypes.TransactionArgs, blockNrOrHash 
 // If the access list has converged, the access list is returned.
 // If the access list has not converged, an error is returned.
 // If the transaction itself fails, an vmErr is returned.
-func (b *Backend) createAccessList(args evmtypes.TransactionArgs, blockNrOrHash rpctypes.BlockNumberOrHash) (ethtypes.AccessList, uint64, error, error) {
+func (b *Backend) createAccessList(
+	args evmtypes.TransactionArgs,
+	blockNrOrHash rpctypes.BlockNumberOrHash,
+	overrides *json.RawMessage,
+) (ethtypes.AccessList, uint64, error, error) {
 	args, err := b.SetTxDefaults(args)
 	if err != nil {
 		b.Logger.Error("failed to set tx defaults", "error", err)
@@ -443,7 +472,7 @@ func (b *Backend) createAccessList(args evmtypes.TransactionArgs, blockNrOrHash 
 	for {
 		accessList := prevTracer.AccessList()
 		traceArgs.AccessList = &accessList
-		res, err := b.DoCall(*traceArgs, blockNum)
+		res, err := b.DoCall(*traceArgs, blockNum, overrides)
 		if err != nil {
 			b.Logger.Error("failed to apply transaction", "error", err)
 			return nil, 0, nil, fmt.Errorf("failed to apply transaction: %v err: %v", traceArgs.ToTransaction(ethtypes.LegacyTxType).Hash(), err)

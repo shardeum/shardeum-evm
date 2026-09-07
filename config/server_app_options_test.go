@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,12 +47,19 @@ func TestGetBlockGasLimit(t *testing.T) {
 		expectPanic bool
 	}{
 		{
-			name: "empty home directory panics",
+			name: "nil app options returns max uint64",
+			setupFn: func() servertypes.AppOptions {
+				return nil
+			},
+			expected: math.MaxUint64,
+		},
+		{
+			name: "empty home directory returns max uint64",
 			setupFn: func() servertypes.AppOptions {
 				opts := newMockAppOptions()
 				return opts
 			},
-			expectPanic: true,
+			expected: math.MaxUint64,
 		},
 		{
 			name: "genesis file not found panics",

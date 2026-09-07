@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"github.com/shardeum/shardeum-evm/config"
 	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	precisebanktypes "github.com/shardeum/shardeum-evm/x/precisebank/types"
@@ -95,6 +96,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 		suite.fmKeeper,
 		suite.consensusKeeper,
 		suite.erc20Keeper,
+		config.EighteenDecimalsChainID,
 		"",
 	)
 }

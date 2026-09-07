@@ -2,7 +2,7 @@ package codec
 
 import (
 	cryptocodec "github.com/shardeum/shardeum-evm/crypto/codec"
-	"github.com/shardeum/shardeum-evm/types"
+	"github.com/shardeum/shardeum-evm/ethereum/eip712"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -21,5 +21,5 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 func RegisterInterfaces(interfaceRegistry codectypes.InterfaceRegistry) {
 	std.RegisterInterfaces(interfaceRegistry)
 	cryptocodec.RegisterInterfaces(interfaceRegistry)
-	types.RegisterInterfaces(interfaceRegistry)
+	eip712.RegisterInterfaces(interfaceRegistry)
 }

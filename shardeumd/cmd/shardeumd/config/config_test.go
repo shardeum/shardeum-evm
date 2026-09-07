@@ -30,34 +30,34 @@ func (suite *ConfigTestSuite) SetupTest() {
 	suite.Require().NoError(err)
 	suite.tempDir = tempDir
 	suite.configDir = filepath.Join(tempDir, "configs")
-	err = os.MkdirAll(suite.configDir, 0755)
+	err = os.MkdirAll(suite.configDir, 0o755)
 	suite.Require().NoError(err)
 
 	// Create standard network config files
 	suite.createStandardConfigs()
 
-    // Save original working directory and change to temp dir
-    suite.originalWd, _ = os.Getwd()
-    os.Chdir(tempDir)
+	// Save original working directory and change to temp dir
+	suite.originalWd, _ = os.Getwd()
+	os.Chdir(tempDir)
 
 	// Save original environment variables
 	suite.originalEnv = make(map[string]string)
-    envVars := []string{
+	envVars := []string{
 		"SHARDEUM_NETWORK",
 		"SHARDEUM_CHAIN_ID",
 		"SHARDEUM_EVM_CHAIN_ID",
 		"SHARDEUM_BASE_DENOM",
 		"SHARDEUM_DISPLAY_DENOM",
-        "SHARDEUM_CONFIG_DIR",
+		"SHARDEUM_CONFIG_DIR",
 	}
 
 	for _, envVar := range envVars {
 		suite.originalEnv[envVar] = os.Getenv(envVar)
 		os.Unsetenv(envVar)
-    }
+	}
 
-    // Point the binary to our temporary configs directory
-    os.Setenv("SHARDEUM_CONFIG_DIR", suite.configDir)
+	// Point the binary to our temporary configs directory
+	os.Setenv("SHARDEUM_CONFIG_DIR", suite.configDir)
 }
 
 func (suite *ConfigTestSuite) TearDownTest() {
@@ -116,45 +116,45 @@ func (suite *ConfigTestSuite) createStandardConfigs() {
 				GRPC:      "9090",
 			},
 		},
-        "devnet": {
-            Name:         "devnet",
-            ChainID:      "shardeum-devnet",
-            EVMChainID:   8119,
-            BaseDenom:    "ashm",
-            DisplayDenom: "shm",
-            Decimals:     evmtypes.EighteenDecimals,
-            Bech32Prefix: "shardeum",
-            Ports: NetworkPorts{
-                RPC:       "26657",
-                REST:      "1317",
-                JSONRPC:   "8545",
-                WebSocket: "8546",
-                GRPC:      "9090",
-            },
-        },
-        "mainnet": {
-            Name:         "mainnet",
-            ChainID:      "shardeum-mainnet",
-            EVMChainID:   8119,
-            BaseDenom:    "ashm",
-            DisplayDenom: "shm",
-            Decimals:     evmtypes.EighteenDecimals,
-            Bech32Prefix: "shardeum",
-            Ports: NetworkPorts{
-                RPC:       "26657",
-                REST:      "1317",
-                JSONRPC:   "8545",
-                WebSocket: "8546",
-                GRPC:      "9090",
-            },
-        },
+		"devnet": {
+			Name:         "devnet",
+			ChainID:      "shardeum-devnet",
+			EVMChainID:   8119,
+			BaseDenom:    "ashm",
+			DisplayDenom: "shm",
+			Decimals:     evmtypes.EighteenDecimals,
+			Bech32Prefix: "shardeum",
+			Ports: NetworkPorts{
+				RPC:       "26657",
+				REST:      "1317",
+				JSONRPC:   "8545",
+				WebSocket: "8546",
+				GRPC:      "9090",
+			},
+		},
+		"mainnet": {
+			Name:         "mainnet",
+			ChainID:      "shardeum-mainnet",
+			EVMChainID:   8119,
+			BaseDenom:    "ashm",
+			DisplayDenom: "shm",
+			Decimals:     evmtypes.EighteenDecimals,
+			Bech32Prefix: "shardeum",
+			Ports: NetworkPorts{
+				RPC:       "26657",
+				REST:      "1317",
+				JSONRPC:   "8545",
+				WebSocket: "8546",
+				GRPC:      "9090",
+			},
+		},
 	}
 
 	for name, config := range networks {
 		configPath := filepath.Join(suite.configDir, name+".json")
 		data, err := json.MarshalIndent(config, "", "  ")
 		suite.Require().NoError(err)
-		err = os.WriteFile(configPath, data, 0644)
+		err = os.WriteFile(configPath, data, 0o644)
 		suite.Require().NoError(err)
 	}
 }
@@ -219,7 +219,7 @@ func (suite *ConfigTestSuite) TestGetEVMChainID() {
 
 func (suite *ConfigTestSuite) TestSetBech32Prefixes() {
 	config := sdk.NewConfig()
-	
+
 	// Test setting Bech32 prefixes
 	SetBech32Prefixes(config)
 
@@ -247,11 +247,11 @@ func (suite *ConfigTestSuite) TestInitializeChainsCoinInfo() {
 	// Verify that builtin networks would be in ChainsCoinInfo if config files exist
 	// Note: This test might not find all networks since we're not in the actual project directory
 	// with config files, but we can test that the test chain IDs are present
-	
+
 	// Verify test chain IDs are also present
 	_, exists := ChainsCoinInfo[EighteenDecimalsChainID]
 	suite.Require().True(exists, "ChainsCoinInfo should contain EighteenDecimalsChainID")
-	
+
 	_, exists = ChainsCoinInfo[SixDecimalsChainID]
 	suite.Require().True(exists, "ChainsCoinInfo should contain SixDecimalsChainID")
 }
@@ -273,7 +273,7 @@ func (suite *ConfigTestSuite) TestChainsCoinInfoDynamicValues() {
 	// Verify that the dynamic functions reflect the environment changes
 	suite.Require().Equal("newdenom", ShardeumChainDenom())
 	suite.Require().Equal("new", ShardeumDisplayDenom())
-	
+
 	// Verify that the test chain IDs use the dynamic values
 	coinInfo := ChainsCoinInfo[EighteenDecimalsChainID]
 	suite.Require().Equal("newdenom", coinInfo.Denom)
@@ -287,7 +287,7 @@ func (suite *ConfigTestSuite) TestNetworkSwitching() {
 	config := GetDefaultNetworkConfig()
 	suite.Require().Equal("testnet", config.Name)
 	suite.Require().Equal("shardeum-testnet", config.ChainID)
-	
+
 	// Test switching to local network
 	os.Setenv("SHARDEUM_NETWORK", "local")
 	config = GetDefaultNetworkConfig()
@@ -299,7 +299,7 @@ func (suite *ConfigTestSuite) TestNetworkSwitching() {
 func (suite *ConfigTestSuite) TestGetDefaultNetworkConfig_InvalidNetwork() {
 	// Test that unset environment variable uses default (local)
 	os.Unsetenv("SHARDEUM_NETWORK")
-	
+
 	// Should use local network as default
 	config := GetDefaultNetworkConfig()
 	suite.Require().Equal("local", config.Name)

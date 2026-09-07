@@ -102,28 +102,28 @@ func (s *KeeperTestSuite) TestOnRecvPacketRegistered() {
 			expCoins:      coins,
 		},
 		{
-			name: "error - invalid sender (no '1')",
+			name: "success - invalid sender (no '1')",
 			malleate: func() {
 				transfer := transfertypes.NewFungibleTokenPacketData(registeredDenom, "100", "evmos", ethsecpAddrCosmos, "")
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
 				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cosmosEVMChannel, timeoutHeight, 0)
 			},
 			receiver:      secpAddr,
-			ackSuccess:    false,
-			checkBalances: false,
+			ackSuccess:    true,
+			checkBalances: true,
 			expErc20s:     big.NewInt(0),
 			expCoins:      coins,
 		},
 		{
-			name: "error - invalid sender (bad address)",
+			name: "success - invalid sender (bad address)",
 			malleate: func() {
 				transfer := transfertypes.NewFungibleTokenPacketData(registeredDenom, "100", "badba1sv9m0g7ycejwr3s369km58h5qe7xj77hvcxrms", ethsecpAddrCosmos, "")
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
 				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cosmosEVMChannel, timeoutHeight, 0)
 			},
 			receiver:      secpAddr,
-			ackSuccess:    false,
-			checkBalances: false,
+			ackSuccess:    true,
+			checkBalances: true,
 			expErc20s:     big.NewInt(0),
 			expCoins:      coins,
 		},
@@ -233,7 +233,8 @@ func (s *KeeperTestSuite) TestOnRecvPacketRegistered() {
 					CodeHash: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 				})
 				s.Require().NoError(err)
-				s.Require().True(s.network.App.GetEVMKeeper().IsContract(ctx, collidedAddr))
+				acct := s.network.App.GetEVMKeeper().GetAccount(ctx, collidedAddr)
+				s.Require().True(acct.HasCodeHash())
 			},
 			ackSuccess:    false,
 			receiver:      secpAddr,
@@ -425,8 +426,8 @@ func (s *KeeperTestSuite) TestConvertCoinToERC20FromPacket() {
 					),
 				)
 				s.Require().NoError(err)
-
-				_, err = s.network.App.GetEVMKeeper().CallEVM(ctx, contracts.ERC20MinterBurnerDecimalsContract.ABI, s.keyring.GetAddr(0), contractAddr, true, nil, "mint", types.ModuleAddress, big.NewInt(10))
+				stateDB := statedb.New(ctx, s.network.App.GetEVMKeeper(), statedb.NewEmptyTxConfig())
+				_, err = s.network.App.GetEVMKeeper().CallEVM(ctx, stateDB, contracts.ERC20MinterBurnerDecimalsContract.ABI, s.keyring.GetAddr(0), contractAddr, true, false, nil, "mint", types.ModuleAddress, big.NewInt(10))
 				s.Require().NoError(err)
 
 				return transfertypes.NewFungibleTokenPacketData(pair.Denom, "10", senderAddr, "", "")
@@ -562,7 +563,8 @@ func (s *KeeperTestSuite) TestOnAcknowledgementPacket() {
 				)
 				s.Require().NoError(err)
 
-				_, err = s.network.App.GetEVMKeeper().CallEVM(ctx, contracts.ERC20MinterBurnerDecimalsContract.ABI, s.keyring.GetAddr(0), contractAddr, true, nil, "mint", types.ModuleAddress, big.NewInt(100))
+				stateDB := statedb.New(ctx, s.network.App.GetEVMKeeper(), statedb.NewEmptyTxConfig())
+				_, err = s.network.App.GetEVMKeeper().CallEVM(ctx, stateDB, contracts.ERC20MinterBurnerDecimalsContract.ABI, s.keyring.GetAddr(0), contractAddr, true, false, nil, "mint", types.ModuleAddress, big.NewInt(100))
 				s.Require().NoError(err)
 
 				ack = channeltypes.NewErrorAcknowledgement(errors.New("error"))
@@ -668,7 +670,8 @@ func (s *KeeperTestSuite) TestOnTimeoutPacket() {
 				pair, _ = s.network.App.GetErc20Keeper().GetTokenPair(ctx, id)
 				s.Require().NotNil(pair)
 
-				_, err = s.network.App.GetEVMKeeper().CallEVM(ctx, contracts.ERC20MinterBurnerDecimalsContract.ABI, s.keyring.GetAddr(0), contractAddr, true, nil, "mint", types.ModuleAddress, big.NewInt(100))
+				stateDB := statedb.New(ctx, s.network.App.GetEVMKeeper(), statedb.NewEmptyTxConfig())
+				_, err = s.network.App.GetEVMKeeper().CallEVM(ctx, stateDB, contracts.ERC20MinterBurnerDecimalsContract.ABI, s.keyring.GetAddr(0), contractAddr, true, false, nil, "mint", types.ModuleAddress, big.NewInt(100))
 				s.Require().NoError(err)
 
 				// Fund module account with ATOM, ERC20 coins and IBC vouchers

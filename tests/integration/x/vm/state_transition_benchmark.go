@@ -10,6 +10,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 	"github.com/stretchr/testify/require"
 
@@ -286,8 +287,10 @@ func BenchmarkApplyMessage(b *testing.B) {
 		)
 		require.NoError(b, err)
 
+		stateDB := statedb.New(suite.Network.GetContext(), suite.Network.App.GetEVMKeeper(), statedb.NewEmptyTxConfig())
+
 		b.StartTimer()
-		resp, err := suite.Network.App.GetEVMKeeper().ApplyMessage(suite.Network.GetContext(), *m, nil, true, false)
+		resp, err := suite.Network.App.GetEVMKeeper().ApplyMessage(suite.Network.GetContext(), stateDB, *m, nil, true, false, false)
 		b.StopTimer()
 
 		require.NoError(b, err)
@@ -320,8 +323,10 @@ func BenchmarkApplyMessageWithLegacyTx(b *testing.B) {
 		)
 		require.NoError(b, err)
 
+		stateDB := statedb.New(suite.Network.GetContext(), suite.Network.App.GetEVMKeeper(), statedb.NewEmptyTxConfig())
+
 		b.StartTimer()
-		resp, err := suite.Network.App.GetEVMKeeper().ApplyMessage(suite.Network.GetContext(), *m, nil, true, false)
+		resp, err := suite.Network.App.GetEVMKeeper().ApplyMessage(suite.Network.GetContext(), stateDB, *m, nil, true, false, false)
 		b.StopTimer()
 
 		require.NoError(b, err)
@@ -354,8 +359,10 @@ func BenchmarkApplyMessageWithDynamicFeeTx(b *testing.B) {
 		)
 		require.NoError(b, err)
 
+		stateDB := statedb.New(suite.Network.GetContext(), suite.Network.App.GetEVMKeeper(), statedb.NewEmptyTxConfig())
+
 		b.StartTimer()
-		resp, err := suite.Network.App.GetEVMKeeper().ApplyMessage(suite.Network.GetContext(), *m, nil, true, false)
+		resp, err := suite.Network.App.GetEVMKeeper().ApplyMessage(suite.Network.GetContext(), stateDB, *m, nil, true, false, false)
 		b.StopTimer()
 
 		require.NoError(b, err)

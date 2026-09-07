@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/shardeum/shardeum-evm/crypto/hd"
 	"github.com/shardeum/shardeum-evm/rpc/backend"
-	"github.com/shardeum/shardeum-evm/types"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
 	"cosmossdk.io/log"
@@ -25,7 +24,7 @@ import (
 type PrivateAccountAPI struct {
 	backend    backend.EVMBackend
 	logger     log.Logger
-	hdPathIter types.HDPathIterator
+	hdPathIter hd.PathIterator
 }
 
 // NewAPI creates an instance of the public Personal Eth API.
@@ -36,7 +35,7 @@ func NewAPI(
 	cfg := sdk.GetConfig()
 	basePath := cfg.GetFullBIP44Path()
 
-	iterator, err := types.NewHDPathIterator(basePath, true)
+	iterator, err := hd.NewHDPathIterator(basePath, true)
 	if err != nil {
 		panic(err)
 	}

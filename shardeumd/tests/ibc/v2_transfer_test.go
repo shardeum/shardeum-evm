@@ -17,11 +17,11 @@ import (
 	"testing"
 	"time"
 
-	testifysuite "github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/shardeumd"
 	"github.com/shardeum/shardeum-evm/shardeumd/tests/integration"
 	evmibctesting "github.com/shardeum/shardeum-evm/testutil/ibc"
+	testifysuite "github.com/stretchr/testify/suite"
+
 	"github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
@@ -150,7 +150,7 @@ func (suite *TransferTestSuiteV2) TestOnSendPacket() {
 		suite.Run(tc.name, func() {
 			suite.SetupTest() // reset
 
-			evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 			originalBalance := evmApp.BankKeeper.GetBalance(
 				suite.evmChainA.GetContext(),
 				suite.evmChainA.SenderAccount.GetAddress(),
@@ -312,7 +312,7 @@ func (suite *TransferTestSuiteV2) TestOnRecvPacket() {
 			)
 
 			ctx := suite.evmChainA.GetContext()
-			evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 			cbs := evmApp.GetIBCKeeper().ChannelKeeperV2.Router.Route(evmibctesting.TransferPort)
 
 			// malleate payload after it has been sent but before OnRecvPacket callback is called
@@ -379,7 +379,7 @@ func (suite *TransferTestSuiteV2) TestOnAckPacket() {
 		suite.Run(tc.name, func() {
 			suite.SetupTest() // reset
 
-			evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 			originalBalance := evmApp.BankKeeper.GetBalance(suite.evmChainA.GetContext(), suite.evmChainA.SenderAccount.GetAddress(), tc.sourceDenomToTransfer)
 
 			timeoutTimestamp := uint64(suite.chainB.GetContext().BlockTime().Add(time.Hour).Unix()) //nolint:gosec // G115
@@ -486,7 +486,7 @@ func (suite *TransferTestSuiteV2) TestOnTimeoutPacket() {
 		suite.Run(tc.name, func() {
 			suite.SetupTest() // reset
 
-			evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 			originalBalance := evmApp.BankKeeper.GetBalance(suite.evmChainA.GetContext(), suite.evmChainA.SenderAccount.GetAddress(), tc.sourceDenomToTransfer)
 
 			timeoutTimestamp := uint64(suite.chainB.GetContext().BlockTime().Add(time.Hour).Unix()) //nolint:gosec // G115

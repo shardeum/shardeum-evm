@@ -12,7 +12,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/shardeum/shardeum-evm/encoding"
-	"github.com/shardeum/shardeum-evm/testutil/config"
 	testconstants "github.com/shardeum/shardeum-evm/testutil/constants"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
@@ -53,8 +52,8 @@ func (suite *MsgsTestSuite) SetupTest() {
 	encodingConfig := encoding.MakeConfig(suite.chainID.Uint64())
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 
-	err := config.EvmAppOptions(9001)
-	suite.Require().NoError(err)
+	configurator := types.NewEVMConfigurator()
+	configurator.ResetTestConfig()
 }
 
 func (suite *MsgsTestSuite) TestMsgEthereumTx_Constructor() {

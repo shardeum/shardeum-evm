@@ -3,18 +3,20 @@ package integration
 import (
 	"encoding/json"
 
-	dbm "github.com/cosmos/cosmos-db"
 	"github.com/shardeum/shardeum-evm"
+	srvflags "github.com/shardeum/shardeum-evm/server/flags"
 	shardeumd "github.com/shardeum/shardeum-evm/shardeumd"
-	testconfig "github.com/shardeum/shardeum-evm/testutil/config"
 	"github.com/shardeum/shardeum-evm/testutil/constants"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
+
+	dbm "github.com/cosmos/cosmos-db"
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 
 	clienthelpers "cosmossdk.io/client/v2/helpers"
 	"cosmossdk.io/log"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	simutils "github.com/cosmos/cosmos-sdk/testutil/sims"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -31,7 +33,7 @@ func CreateShardeum(chainID string, evmChainID uint64, customBaseAppOptions ...f
 	db := dbm.NewMemDB()
 	logger := log.NewNopLogger()
 	loadLatest := true
-	appOptions := simutils.NewAppOptionsWithFlagHome(defaultNodeHome)
+	appOptions := NewAppOptionsWithFlagHomeAndChainID(defaultNodeHome, evmChainID)
 
 	baseAppOptions := append(customBaseAppOptions, baseapp.SetChainID(chainID))
 
@@ -42,7 +44,6 @@ func CreateShardeum(chainID string, evmChainID uint64, customBaseAppOptions ...f
 		loadLatest,
 		appOptions,
 		evmChainID,
-		testconfig.EvmAppOptions,
 		baseAppOptions...,
 	)
 }
@@ -57,7 +58,6 @@ func SetupShardeum() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		true,
 		simutils.EmptyAppOptions{},
 		constants.ShardeumEIP155ChainID,
-		testconfig.EvmAppOptions,
 	)
 	// disable base fee for testing
 	genesisState := app.DefaultGenesis()
@@ -72,4 +72,11 @@ func SetupShardeum() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	genesisState[minttypes.ModuleName] = app.AppCodec().MustMarshalJSON(mintGen)
 
 	return app, genesisState
+}
+
+func NewAppOptionsWithFlagHomeAndChainID(home string, evmChainID uint64) simutils.AppOptionsMap {
+	return simutils.AppOptionsMap{
+		flags.FlagHome:      home,
+		srvflags.EVMChainID: evmChainID,
+	}
 }

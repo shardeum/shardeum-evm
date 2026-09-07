@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/txpool"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	anteinterfaces "github.com/shardeum/shardeum-evm/ante/interfaces"
+	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	evmkeeper "github.com/shardeum/shardeum-evm/x/vm/keeper"
 	evmtypes "github.com/shardeum/shardeum-evm/x/vm/types"
 
@@ -32,6 +33,8 @@ type MonoDecorator struct {
 	feeMarketKeeper anteinterfaces.FeeMarketKeeper
 	evmKeeper       anteinterfaces.EVMKeeper
 	maxGasWanted    uint64
+	evmParams       *evmtypes.Params
+	feemarketParams *feemarkettypes.Params
 }
 
 // NewEVMMonoDecorator creates the 'mono' decorator, that is used to run the ante handle logic
@@ -45,12 +48,16 @@ func NewEVMMonoDecorator(
 	feeMarketKeeper anteinterfaces.FeeMarketKeeper,
 	evmKeeper anteinterfaces.EVMKeeper,
 	maxGasWanted uint64,
+	evmParams *evmtypes.Params,
+	feemarketParams *feemarkettypes.Params,
 ) MonoDecorator {
 	return MonoDecorator{
 		accountKeeper:   accountKeeper,
 		feeMarketKeeper: feeMarketKeeper,
 		evmKeeper:       evmKeeper,
 		maxGasWanted:    maxGasWanted,
+		evmParams:       evmParams,
+		feemarketParams: feemarketParams,
 	}
 }
 
@@ -77,7 +84,7 @@ func (md MonoDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, ne
 	}
 
 	// 2. get utils
-	decUtils, err := NewMonoDecoratorUtils(ctx, md.evmKeeper)
+	decUtils, err := NewMonoDecoratorUtils(ctx, md.evmKeeper, md.evmParams, md.feemarketParams)
 	if err != nil {
 		return ctx, err
 	}
@@ -103,8 +110,11 @@ func (md MonoDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, ne
 		Time:       uint64(ctx.BlockTime().Unix()), //nolint:gosec
 		Difficulty: big.NewInt(0),
 	}
+
+	chainConfig := evmtypes.GetEthChainConfig()
+
 	if err := txpool.ValidateTransaction(ethTx, &header, decUtils.Signer, &txpool.ValidationOptions{
-		Config:  evmtypes.GetEthChainConfig(),
+		Config:  chainConfig,
 		Accept:  AcceptedTxType,
 		MaxSize: math.MaxUint64, // tx size is checked in cometbft
 		MinTip:  new(big.Int),
@@ -255,7 +265,7 @@ func (md MonoDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, ne
 	}
 
 	// 10. gas wanted
-	if err := CheckGasWanted(ctx, md.feeMarketKeeper, tx, decUtils.Rules.IsLondon); err != nil {
+	if err := CheckGasWanted(ctx, md.feeMarketKeeper, tx, decUtils.Rules.IsLondon, md.feemarketParams); err != nil {
 		return ctx, err
 	}
 

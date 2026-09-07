@@ -12,14 +12,16 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/stretchr/testify/suite"
-
+	"github.com/shardeum/shardeum-evm"
+	"github.com/shardeum/shardeum-evm/precompiles/ics20"
 	"github.com/shardeum/shardeum-evm/shardeumd"
 	"github.com/shardeum/shardeum-evm/shardeumd/tests/integration"
-	"github.com/shardeum/shardeum-evm/precompiles/ics20"
 	chainutil "github.com/shardeum/shardeum-evm/testutil"
 	evmibctesting "github.com/shardeum/shardeum-evm/testutil/ibc"
 	evmante "github.com/shardeum/shardeum-evm/x/vm/ante"
+	"github.com/shardeum/shardeum-evm/x/vm/statedb"
+	"github.com/stretchr/testify/suite"
+
 	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 
@@ -46,19 +48,21 @@ func (suite *ICS20TransferV2TestSuite) SetupTest() {
 	suite.chainA = suite.coordinator.GetChain(evmibctesting.GetEvmChainID(1))
 	suite.chainB = suite.coordinator.GetChain(evmibctesting.GetEvmChainID(2))
 
-	evmAppA := suite.chainA.App.(*evmd.ShardeumApp)
-	suite.chainAPrecompile, _ = ics20.NewPrecompile(
+	evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
+	suite.chainAPrecompile = ics20.NewPrecompile(
 		evmAppA.BankKeeper,
 		*evmAppA.StakingKeeper,
 		evmAppA.TransferKeeper,
 		evmAppA.IBCKeeper.ChannelKeeper,
+		evmAppA.Erc20Keeper,
 	)
-	evmAppB := suite.chainB.App.(*evmd.ShardeumApp)
-	suite.chainBPrecompile, _ = ics20.NewPrecompile(
+	evmAppB := suite.chainB.App.(*shardeumd.ShardeumApp)
+	suite.chainBPrecompile = ics20.NewPrecompile(
 		evmAppB.BankKeeper,
 		*evmAppB.StakingKeeper,
 		evmAppB.TransferKeeper,
 		evmAppB.IBCKeeper.ChannelKeeper,
+		evmAppB.Erc20Keeper,
 	)
 }
 
@@ -81,7 +85,7 @@ func (suite *ICS20TransferV2TestSuite) TestHandleMsgTransfer() {
 		{
 			"transfer single denom",
 			func(_ evmibctesting.SenderAccount) {
-				evmAppA := suite.chainA.App.(*evmd.ShardeumApp)
+				evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 				sourceDenomToTransfer, err = evmAppA.StakingKeeper.BondDenom(suite.chainA.GetContext())
 				msgAmount = evmibctesting.DefaultCoinAmount
 			},
@@ -90,7 +94,7 @@ func (suite *ICS20TransferV2TestSuite) TestHandleMsgTransfer() {
 			"transfer amount larger than int64",
 			func(_ evmibctesting.SenderAccount) {
 				var ok bool
-				evmAppA := suite.chainA.App.(*evmd.ShardeumApp)
+				evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 				sourceDenomToTransfer, err = evmAppA.StakingKeeper.BondDenom(suite.chainA.GetContext())
 				msgAmount, ok = sdkmath.NewIntFromString("9223372036854775808") // 2^63 (one above int64)
 				suite.Require().True(ok)
@@ -99,7 +103,7 @@ func (suite *ICS20TransferV2TestSuite) TestHandleMsgTransfer() {
 		{
 			"transfer entire balance",
 			func(_ evmibctesting.SenderAccount) {
-				evmAppA := suite.chainA.App.(*evmd.ShardeumApp)
+				evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 				sourceDenomToTransfer, err = evmAppA.StakingKeeper.BondDenom(suite.chainA.GetContext())
 				msgAmount = transfertypes.UnboundedSpendLimit()
 			},
@@ -134,7 +138,7 @@ func (suite *ICS20TransferV2TestSuite) TestHandleMsgTransfer() {
 
 			tc.malleate(senderAccount)
 
-			evmAppA := suite.chainA.App.(*evmd.ShardeumApp)
+			evmAppA := suite.chainA.App.(*shardeumd.ShardeumApp)
 
 			GetBalance := func(addr sdk.AccAddress) sdk.Coin {
 				ctx := suite.chainA.GetContext()
@@ -220,7 +224,7 @@ func (suite *ICS20TransferV2TestSuite) TestHandleMsgTransfer() {
 			suite.Require().True(transferAmount.Equal(chainAEscrowBalance.Amount))
 
 			// check that voucher exists on chain B
-			evmAppB := suite.chainB.App.(*evmd.ShardeumApp)
+			evmAppB := suite.chainB.App.(*shardeumd.ShardeumApp)
 			chainBDenom := transfertypes.NewDenom(originalCoin.Denom, traceAToB)
 			chainBBalance := evmAppB.BankKeeper.GetBalance(
 				suite.chainB.GetContext(),
@@ -235,11 +239,14 @@ func (suite *ICS20TransferV2TestSuite) TestHandleMsgTransfer() {
 			// denoms query method
 			chainBAddr := common.BytesToAddress(suite.chainB.SenderAccount.GetAddress().Bytes())
 			ctxB := evmante.BuildEvmExecutionCtx(suite.chainB.GetContext())
+			stateDB := statedb.New(ctxB, suite.chainB.App.(evm.EvmApp).GetEVMKeeper(), statedb.NewEmptyTxConfig())
 			evmRes, err := evmAppB.EVMKeeper.CallEVM(
 				ctxB,
+				stateDB,
 				suite.chainBPrecompile.ABI,
 				chainBAddr,
 				suite.chainBPrecompile.Address(),
+				false,
 				false,
 				nil,
 				ics20.DenomsMethod,
@@ -260,9 +267,11 @@ func (suite *ICS20TransferV2TestSuite) TestHandleMsgTransfer() {
 			// denom query method
 			evmRes, err = evmAppB.EVMKeeper.CallEVM(
 				ctxB,
+				stateDB,
 				suite.chainBPrecompile.ABI,
 				chainBAddr,
 				suite.chainBPrecompile.Address(),
+				false,
 				false,
 				nil,
 				ics20.DenomMethod,
@@ -277,9 +286,11 @@ func (suite *ICS20TransferV2TestSuite) TestHandleMsgTransfer() {
 			// denom query method not exists case
 			evmRes, err = evmAppB.EVMKeeper.CallEVM(
 				ctxB,
+				stateDB,
 				suite.chainBPrecompile.ABI,
 				chainBAddr,
 				suite.chainBPrecompile.Address(),
+				false,
 				false,
 				nil,
 				ics20.DenomMethod,
@@ -294,9 +305,11 @@ func (suite *ICS20TransferV2TestSuite) TestHandleMsgTransfer() {
 			// denom query method invalid error case
 			evmRes, err = evmAppB.EVMKeeper.CallEVM(
 				ctxB,
+				stateDB,
 				suite.chainBPrecompile.ABI,
 				chainBAddr,
 				suite.chainBPrecompile.Address(),
+				false,
 				false,
 				nil,
 				ics20.DenomMethod,
@@ -310,9 +323,11 @@ func (suite *ICS20TransferV2TestSuite) TestHandleMsgTransfer() {
 			// denomHash query method
 			evmRes, err = evmAppB.EVMKeeper.CallEVM(
 				ctxB,
+				stateDB,
 				suite.chainBPrecompile.ABI,
 				chainBAddr,
 				suite.chainBPrecompile.Address(),
+				false,
 				false,
 				nil,
 				ics20.DenomHashMethod,
@@ -327,9 +342,11 @@ func (suite *ICS20TransferV2TestSuite) TestHandleMsgTransfer() {
 			// denomHash query method not exists case
 			evmRes, err = evmAppB.EVMKeeper.CallEVM(
 				ctxB,
+				stateDB,
 				suite.chainBPrecompile.ABI,
 				chainBAddr,
 				suite.chainBPrecompile.Address(),
+				false,
 				false,
 				nil,
 				ics20.DenomHashMethod,
@@ -343,9 +360,11 @@ func (suite *ICS20TransferV2TestSuite) TestHandleMsgTransfer() {
 			// denomHash query method invalid error case
 			evmRes, err = evmAppB.EVMKeeper.CallEVM(
 				ctxB,
+				stateDB,
 				suite.chainBPrecompile.ABI,
 				chainBAddr,
 				suite.chainBPrecompile.Address(),
+				false,
 				false,
 				nil,
 				ics20.DenomHashMethod,

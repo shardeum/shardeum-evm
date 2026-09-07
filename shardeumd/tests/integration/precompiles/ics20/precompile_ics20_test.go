@@ -3,10 +3,9 @@ package ics20
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/shardeumd/tests/integration"
 	"github.com/shardeum/shardeum-evm/tests/integration/precompiles/ics20"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestICS20PrecompileTestSuite(t *testing.T) {

@@ -5,23 +5,25 @@ import (
 	"io"
 	"path/filepath"
 
-	dbm "github.com/cosmos/cosmos-db"
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/shardeum/shardeum-evm/shardeumd"
 	shardeumdconfig "github.com/shardeum/shardeum-evm/shardeumd/cmd/shardeumd/config"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
+
+	dbm "github.com/cosmos/cosmos-db"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/snapshots"
 	snapshottypes "cosmossdk.io/store/snapshots/types"
 	storetypes "cosmossdk.io/store/types"
+
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/server"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 )
 
 type appCreator struct{}
@@ -95,7 +97,6 @@ func (a appCreator) newApp(
 		true,
 		simtestutil.EmptyAppOptions{},
 		shardeumdconfig.ShardeumChainID(),
-		shardeumdconfig.EvmAppOptions,
 		baseappOptions...,
 	)
 }
@@ -138,7 +139,6 @@ func (a appCreator) appExport(
 		loadLatest,
 		appOpts,
 		shardeumdconfig.ShardeumChainID(),
-		shardeumdconfig.EvmAppOptions,
 	)
 
 	if height != -1 {

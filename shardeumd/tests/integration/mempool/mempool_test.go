@@ -4,10 +4,8 @@ import (
 	"testing"
 
 	"github.com/shardeum/shardeum-evm/shardeumd/tests/integration"
-
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/tests/integration/mempool"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestMempoolIntegrationTestSuite(t *testing.T) {

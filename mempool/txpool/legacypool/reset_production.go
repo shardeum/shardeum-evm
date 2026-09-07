@@ -14,13 +14,15 @@ func (pool *LegacyPool) reset(oldHead, newHead *types.Header) {
 	var reinject types.Transactions
 
 	if oldHead != nil && oldHead.Hash() != newHead.ParentHash {
-		// Skip reorg logic on Cosmos chains due to instant finality
-		// This condition indicates a reorg attempt which shouldn't happen in Cosmos
-		log.Debug("legacypool saw skipped block (reorg) on cosmos chain, doing nothing...", 
-			"oldHead", oldHead.Hash(), 
-			"newHead", newHead.Hash(), 
-			"newParent", newHead.ParentHash)
-		reinject = nil // No transactions to reinject
+		// this is a strange reorg check from geth, it is possible for cosmos
+		// chains to call this function with newHead=oldHead+2, so
+		// newHead.ParentHash != oldHead.Hash. This would incorrectly be seen
+		// as a reorg on a cosmos chain and would therefore panic. Since this
+		// logic would only panic for cosmos chains in a valid state, we have
+		// removed it and replaced with a debug log.
+		//
+		// see https://github.com/shardeum/shardeum-evm/pull/668 for more context.
+		log.Debug("leacypool saw skipped block (reorg) on cosmos chain, doing nothing...", "oldHead", oldHead.Hash(), "newHead", newHead.Hash(), "newParent", newHead.ParentHash)
 	}
 	pool.resetInternalState(newHead, reinject)
 }

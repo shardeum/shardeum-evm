@@ -15,6 +15,7 @@ import (
 	"github.com/shardeum/shardeum-evm/precompiles/testutil"
 	"github.com/shardeum/shardeum-evm/precompiles/testutil/contracts"
 	cosmosevmutil "github.com/shardeum/shardeum-evm/testutil/constants"
+	basefactory "github.com/shardeum/shardeum-evm/testutil/integration/base/factory"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/network"
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
 	testutiltx "github.com/shardeum/shardeum-evm/testutil/tx"
@@ -34,6 +35,8 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -424,6 +427,90 @@ func TestPrecompileIntegrationTestSuite(t *testing.T, create network.CreateEvmAp
 						logCheckArgs,
 					)
 					Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+				})
+			})
+
+			Context("from a vesting account", func() {
+				var (
+					vestAddr     sdk.AccAddress
+					vestPriv     *ethsecp256k1.PrivKey
+					amtLocked    math.Int
+					amtSpendable math.Int
+					preBal       math.Int
+					preSupply    math.Int
+				)
+
+				BeforeEach(func() {
+					// setup vesting account to delegate from
+					vestAddr, vestPriv = testutiltx.NewAccAddressAndKey()
+					amtLocked = math.NewInt(2e18)
+					amtSpendable = math.NewInt(2e18)
+
+					funder := s.keyring.GetKey(0)
+					startTime := s.network.GetContext().BlockTime().Unix()
+					createMsg := &vestingtypes.MsgCreateVestingAccount{
+						FromAddress: funder.AccAddr.String(),
+						ToAddress:   vestAddr.String(),
+						Amount:      sdk.NewCoins(sdk.NewCoin(s.bondDenom, amtLocked)),
+						EndTime:     startTime + 365*24*3600,
+						Delayed:     false,
+					}
+					sendMsg := banktypes.NewMsgSend(
+						funder.AccAddr, vestAddr,
+						sdk.NewCoins(sdk.NewCoin(s.bondDenom, amtSpendable)),
+					)
+					_, err := s.factory.CommitCosmosTx(funder.Priv, basefactory.CosmosTxArgs{
+						Msgs: []sdk.Msg{createMsg, sendMsg},
+					})
+					Expect(err).To(BeNil(), "error while submitting vesting setup tx")
+
+					ctx := s.network.GetContext()
+					_, ok := s.network.App.GetAccountKeeper().GetAccount(ctx, vestAddr).(*vestingtypes.ContinuousVestingAccount)
+					Expect(ok).To(BeTrue(), "expected vesting account to persist after tx commit")
+					spendable := s.network.App.GetBankKeeper().SpendableCoin(ctx, vestAddr, s.bondDenom).Amount
+					Expect(spendable).To(Equal(amtSpendable), "unexpected spendable balance after vesting setup")
+
+					preBalRes, err := s.grpcHandler.GetBalanceFromBank(vestAddr, s.bondDenom)
+					Expect(err).To(BeNil(), "error while getting pre balance")
+					preBal = preBalRes.Balance.Amount
+					Expect(preBal).To(Equal(amtLocked.Add(amtSpendable)), "expected vester pre bank balance to equal OV + extra")
+
+					preSupplyRes, err := s.grpcHandler.GetTotalSupply()
+					Expect(err).To(BeNil(), "error while getting pre supply")
+					preSupply = preSupplyRes.Supply.AmountOf(s.bondDenom)
+				})
+
+				It("should preserve bank balance and total supply when delegating within spendable", func() {
+					// delegating less than spendable balance and less than
+					// locked balance
+					delAmt := big.NewInt(1e18)
+					gasPrice := big.NewInt(1e9)
+
+					callArgs.Args = []interface{}{
+						common.BytesToAddress(vestAddr), valAddr.String(), delAmt,
+					}
+					delTxArgs := txArgs
+					delTxArgs.GasPrice = gasPrice
+
+					logCheckArgs := passCheck.WithExpEvents(staking.EventTypeDelegate)
+					res, _, err := s.factory.CallContractAndCheckLogs(
+						vestPriv, delTxArgs, callArgs, logCheckArgs,
+					)
+					Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+					Expect(s.network.NextBlock()).To(BeNil())
+
+					postBalRes, err := s.grpcHandler.GetBalanceFromBank(vestAddr, s.bondDenom)
+					Expect(err).To(BeNil(), "error while getting post balance")
+					postSupplyRes, err := s.grpcHandler.GetTotalSupply()
+					Expect(err).To(BeNil(), "error while getting post supply")
+					postBal := postBalRes.Balance.Amount
+					postSupply := postSupplyRes.Supply.AmountOf(s.bondDenom)
+
+					gasCost := new(big.Int).Mul(gasPrice, big.NewInt(res.GasUsed))
+					expBalDrop := new(big.Int).Add(delAmt, gasCost)
+					actualBalDrop := preBal.Sub(postBal).BigInt()
+					Expect(actualBalDrop).To(Equal(expBalDrop), "vesting bank balance dropped by more than delegation amount + gas")
+					Expect(postSupply).To(Equal(preSupply), "unexpected total supply after delegating from vesting account")
 				})
 			})
 
@@ -1439,7 +1526,8 @@ func TestPrecompileIntegrationTestSuite(t *testing.T, create network.CreateEvmAp
 			// check contract was correctly deployed
 			cAcc := s.network.App.GetEVMKeeper().GetAccount(s.network.GetContext(), contractAddr)
 			Expect(cAcc).ToNot(BeNil(), "contract account should exist")
-			Expect(cAcc.IsContract()).To(BeTrue(), "account should be a contract")
+			isContract := s.network.App.GetEVMKeeper().IsContract(s.network.GetContext(), contractAddr)
+			Expect(isContract).To(BeTrue(), "account should be a contract")
 
 			// populate default TxArgs
 			txArgs.To = &contractAddr
@@ -1564,6 +1652,36 @@ func TestPrecompileIntegrationTestSuite(t *testing.T, create network.CreateEvmAp
 				Expect(err).NotTo(BeNil(), "expected validator NOT to be found")
 				Expect(err.Error()).To(ContainSubstring("not found"), "expected validator NOT to be found")
 			})
+
+			It("tx from validator operator with delegated code - should create a validator", func() {
+				s.delegateAccountToContract(valPriv, valHexAddr, contractTwoAddr)
+
+				callArgs = testutiltypes.CallArgs{
+					ContractABI: stakingCallerTwoContract.ABI,
+					MethodName:  "testCreateValidatorWithTransfer",
+					Args: []interface{}{
+						defaultDescription, defaultCommission, defaultMinSelfDelegation, valHexAddr, defaultPubkeyBase64Str, false, false,
+					},
+				}
+
+				txArgs = evmtypes.EvmTxArgs{
+					To:       &valHexAddr,
+					GasLimit: 500_000,
+					Amount:   new(big.Int).Set(defaultValue),
+				}
+
+				_, _, err = s.factory.CallContractAndCheckLogs(
+					valPriv,
+					txArgs, callArgs,
+					passCheck.WithExpEvents(staking.EventTypeCreateValidator),
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract")
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				qc := s.network.GetStakingClient()
+				_, err := qc.Validator(s.network.GetContext(), &stakingtypes.QueryValidatorRequest{ValidatorAddr: sdk.ValAddress(valAddr).String()})
+				Expect(err).To(BeNil(), "expected validator NOT to be found")
+			})
 		})
 
 		Context("to edit a validator", func() {
@@ -1681,6 +1799,33 @@ func TestPrecompileIntegrationTestSuite(t *testing.T, create network.CreateEvmAp
 				validator := qRes.Validator
 				Expect(validator.Description.Moniker).To(Equal("original moniker"), "expected validator moniker is updated")
 				Expect(validator.Commission.Rate.BigInt().String()).To(Equal("100000000000000000"), "expected validator commission rate remain unchanged")
+			})
+
+			It("with tx from validator operator using delegated code - should NOT edit a validator", func() {
+				s.delegateAccountToContract(valPriv, valHexAddr, contractAddr)
+				callArgs.Args = []interface{}{
+					defaultDescription, valHexAddr,
+					defaultCommissionRate, defaultMinSelfDelegation,
+				}
+
+				txArgs.To = &valHexAddr
+
+				_, _, err = s.factory.CallContractAndCheckLogs(
+					valPriv,
+					txArgs,
+					callArgs,
+					execRevertedCheck,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract")
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				qc := s.network.GetStakingClient()
+				qRes, err := qc.Validator(s.network.GetContext(), &stakingtypes.QueryValidatorRequest{ValidatorAddr: sdk.ValAddress(valAddr).String()})
+				Expect(err).To(BeNil())
+				Expect(qRes).NotTo(BeNil())
+
+				validator := qRes.Validator
+				Expect(validator.Description.Moniker).NotTo(Equal(defaultDescription.Moniker), "expected validator moniker NOT to be updated")
 			})
 		})
 
@@ -2092,6 +2237,59 @@ func TestPrecompileIntegrationTestSuite(t *testing.T, create network.CreateEvmAp
 						bondedTokensPoolFinalBalance := balRes.Balance
 						Expect(bondedTokensPoolFinalBalance.Amount).To(Equal(bondedTokensPoolInitialBalance.Amount))
 					})
+
+					DescribeTable("should not delegate and update balances accordingly across orderings - internal transfer to tokens pool",
+						func(tc struct {
+							before bool
+							after  bool
+							msgAmt *big.Int
+						},
+						) {
+							args.MethodName = "testDelegateWithTransfer"
+							args.Args = []interface{}{
+								common.BytesToAddress(bondedTokensPoolAccAddr),
+								s.keyring.GetAddr(0), valAddr.String(), tc.before, tc.after,
+							}
+
+							txArgs.To = &contractTwoAddr
+							if tc.msgAmt != nil {
+								txArgs.Amount = tc.msgAmt
+							}
+
+							reverReasonCheck := execRevertedCheck.WithErrContains(
+								errorsmod.Wrapf(
+									sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", bondedTokensPoolAccAddr.String(),
+								).Error(),
+							)
+
+							_, _, err := s.factory.CallContractAndCheckLogs(
+								s.keyring.GetPrivKey(0),
+								txArgs,
+								args,
+								reverReasonCheck,
+							)
+							Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+							Expect(s.network.NextBlock()).To(BeNil())
+
+							balRes, err := s.grpcHandler.GetBalanceFromBank(contractTwoAddr.Bytes(), s.bondDenom)
+							Expect(err).To(BeNil())
+							Expect(balRes.Balance.Amount).To(Equal(contractInitialBalance.Amount))
+
+							balRes, err = s.grpcHandler.GetBalanceFromBank(bondedTokensPoolAccAddr, s.bondDenom)
+							Expect(err).To(BeNil())
+							Expect(balRes.Balance.Amount).To(Equal(bondedTokensPoolInitialBalance.Amount))
+						},
+						Entry("internal transfer after precompile call", struct {
+							before bool
+							after  bool
+							msgAmt *big.Int
+						}{before: false, after: true, msgAmt: nil}),
+						Entry("internal transfer after precompile call with matching amounts", struct {
+							before bool
+							after  bool
+							msgAmt *big.Int
+						}{before: false, after: true, msgAmt: big.NewInt(15)}),
+					)
 				})
 
 				It("should not delegate when validator does not exist", func() {

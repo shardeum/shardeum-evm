@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	"github.com/shardeum/shardeum-evm/x/vm/types"
 )
 
@@ -37,6 +38,7 @@ func NewEmptyTxConfig() TxConfig {
 // It's mainly to reduce the number of method parameters
 type EVMConfig struct {
 	Params                  types.Params
+	FeeMarketParams         feemarkettypes.Params
 	CoinBase                common.Address
 	BaseFee                 *big.Int
 	EnablePreimageRecording bool

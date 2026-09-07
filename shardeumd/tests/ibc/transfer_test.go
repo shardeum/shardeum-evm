@@ -8,11 +8,11 @@ package ibc
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/shardeum/shardeum-evm/shardeumd"
 	"github.com/shardeum/shardeum-evm/shardeumd/tests/integration"
 	evmibctesting "github.com/shardeum/shardeum-evm/testutil/ibc"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 
@@ -95,7 +95,7 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 			senderAddr := senderAccount.SenderAccount.GetAddress()
 			tc.malleate()
 
-			evmApp := suite.evmChainA.App.(*evmd.ShardeumApp)
+			evmApp := suite.evmChainA.App.(*shardeumd.ShardeumApp)
 			sourceDenomToTransfer, err = evmApp.StakingKeeper.BondDenom(suite.evmChainA.GetContext())
 			suite.Require().NoError(err)
 			senderBalance := evmApp.BankKeeper.GetBalance(suite.evmChainA.GetContext(), senderAddr, sourceDenomToTransfer)

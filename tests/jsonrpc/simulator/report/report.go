@@ -8,11 +8,10 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/xuri/excelize/v2"
-
 	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/config"
 	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/types"
 	"github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator/utils"
+	"github.com/xuri/excelize/v2"
 )
 
 const totalWidth = 63
@@ -359,7 +358,6 @@ func PrintCategoryMatrix(summary *types.TestSummary) {
 				catSummary.Total)
 		}
 	}
-
 }
 
 func PrintSummary(summary *types.TestSummary) {
