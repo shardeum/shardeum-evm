@@ -1,0 +1,22 @@
+{
+  "messages": [
+    {
+      "@type": "/cosmos.evm.feemarket.v1.MsgUpdateParams",
+      "authority": "shardeum10d07y265gmmuvt4z0w9aw880jnsr700jzj92zh",
+      "params": {
+        "base_fee": "1048130280389041.000000000000000000",
+        "base_fee_change_denominator": 8,
+        "elasticity_multiplier": 2,
+        "enable_height": "0",
+        "min_gas_multiplier": "0.500000000000000000",
+        "min_gas_price": "1048130280389041.000000000000000000",
+        "no_base_fee": false
+      }
+    }
+  ],
+  "metadata": "",
+  "deposit": "1290000000000000000000000ashm",
+  "title": "EXAMPLE ONLY: Update Feemarket Parameters: reduce gas price and base fee by about 50%",
+  "summary": "EXAMPLE ONLY: Proposal to update feemarket module parameters. reduce gas price and base fee by about 50%",
+  "expedited": true
+}
