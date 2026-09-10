@@ -137,6 +137,7 @@ fi
 CHAINID=$(jq -r '.chain_id' "$CONFIG_FILE")
 EVM_CHAIN_ID=$(jq -r '.evm_chain_id' "$CONFIG_FILE")
 BASE_DENOM=$(jq -r '.base_denom' "$CONFIG_FILE")
+METRICS_ENABLED=$(jq -r '.metrics_enabled // false' "$CONFIG_FILE")
 
 # Overrides
 if [[ -n "$CUSTOM_CHAIN_ID" ]]; then
@@ -503,6 +504,52 @@ echo -e "  - Node0: Seed node (no seeds configured)"
 echo -e "  - Node1-$(($NODES-1)): Use node0 as seed for peer discovery"
 
 # -----------------------------
+# Metrics Configuration
+# -----------------------------
+if [ "$METRICS_ENABLED" = "true" ]; then
+  echo -e "${YELLOW}Configuring metrics endpoints${NC}"
+  
+  for i in $(seq 0 $((NODES-1))); do
+    NODE_DIR="$BASE_DIR/node$i"
+    CONFIG_TOML="$NODE_DIR/config/config.toml"
+    APP_TOML="$NODE_DIR/config/app.toml"
+    PROMETHEUS_PORT=$((26660 + i))
+    EVM_METRICS_PORT=$((6065 + i))
+    
+    # Enable CometBFT metrics in config.toml
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' "/^\[instrumentation\]/,/^\[/ s/^prometheus = false/prometheus = true/" "$CONFIG_TOML"
+      sed -i '' "/^\[instrumentation\]/,/^\[/ s/^prometheus_listen_addr = \"[^\"]*\"/prometheus_listen_addr = \"127.0.0.1:$PROMETHEUS_PORT\"/" "$CONFIG_TOML"
+      
+      # Enable SDK telemetry in app.toml
+      sed -i '' "/^\[telemetry\]/,/^\[/ s/^enabled = false/enabled = true/" "$APP_TOML"
+      sed -i '' "/^\[telemetry\]/,/^\[/ s/^prometheus-retention-time = 0/prometheus-retention-time = 60/" "$APP_TOML"
+      
+      # Enable EVM metrics for non-validator nodes
+      if [ $i -ne 0 ]; then
+        sed -i '' "/^\[json-rpc\]/,/^\[/ s/^metrics-address = \"[^\"]*\"/metrics-address = \"127.0.0.1:$EVM_METRICS_PORT\"/" "$APP_TOML"
+      fi
+    else
+      sed -i "/^\[instrumentation\]/,/^\[/ s/^prometheus = false/prometheus = true/" "$CONFIG_TOML"
+      sed -i "/^\[instrumentation\]/,/^\[/ s/^prometheus_listen_addr = \"[^\"]*\"/prometheus_listen_addr = \"127.0.0.1:$PROMETHEUS_PORT\"/" "$CONFIG_TOML"
+      
+      # Enable SDK telemetry in app.toml
+      sed -i "/^\[telemetry\]/,/^\[/ s/^enabled = false/enabled = true/" "$APP_TOML"
+      sed -i "/^\[telemetry\]/,/^\[/ s/^prometheus-retention-time = 0/prometheus-retention-time = 60/" "$APP_TOML"
+      
+      # Enable EVM metrics for non-validator nodes
+      if [ $i -ne 0 ]; then
+        sed -i "/^\[json-rpc\]/,/^\[/ s/^metrics-address = \"[^\"]*\"/metrics-address = \"127.0.0.1:$EVM_METRICS_PORT\"/" "$APP_TOML"
+      fi
+    fi
+    
+    echo "  Node$i: Metrics enabled on localhost:$PROMETHEUS_PORT"
+  done
+  
+  echo -e "${GREEN}Metrics endpoints configured (bound to localhost)${NC}"
+fi
+
+# -----------------------------
 # Start nodes
 # -----------------------------
 echo -e "${YELLOW}Starting $NODES nodes${NC}"
@@ -559,11 +606,27 @@ for i in $(seq 0 $((NODES-1))); do
   WS_PORT=$((8546 + i * 2))
   
   if [ $i -eq 0 ]; then
-    # Node0 is validator - no JSON-RPC
-    echo "  Node$i (validator): RPC=http://localhost:$RPC_PORT API=http://localhost:$API_PORT"
+    echo "  Node$i (validator):"
+    echo "    RPC=http://localhost:$RPC_PORT"
+    echo "    API=http://localhost:$API_PORT"
+    if [ "$METRICS_ENABLED" = "true" ]; then
+      PROMETHEUS_PORT=$((26660 + i))
+      echo "    CometBFT Metrics=http://localhost:$PROMETHEUS_PORT/metrics"
+      echo "    SDK Metrics=http://localhost:$API_PORT/metrics"
+    fi
   else
-    # Other nodes are full nodes - show JSON-RPC
-    echo "  Node$i (full-node): RPC=http://localhost:$RPC_PORT API=http://localhost:$API_PORT JSON-RPC=http://localhost:$JSON_PORT WebSocket=ws://localhost:$WS_PORT"
+    echo "  Node$i (full-node):"
+    echo "    RPC=http://localhost:$RPC_PORT"
+    echo "    API=http://localhost:$API_PORT"
+    echo "    JSON-RPC=http://localhost:$JSON_PORT"
+    echo "    WebSocket=ws://localhost:$WS_PORT"
+    if [ "$METRICS_ENABLED" = "true" ]; then
+      PROMETHEUS_PORT=$((26660 + i))
+      EVM_METRICS_PORT=$((6065 + i))
+      echo "    CometBFT Metrics=http://localhost:$PROMETHEUS_PORT/metrics"
+      echo "    SDK Metrics=http://localhost:$API_PORT/metrics"
+      echo "    EVM Metrics=http://localhost:$EVM_METRICS_PORT/metrics"
+    fi
   fi
 done
 echo
