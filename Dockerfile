@@ -10,7 +10,7 @@ COPY . .
 RUN make build
 
 # Production stage
-FROM alpine:3.22.1
+FROM alpine:3.22.2
 
 # Needed to download genesis.json
 RUN apk add --no-cache curl jq
