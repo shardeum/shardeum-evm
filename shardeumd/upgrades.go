@@ -6,36 +6,34 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 )
 
-// UpgradeName defines the on-chain upgrade name for the Shardeum resync onto
-// cosmos/evm v0.6.3.
+// UpgradeName defines the on-chain upgrade name for the resync onto
+// cosmos/evm v0.6.4 (security fixes GHSA-p8x8-4gg6-prcc, GHSA-7xxp-gq2c-x47x,
+// GHSA-c6xv-pppp-rjw6, GHSA-wm4f-qpxp-rch4 and #1277). The release is
+// consensus-breaking (EVM execution semantics change), so it must go through
+// a MsgSoftwareUpgrade governance proposal.
 //
-// NOTE: the live chains are v0.4.0-era. They never executed the v0.4.0->v0.5.0
-// upgrade (that handler was dead reference scaffolding), so this upgrade jumps
-// straight from v0.4.0-era state to v0.6.3, skipping v0.5.0 and v0.6.0-v0.6.2.
+// Only the current upgrade's handler is registered, matching upstream evmd.
+// x/upgrade requires the running binary to have a handler for the last
+// applied upgrade; on a chain still on v1.1.0 that is "v0.4.0-to-v0.6.3",
+// which this binary does not register, so it errors on its first block until
+// the "v0.6.3-to-v0.6.4" height is reached. Nodes replaying history from
+// genesis must therefore step through binaries: the pre-v1.1.0 release up to
+// the "v0.4.0-to-v0.6.3" height (mainnet 7,927,860), v1.1.0 up to the
+// "v0.6.3-to-v0.6.4" height, then this binary. State sync avoids this.
+//
 // The name must match the name used in the MsgSoftwareUpgrade proposal and in
 // each node's cosmovisor upgrades/<name>/bin directory.
-const UpgradeName = "v0.4.0-to-v0.6.3"
+const UpgradeName = "v0.6.3-to-v0.6.4"
 
 func (app ShardeumApp) RegisterUpgradeHandlers() {
+	// v0.6.3 -> v0.6.4: no store changes and no new state to backfill. The
+	// upgrade exists only to coordinate the binary switch at a single height.
 	app.UpgradeKeeper.SetUpgradeHandler(
 		UpgradeName,
 		func(ctx context.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-			sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-			// v0.5.0 moved EVM coin info (denom/decimals) from app-creation-time
-			// config into x/vm's own KVStore, populated only by InitGenesis. Chains
-			// upgrading from pre-v0.5.0 (as this one is) never had InitGenesis run
-			// with that logic, so the store entry must be backfilled here or every
-			// EVM operation panics with "denom not registered". See
-			// docs/migrations/v0.4.0_to_v0.5.0.md, "UpgradeHandler" section.
-			if err := app.EVMKeeper.InitEvmCoinInfo(sdkCtx); err != nil {
-				return nil, err
-			}
-
 			return app.ModuleManager.RunMigrations(ctx, app.Configurator(), fromVM)
 		},
 	)
