@@ -18,7 +18,7 @@ import (
 
 const (
 	upgradeHeight int64 = 22
-	upgradeName         = "v0.4.0-to-v0.6.3" // must match UpgradeName in shardeumd/upgrades.go
+	upgradeName         = "v0.6.3-to-v0.6.4" // must match UpgradeName in shardeumd/upgrades.go
 )
 
 func TestChainUpgrade(t *testing.T) {
@@ -31,7 +31,7 @@ func TestChainUpgrade(t *testing.T) {
 	currentBranchBinary := systest.Sut.ExecBinary()
 	currentInitializer := systest.Sut.TestnetInitializer()
 
-	legacyBinary := systest.WorkDir + "/binaries/v0.4/shardeumd"
+	legacyBinary := systest.WorkDir + "/binaries/v1.1.0/shardeumd" // released v1.1.0 (cosmos/evm v0.6.3) — the chain state this upgrade starts from
 	systest.Sut.SetExecBinary(legacyBinary)
 	systest.Sut.SetTestnetInitializer(systest.InitializerWithBinary(legacyBinary, systest.Sut))
 	systest.Sut.SetupChain()

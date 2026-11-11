@@ -16,9 +16,12 @@ Or via manual steps
 
 ```shell
 make build
-mkdir -= ./tests/systemtests/binaries
-cp ./build/evmd ./tests/systemtests/binaries
-cp ./build/evmd ./tests/systemtests/binaries/v0.4
+mkdir -p ./tests/systemtests/binaries/v1.1.0
+cp ./build/shardeumd ./tests/systemtests/binaries
+# The upgrade test starts a chain on the previous release and upgrades it to the
+# current build. Place the released v1.1.0 shardeumd binary (cosmos/evm v0.6.3) here;
+# do NOT copy the current build, or the upgrade path is not exercised.
+cp /path/to/shardeumd-v1.1.0 ./tests/systemtests/binaries/v1.1.0/shardeumd
 ```
 
 ## Run Individual test

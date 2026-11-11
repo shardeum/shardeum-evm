@@ -20,6 +20,7 @@ import (
 	"github.com/shardeum/shardeum-evm/testutil/integration/evm/utils"
 	testKeyring "github.com/shardeum/shardeum-evm/testutil/keyring"
 	utiltx "github.com/shardeum/shardeum-evm/testutil/tx"
+	erc20types "github.com/shardeum/shardeum-evm/x/erc20/types"
 	feemarkettypes "github.com/shardeum/shardeum-evm/x/feemarket/types"
 	"github.com/shardeum/shardeum-evm/x/vm/keeper"
 	"github.com/shardeum/shardeum-evm/x/vm/statedb"
@@ -36,6 +37,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 )
 
 func (s *KeeperTestSuite) TestContextSetConsensusParams() {
@@ -862,6 +864,62 @@ func (s *KeeperTestSuite) TestApplyMessage() {
 			}
 		})
 	}
+}
+
+func (s *KeeperTestSuite) TestApplyMessageChargesGasOnCommitError() {
+	s.EnableFeemarket = true
+	defer func() { s.EnableFeemarket = false }()
+	s.SetupTest()
+
+	sender := s.Keyring.GetKey(0)
+
+	// Shardeum: the fork's integration network does not fund keyring accounts in
+	// the EVM denom, so the transfer below would fail inside the EVM with
+	// "insufficient balance for transfer" and never reach StateDB.Commit. Fund
+	// the sender here and run both ApplyMessage calls on the same context so the
+	// balance is visible to each.
+	ctx0 := s.Network.GetContext()
+	fundCoins := sdk.NewCoins(sdk.NewCoin(types.GetEVMCoinDenom(), sdkmath.NewIntWithDecimal(1, 24)))
+	s.Require().NoError(s.Network.App.GetBankKeeper().MintCoins(ctx0, minttypes.ModuleName, fundCoins))
+	s.Require().NoError(s.Network.App.GetBankKeeper().SendCoinsFromModuleToAccount(ctx0, minttypes.ModuleName, sender.AccAddr, fundCoins))
+
+	// A transfer to a blocked module account succeeds at the EVM level but
+	// fails during StateDB.Commit with "is not allowed to receive funds".
+	recipient := common.BytesToAddress(authtypes.NewModuleAddress(erc20types.ModuleName).Bytes())
+	transferArgs := types.EvmTxArgs{
+		To:     &recipient,
+		Amount: big.NewInt(100),
+	}
+	coreMsg, err := s.Factory.GenerateGethCoreMsg(sender.Priv, transferArgs)
+	s.Require().NoError(err)
+
+	// Baseline: run the same message with commit=false to measure how much
+	// gas the surrounding SDK work consumes, and how much EVM gas the call
+	// used, without charging or committing anything.
+	baselineMeter := storetypes.NewGasMeter(100_000_000)
+	baselineCtx := ctx0.WithGasMeter(baselineMeter)
+	baselineDB := statedb.New(baselineCtx, s.Network.App.GetEVMKeeper(), statedb.NewEmptyTxConfig())
+	baselineGasBefore := baselineMeter.GasConsumed()
+	res, err := s.Network.App.GetEVMKeeper().ApplyMessage(baselineCtx, baselineDB, *coreMsg, nil, false, false, true)
+	s.Require().NoError(err)
+	sdkGasConsumed := baselineMeter.GasConsumed() - baselineGasBefore
+	s.Require().Equal(params.TxGas, res.GasUsed)
+
+	// Now run the same message with commit=true so that StateDB.Commit
+	// fails on the blocked module account balance change.
+	gasMeter := storetypes.NewGasMeter(100_000_000)
+	ctx := ctx0.WithGasMeter(gasMeter)
+	stateDB := statedb.New(ctx, s.Network.App.GetEVMKeeper(), statedb.NewEmptyTxConfig())
+
+	gasBefore := gasMeter.GasConsumed()
+	_, err = s.Network.App.GetEVMKeeper().ApplyMessage(ctx, stateDB, *coreMsg, nil, true, false, true)
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "failed to commit stateDB")
+	s.Require().Contains(err.Error(), "is not allowed to receive funds")
+
+	// The EVM work was performed; its gas must not be dropped on the error
+	// path, even though the commit failed after execution.
+	s.Require().GreaterOrEqual(gasMeter.GasConsumed()-gasBefore, sdkGasConsumed+res.GasUsed)
 }
 
 func (s *KeeperTestSuite) TestApplyMessageWithConfig() {
