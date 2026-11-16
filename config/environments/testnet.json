@@ -6,6 +6,7 @@
   "display_denom": "shm",
   "decimals": 18,
   "bech32_prefix": "shardeum",
+  "metrics_enabled": false,
   "ports": {
     "rpc": "26657",
     "rest": "1317",
