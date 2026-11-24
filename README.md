@@ -224,7 +224,7 @@ The following networks are preconfigured:
 | Network | Chain ID | EVM Chain ID | Description |
 |---------|----------|--------------|-------------|
 | local | shardeum_8119-1 | 8119 | Local development |
-| testnet | shardeum_8119-2 | 8119 | Public testnet |
+| testnet | shardeum-testnet | 8119 | Public testnet |
 | devnet | shardeum_8119-3 | 8119 | Development network |
 | mainnet | shardeum_8118-1 | 8118 | Production mainnet |
 
@@ -259,7 +259,7 @@ All network parameters can be overridden with environment variables:
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `SHARDEUM_NETWORK` | Network name | `testnet` |
-| `SHARDEUM_CHAIN_ID` | Cosmos chain ID | `shardeum_8119-1` (local), `shardeum_8119-2` (testnet), etc. |
+| `SHARDEUM_CHAIN_ID` | Cosmos chain ID | `shardeum_8119-1` (local), `shardeum-testnet` (testnet), etc. |
 | `SHARDEUM_EVM_CHAIN_ID` | EVM chain ID | `8119` |
 | `SHARDEUM_BASE_DENOM` | Base denomination | `ashm` |
 | `SHARDEUM_DISPLAY_DENOM` | Display denomination | `shm` |

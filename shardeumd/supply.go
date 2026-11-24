@@ -98,7 +98,7 @@ var networkNonCircAddresses = map[string][]string{
 		"shardeum1lgsqfegwwgvfwz2ukcrgvxcdc7kpxr0fhwa4ff", // 0xFa2004E50e721897095cB606861b0Dc7AC130dE9
 		"shardeum1t0rzptla0ueq99c3tm3d8hq27vv6rdtxsgx6ur", // 0x5Bc620affd7F320297115Ee2D3dC0AF319a1B566
 	},
-	"shardeum_8119-2": { // testnet
+	"shardeum-testnet": { // testnet
 		"shardeum1lg3dd9d0zmvkpcrmrkr5guc6dn8s2k43gr3p6j", // 0xfa22D695Af16D960E07b1D8744731A6ccF055aB1
 		"shardeum16r5ta5cpvcnkfgrkxvgnnnjwfd4eqlhend3ly8", // 0xD0e8BEd301662764a076331139Ce4e4b6B907EF9
 		"shardeum1twv0y2s9426yqxmmh3u3r30q86ha8j0wcu7ajf", // 0x5B98F22a05aaB4401b7BBC7911C5e03eAFD3C9Ee

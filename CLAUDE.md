@@ -94,11 +94,11 @@ The following predefined networks are available for development and testing:
 
 ### Network Configurations
 - **local**: Development network (`shardeum_8117-1`, EVM Chain ID: 8117)
-- **testnet**: Test network (`shardeum_8119-2`, EVM Chain ID: 8119)
+- **testnet**: Test network (`shardeum-testnet`, EVM Chain ID: 8119)
 - **devnet**: Development staging network (`shardeum_8119-3`, EVM Chain ID: 8119)
 - **mainnet**: Production network (`shardeum_8118-1`, EVM Chain ID: 8118)
 
-**Note**: All networks use the ethermint chain ID format (`{name}_{evmChainId}-{version}`) for automatic EVM compatibility detection by wallets like Keplr and ping.pub. Each network has a unique version number or chain ID to prevent replay attacks across networks.
+**Note**: All networks except testnet use the ethermint chain ID format (`{name}_{evmChainId}-{version}`) for automatic EVM compatibility detection by wallets like Keplr and ping.pub. Testnet's live chain ID is `shardeum-testnet` (set in its genesis), so its EVM chain ID must be passed explicitly (`--evm.evm-chain-id 8119`). Each network has a unique version number or chain ID to prevent replay attacks across networks.
 
 ### Network Selection
 Use the `NETWORK` parameter with make commands or `--network` flag with scripts:
