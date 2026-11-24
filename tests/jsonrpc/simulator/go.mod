@@ -1,6 +1,6 @@
-module github.com/cosmos/evm/tests/jsonrpc/simulator
+module github.com/shardeum/shardeum-evm/tests/jsonrpc/simulator
 
-go 1.23.8
+go 1.26.11
 
 require (
 	github.com/ethereum/go-ethereum v1.16.3

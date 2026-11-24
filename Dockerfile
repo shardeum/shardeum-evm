@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.25.1-alpine3.22 AS builder
+FROM golang:1.26.11-alpine3.24 AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY . .
 RUN make build
 
 # Production stage
-FROM alpine:3.22.1
+FROM alpine:3.24.4
 
 # Needed to download genesis.json
 RUN apk add --no-cache curl jq
