@@ -3,7 +3,8 @@ FROM golang:1.26.11-alpine3.24 AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache build-base gcc linux-headers make
+# git is needed so `make build` can stamp the version (git describe) and commit (git log)
+RUN apk add --no-cache build-base gcc linux-headers make git
 
 COPY . .
 
