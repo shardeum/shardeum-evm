@@ -152,7 +152,10 @@ func TestBytesToString(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := cdc.BytesToString(tc.input())
+			// tc.input() sets cdc, so it must run before cdc is read
+			// (Go does not specify evaluation order within a single call expression).
+			input := tc.input()
+			got, err := cdc.BytesToString(input)
 			if tc.expErr == nil {
 				require.NoError(t, err)
 				require.Equal(t, tc.expRes, got)
