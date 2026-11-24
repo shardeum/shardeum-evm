@@ -2,7 +2,7 @@
 ARG IMG_TAG=latest
 
 # Compile the shardeumd binary
-FROM golang:1.24-alpine AS shardeumd-builder
+FROM golang:1.26.11-alpine3.24 AS shardeumd-builder
 WORKDIR /work
 ENV PACKAGES="curl build-base git bash file linux-headers eudev-dev"
 RUN apk add --no-cache $PACKAGES
