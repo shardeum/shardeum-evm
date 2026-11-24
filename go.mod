@@ -2,6 +2,8 @@ module github.com/shardeum/shardeum-evm
 
 go 1.26.0
 
+toolchain go1.26.11
+
 require (
 	cosmossdk.io/api v0.9.2
 	cosmossdk.io/client/v2 v2.0.0-beta.7
