@@ -148,7 +148,7 @@ export CHAIN_ID=shardeum_8117-1  # Adjust based on your network
 ```
 
 **Note for Testnet/Remote Networks:**
-- The chain ID may differ from the config file. For example, testnet may use `shardeum-testnet` or `shardeum_8119-2` depending on the deployment. Always verify the actual chain ID from your genesis file or contact ops for the current network configuration.
+- The public testnet's chain ID is `shardeum-testnet` (from its genesis). Always verify the actual chain ID from your genesis file or contact ops for the current network configuration.
 - For fee estimation on remote networks, query the appropriate RPC endpoint (e.g., `shardeumd query feemarket params --node https://rpc-mezame.shardeum.org` for testnet).
 
 ## Step 3: Add Node with Multisig Operator Key

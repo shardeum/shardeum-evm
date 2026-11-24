@@ -1,6 +1,6 @@
 {
   "name": "testnet",
-  "chain_id": "shardeum_8119-2",
+  "chain_id": "shardeum-testnet",
   "evm_chain_id": 8119,
   "base_denom": "ashm",
   "display_denom": "shm",
